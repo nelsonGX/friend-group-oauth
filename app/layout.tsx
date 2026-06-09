@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { TopProgress } from "@/components/TopProgress";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -58,6 +59,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="relative min-h-full flex flex-col">
+        <TopProgress />
         <header className="sticky top-0 z-30 border-b border-border bg-bg">
           <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
             <Brand />
