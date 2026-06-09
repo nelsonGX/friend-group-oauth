@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, Link2, Boxes } from "lucide-react";
 import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accessTokens, clients } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
-import { format } from "@/lib/i18n/format";
 import { getBalance, getLedger, getProviderEarnings } from "@/lib/credits";
+import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
-import { revokeAppAccess } from "./actions";
-import { AppSetup, NewAppForm } from "./DashboardForms";
+import { ProviderApps } from "./ProviderApps";
+import { ConnectedApps } from "./ConnectedApps";
+import type { AppView } from "./AppDetailsModal";
 
 function fmt(d: Date) {
   return d.toISOString().slice(0, 16).replace("T", " ");
@@ -41,6 +42,24 @@ export default async function DashboardPage() {
   const ownedEarnings = await Promise.all(owned.map((c) => getProviderEarnings(c.id)));
   const canRegister = user.allowed || user.isAdmin;
   const appUrl = env.APP_URL;
+
+  // Serialize owned apps for the client components (Dates aren't passable as-is).
+  const appViews: AppView[] = owned.map((c, i) => ({
+    id: c.id,
+    name: c.name,
+    clientId: c.clientId,
+    allowedScopes: c.allowedScopes,
+    redirectUris: c.redirectUris,
+    isActive: c.isActive,
+    trusted: c.trusted,
+    earned: ownedEarnings[i],
+    createdAt: c.createdAt.toISOString(),
+  }));
+
+  const stats = [
+    { icon: Link2, label: t.dashboard.statConnected, value: connected.length },
+    { icon: Boxes, label: t.dashboard.statOwned, value: owned.length },
+  ];
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
@@ -90,152 +109,94 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* desktop: sidebar (balance + connected) | main (provider + activity) */}
-      <div className="mt-8 grid items-start gap-6 lg:grid-cols-3">
-        {/* sidebar */}
-        <aside className="space-y-6 lg:sticky lg:top-20">
-          {/* balance hero */}
-          <section
-            className="reveal card card-hover relative overflow-hidden p-6"
-            style={{ animationDelay: "80ms" }}
-          >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand/25 blur-3xl"
-            />
-            <p className="text-sm text-muted">{t.dashboard.creditBalance}</p>
-            <p className="mt-1 text-5xl font-semibold tracking-tight">
-              <span className="shimmer-text">{balance}</span>
-              <span className="ml-2 align-middle text-base font-normal text-faint">
-                {t.dashboard.credits}
-              </span>
-            </p>
-          </section>
-
-          {/* connected apps */}
-          <section className="reveal" style={{ animationDelay: "140ms" }}>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-              {t.dashboard.connectedApps}
-            </h2>
-            {connected.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">{t.dashboard.noAppsConnected}</p>
-            ) : (
-              <ul className="card card-hover mt-3 glass-divide overflow-hidden">
-                {connected.map((c) => (
-                  <li
-                    key={c.clientId}
-                    className="flex items-center justify-between p-4 transition-colors hover:bg-surface-strong"
-                  >
-                    <span className="text-sm font-medium">
-                      {c.name ?? c.clientId}
-                    </span>
-                    <form action={revokeAppAccess}>
-                      <input type="hidden" name="clientId" value={c.clientId} />
-                      <button className="text-sm text-danger transition-opacity hover:opacity-80">
-                        {t.dashboard.revoke}
-                      </button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </aside>
-
-        {/* main column */}
-        <div className="space-y-9 lg:col-span-2">
-          {/* provider apps */}
-          <section className="reveal" style={{ animationDelay: "200ms" }}>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-              {t.dashboard.providerApps}
-            </h2>
-            <p className="mt-2 text-sm text-muted">
-              {t.dashboard.providerAppsDesc}
-            </p>
-
-            {owned.length > 0 && (
-              <ul className="mt-4 space-y-3">
-                {owned.map((c, i) => (
-                  <li key={c.id} className="card card-hover p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-medium">{c.name}</span>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="badge">
-                          {format(t.dashboard.earnedBadge, { n: ownedEarnings[i] })}
-                        </span>
-                        {!c.isActive && (
-                          <span className="badge badge-danger">{t.dashboard.disabled}</span>
-                        )}
-                        {c.trusted && (
-                          <span className="badge badge-success">{t.dashboard.trusted}</span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="mt-1.5 font-mono text-xs text-faint">
-                      {c.clientId}
-                    </p>
-                    <AppSetup
-                      appUrl={appUrl}
-                      clientId={c.clientId}
-                      scopes={c.allowedScopes}
-                      redirectUris={c.redirectUris}
-                      t={t.dashboard.forms}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="card mt-4 p-5">
-              <h3 className="text-sm font-semibold">{t.dashboard.registerNewApp}</h3>
-              {canRegister ? (
-                <div className="mt-3">
-                  <NewAppForm t={t.dashboard.forms} />
-                </div>
-              ) : (
-                <p className="mt-2 text-sm text-muted">{t.dashboard.needAccess}</p>
-              )}
+      {/* stats row */}
+      <div
+        className="reveal mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        style={{ animationDelay: "80ms" }}
+      >
+        <section className="card relative overflow-hidden p-6 sm:col-span-2 lg:col-span-1">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand/25 blur-3xl"
+          />
+          <p className="text-sm text-muted">{t.dashboard.creditBalance}</p>
+          <p className="mt-1 text-5xl font-semibold tracking-tight">
+            <span className="shimmer-text">{balance}</span>
+            <span className="ml-2 align-middle text-base font-normal text-faint">
+              {t.dashboard.credits}
+            </span>
+          </p>
+        </section>
+        {stats.map(({ icon: Icon, label, value }) => (
+          <section key={label} className="card flex items-center gap-4 p-6">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-strong text-brand-soft">
+              <Icon size={20} />
+            </span>
+            <div>
+              <p className="text-3xl font-semibold tabular-nums leading-none">{value}</p>
+              <p className="mt-1 text-sm text-muted">{label}</p>
             </div>
           </section>
-
-          {/* activity */}
-          <section className="reveal" style={{ animationDelay: "260ms" }}>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-              {t.dashboard.recentActivity}
-            </h2>
-            {entries.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">{t.dashboard.noTransactions}</p>
-            ) : (
-              <div className="card card-hover mt-3 overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <tbody className="glass-divide">
-                    {entries.map((e) => (
-                      <tr
-                        key={e.id}
-                        className="transition-colors hover:bg-surface-strong"
-                      >
-                        <td className="p-4 font-mono text-xs text-faint">
-                          {fmt(e.createdAt)}
-                        </td>
-                        <td className="p-4 text-muted">
-                          {e.reason ?? (e.delta > 0 ? t.dashboard.topUp : t.dashboard.charge)}
-                        </td>
-                        <td
-                          className={`p-4 text-right font-medium tabular-nums ${
-                            e.delta > 0 ? "text-success" : "text-ink"
-                          }`}
-                        >
-                          {e.delta > 0 ? `+${e.delta}` : e.delta}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </div>
+        ))}
       </div>
+
+      {/* your apps | connected */}
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-3">
+        <div className="reveal lg:col-span-2" style={{ animationDelay: "140ms" }}>
+          <ProviderApps
+            apps={appViews}
+            appUrl={appUrl}
+            canRegister={canRegister}
+            supportedScopes={[...SUPPORTED_SCOPES]}
+            scopeInfo={t.authorize.scopes}
+            t={t.dashboard}
+          />
+        </div>
+
+        <aside className="reveal lg:sticky lg:top-20" style={{ animationDelay: "200ms" }}>
+          <ConnectedApps
+            apps={connected.map((c) => ({ clientId: c.clientId, name: c.name }))}
+            t={t.dashboard}
+          />
+        </aside>
+      </div>
+
+      {/* activity */}
+      <section className="reveal mt-10" style={{ animationDelay: "260ms" }}>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
+          {t.dashboard.recentActivity}
+        </h2>
+        {entries.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">{t.dashboard.noTransactions}</p>
+        ) : (
+          <div className="card mt-3 overflow-hidden">
+            <table className="w-full text-left text-sm">
+              <tbody className="glass-divide">
+                {entries.map((e) => (
+                  <tr
+                    key={e.id}
+                    className="transition-colors hover:bg-surface-strong"
+                  >
+                    <td className="p-4 font-mono text-xs text-faint">
+                      {fmt(e.createdAt)}
+                    </td>
+                    <td className="p-4 text-muted">
+                      {e.reason ?? (e.delta > 0 ? t.dashboard.topUp : t.dashboard.charge)}
+                    </td>
+                    <td
+                      className={`p-4 text-right font-medium tabular-nums ${
+                        e.delta > 0 ? "text-success" : "text-ink"
+                      }`}
+                    >
+                      {e.delta > 0 ? `+${e.delta}` : e.delta}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
