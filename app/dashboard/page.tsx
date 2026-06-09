@@ -1,18 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, LogOut, Compass, Boxes, Coins, Sparkles } from "lucide-react";
+import { Shield, LogOut, Compass, Boxes, Coins, Sparkles, Wallet } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
-import { getDictionary } from "@/lib/i18n";
-import { getProviderEarnings } from "@/lib/credits";
+import { getBalance, getIncome, getProviderEarnings } from "@/lib/credits";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
 import { installCommands } from "@/lib/skill";
 import { ProviderApps } from "./ProviderApps";
 import { SkillInstall } from "./SkillInstall";
 import type { AppView } from "./AppDetailsModal";
+
+function fmtDate(d: Date) {
+  return d.toISOString().slice(0, 16).replace("T", " ");
+}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -24,6 +27,8 @@ export default async function DashboardPage() {
   const owned = await db.select().from(clients).where(eq(clients.ownerUserId, user.id));
   const ownedEarnings = await Promise.all(owned.map((c) => getProviderEarnings(c.id)));
   const totalEarned = ownedEarnings.reduce((sum, n) => sum + n, 0);
+  const balance = await getBalance(user.id);
+  const income = await getIncome(user.id, 50);
   const canRegister = user.allowed || user.isAdmin;
   const appUrl = env.APP_URL;
   const skillCmds = installCommands();
@@ -48,6 +53,7 @@ export default async function DashboardPage() {
   }));
 
   const stats = [
+    { icon: Wallet, label: t.dashboard.statBalance, value: balance },
     { icon: Boxes, label: t.dashboard.statOwned, value: owned.length },
     { icon: Coins, label: t.dashboard.statEarned, value: totalEarned },
   ];
@@ -103,7 +109,7 @@ export default async function DashboardPage() {
 
       {/* stats row */}
       <div
-        className="reveal mt-8 grid gap-4 sm:grid-cols-2"
+        className="reveal mt-8 grid gap-4 sm:grid-cols-3"
         style={{ animationDelay: "60ms" }}
       >
         {stats.map(({ icon: Icon, label, value }) => (
@@ -162,6 +168,64 @@ export default async function DashboardPage() {
           t={t.dashboard}
         />
       </div>
+
+      {/* income report */}
+      <section className="reveal mt-10" style={{ animationDelay: "240ms" }}>
+        <div className="flex items-center gap-2.5">
+          <Coins size={18} className="text-brand-soft" />
+          <h2 className="text-lg font-semibold">{t.dashboard.income.heading}</h2>
+        </div>
+        <p className="mt-1 max-w-xl text-sm text-muted">
+          {t.dashboard.income.desc}
+        </p>
+
+        {income.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">{t.dashboard.income.empty}</p>
+        ) : (
+          <div className="card card-hover mt-4 overflow-hidden">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide text-faint">
+                  <th className="p-4 font-medium">{t.dashboard.income.thDate}</th>
+                  <th className="p-4 font-medium">{t.dashboard.income.thApp}</th>
+                  <th className="p-4 font-medium">{t.dashboard.income.thFrom}</th>
+                  <th className="p-4 text-right font-medium">
+                    {t.dashboard.income.thAmount}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="glass-divide">
+                {income.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    className="transition-colors hover:bg-surface-strong"
+                  >
+                    <td className="p-4 font-mono text-xs text-faint">
+                      {fmtDate(entry.createdAt)}
+                    </td>
+                    <td className="p-4">
+                      <span className="font-medium">
+                        {entry.appName ?? t.dashboard.income.unknownApp}
+                      </span>
+                      {entry.reason && (
+                        <span className="block text-xs text-muted">
+                          {entry.reason}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-muted">
+                      {entry.fromName ?? t.dashboard.income.unknownFrom}
+                    </td>
+                    <td className="p-4 text-right font-medium tabular-nums text-success">
+                      +{entry.amount}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
