@@ -140,6 +140,8 @@ const en = {
       thAmount: "Amount",
       unknownApp: "Deleted app",
       unknownFrom: "Unknown",
+      showAll: "Show all ({n})",
+      showLess: "Show less",
     },
     skill: {
       heading: "One-click integration",
@@ -196,6 +198,9 @@ const en = {
       next: "Next",
       create: "Create app",
       creating: "Creating…",
+      or: "or",
+      manual: "Create manually",
+      manualHint: "Prefer to set it up by hand?",
       nameRequired: "Give your app a name to continue.",
       uriRequired: "Add at least one redirect URI.",
       uriInvalid: "{uri} isn't a valid URL.",
@@ -329,6 +334,20 @@ const en = {
     registerProviderDesc: "Create OAuth credentials for a friend's site.",
     providers: "Providers",
     users: "Users",
+    stats: {
+      users: "Users",
+      withAccess: "{n} with access",
+      providers: "Providers",
+      active: "{n} active",
+      circulation: "Credits in circulation",
+      earned: "Total earned",
+    },
+    searchProviders: "Search providers…",
+    searchUsers: "Search users…",
+    noResults: "No matches.",
+    grant: "Grant",
+    listed: "listed",
+    you: "you",
     th: {
       name: "Name",
       clientId: "client_id",
@@ -401,7 +420,7 @@ const en = {
       "You don't have access to this platform yet. Make sure you're in the Discord server with the required role.",
     scopes: {
       identify: "Your Discord identity (username, avatar)",
-      roles: "Your server roles and access status",
+      roles: "Your access status (in server, has required role)",
       credits: "Your credit balance",
     },
     renderErrors: {

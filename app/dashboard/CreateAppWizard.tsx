@@ -1,41 +1,51 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Plus, Trash2, Check, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Check, AlertTriangle, Sparkles, PencilLine } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { createOwnApp, type AppState } from "./actions";
 import { CopyButton, OneShotPrompt } from "./DashboardForms";
+import { SkillInstall } from "./SkillInstall";
 import { format } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
 type WizardDict = Dictionary["dashboard"]["wizard"];
 type FormsDict = Dictionary["dashboard"]["forms"];
+type SkillDict = Dictionary["dashboard"]["skill"];
 
 const appInitial: AppState = { ok: false, message: "" };
 const TOTAL_STEPS = 3;
 
 /**
- * Guided, multi-step replacement for the old inline "register app" form. Walks
- * the user through name → redirect URIs → scopes, explaining each in context,
- * then surfaces the one-time secret on a dedicated success screen. State is
- * collected in React and submitted via hidden inputs so the `createOwnApp`
- * server action keeps its existing FormData shape.
+ * Create-app popup. Opens on a chooser: the recommended one-click integration
+ * (install the coding-agent skill, which registers the app for you via the
+ * browser-approved device flow) on top, an "or" divider, and a manual path
+ * below. The manual path is the guided name → redirect URIs → scopes wizard,
+ * which surfaces the one-time secret on a dedicated success screen. Manual
+ * state is collected in React and submitted via hidden inputs so the
+ * `createOwnApp` server action keeps its existing FormData shape.
  */
 export function CreateAppWizard({
   onClose,
   supportedScopes,
   scopeInfo,
+  skillCmds,
   t,
   forms,
+  skillT,
 }: {
   onClose: () => void;
   supportedScopes: string[];
   scopeInfo: Record<string, string>;
+  skillCmds: { sh: string; ps1: string };
   t: WizardDict;
   forms: FormsDict;
+  skillT: SkillDict;
 }) {
   const [state, action, pending] = useActionState(createOwnApp, appInitial);
 
+  // "choose" shows the one-click vs manual chooser; "manual" runs the wizard.
+  const [mode, setMode] = useState<"choose" | "manual">("choose");
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [uris, setUris] = useState<string[]>([""]);
@@ -81,6 +91,11 @@ export function CreateAppWizard({
   }
   function back() {
     setError("");
+    // From the first step, step back out to the one-click / manual chooser.
+    if (step === 1) {
+      setMode("choose");
+      return;
+    }
     setStep((s) => Math.max(s - 1, 1));
   }
 
@@ -91,7 +106,11 @@ export function CreateAppWizard({
       open
       onClose={onClose}
       title={done ? t.doneTitle : t.title}
-      description={done ? undefined : format(t.step, { n: step, total: TOTAL_STEPS })}
+      description={
+        done || mode === "choose"
+          ? undefined
+          : format(t.step, { n: step, total: TOTAL_STEPS })
+      }
       size="lg"
     >
       {done ? (
@@ -102,6 +121,17 @@ export function CreateAppWizard({
           t={t}
           forms={forms}
           onClose={onClose}
+        />
+      ) : mode === "choose" ? (
+        <ChooseView
+          skillCmds={skillCmds}
+          skillT={skillT}
+          t={t}
+          onManual={() => {
+            setError("");
+            setStep(1);
+            setMode("manual");
+          }}
         />
       ) : (
         <form action={action}>
@@ -259,6 +289,57 @@ export function CreateAppWizard({
         </form>
       )}
     </Modal>
+  );
+}
+
+/**
+ * The popup's first screen: the recommended one-click integration on top, an
+ * "or" divider, then a button to drop into the manual wizard below.
+ */
+function ChooseView({
+  skillCmds,
+  skillT,
+  t,
+  onManual,
+}: {
+  skillCmds: { sh: string; ps1: string };
+  skillT: SkillDict;
+  t: WizardDict;
+  onManual: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand text-white">
+          <Sparkles size={18} />
+        </span>
+        <div>
+          <h3 className="text-base font-semibold leading-tight">{skillT.heading}</h3>
+          <p className="mt-1 text-sm text-muted">{skillT.desc}</p>
+        </div>
+      </div>
+
+      <SkillInstall sh={skillCmds.sh} ps1={skillCmds.ps1} zipUrl="/api/skill" t={skillT} />
+
+      <p className="text-xs text-faint">{skillT.flowNote}</p>
+
+      {/* divider */}
+      <div className="flex items-center gap-3" aria-hidden>
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium uppercase tracking-wide text-faint">
+          {t.or}
+        </span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">{t.manualHint}</p>
+        <button type="button" onClick={onManual} className="btn btn-secondary text-sm">
+          <PencilLine size={15} />
+          {t.manual}
+        </button>
+      </div>
+    </div>
   );
 }
 

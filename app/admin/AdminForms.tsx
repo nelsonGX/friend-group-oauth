@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import {
   createClient,
   grantCredits,
@@ -15,11 +15,35 @@ const initial: ActionState = { ok: false, message: "" };
 const inputClass = "input";
 const buttonClass = "btn btn-primary text-sm";
 
-export function GrantCreditsForm({ t }: { t: FormsDict }) {
+/**
+ * The Discord ID field is controlled by the parent so a "Grant" button in the
+ * users table can target a specific user. Other fields stay uncontrolled.
+ */
+export function GrantCreditsForm({
+  t,
+  discordId,
+  onDiscordIdChange,
+}: {
+  t: FormsDict;
+  discordId: string;
+  onDiscordIdChange: (value: string) => void;
+}) {
   const [state, action, pending] = useActionState(grantCredits, initial);
+
+  // Clear the targeted user once a grant lands, so the field is ready to reuse.
+  useEffect(() => {
+    if (state.ok) onDiscordIdChange("");
+  }, [state, onDiscordIdChange]);
+
   return (
     <form action={action} className="space-y-3">
-      <input className={inputClass} name="discordId" placeholder={t.discordIdPlaceholder} />
+      <input
+        className={inputClass}
+        name="discordId"
+        placeholder={t.discordIdPlaceholder}
+        value={discordId}
+        onChange={(e) => onDiscordIdChange(e.target.value)}
+      />
       <input className={inputClass} name="amount" type="number" min="1" placeholder={t.amountPlaceholder} />
       <input className={inputClass} name="reason" placeholder={t.reasonPlaceholder} />
       <button className={buttonClass} disabled={pending}>

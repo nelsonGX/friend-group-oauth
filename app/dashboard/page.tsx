@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, LogOut, Compass, Boxes, Coins, Sparkles, Wallet } from "lucide-react";
+import { Shield, Boxes, Coins, Wallet } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients } from "@/db/schema";
@@ -11,7 +11,7 @@ import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
 import { installCommands } from "@/lib/skill";
 import { ProviderApps } from "./ProviderApps";
-import { SkillInstall } from "./SkillInstall";
+import { IncomeReport, type IncomeRow } from "./IncomeReport";
 import type { AppView } from "./AppDetailsModal";
 
 function fmtDate(d: Date) {
@@ -55,6 +55,16 @@ export default async function DashboardPage() {
     createdAt: c.createdAt.toISOString(),
   }));
 
+  // Pre-format income for the (client) IncomeReport — Dates can't cross the boundary.
+  const incomeRows: IncomeRow[] = income.map((e) => ({
+    id: e.id,
+    date: fmtDate(e.createdAt),
+    appName: e.appName,
+    reason: e.reason,
+    fromName: e.fromName,
+    amount: e.amount,
+  }));
+
   const stats = [
     { icon: Wallet, label: t.dashboard.statBalance, value: balance },
     { icon: Boxes, label: t.dashboard.statOwned, value: owned.length },
@@ -63,7 +73,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">
-      {/* identity + actions */}
+      {/* identity (nav lives in the global header; only the admin link is unique here) */}
       <div
         className="reveal flex flex-wrap items-center justify-between gap-4"
         style={{ animationDelay: "0ms" }}
@@ -90,145 +100,49 @@ export default async function DashboardPage() {
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/explore" className="btn btn-ghost !py-2 text-sm">
-            <Compass size={15} />
-            {t.nav.explore}
+        {user.isAdmin && (
+          <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
+            <Shield size={15} />
+            {t.dashboard.admin}
           </Link>
-          {user.isAdmin && (
-            <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
-              <Shield size={15} />
-              {t.dashboard.admin}
-            </Link>
-          )}
-          <form action="/api/auth/logout" method="post">
-            <button className="btn btn-ghost !py-2 text-sm">
-              <LogOut size={15} />
-              {t.dashboard.logout}
-            </button>
-          </form>
-        </div>
+        )}
       </div>
 
-      {/* stats row */}
+      {/* compact stats strip — glanceable context, not a competing hero */}
       <div
-        className="reveal mt-8 grid gap-4 sm:grid-cols-3"
+        className="reveal mt-8 grid gap-3 sm:grid-cols-3"
         style={{ animationDelay: "60ms" }}
       >
         {stats.map(({ icon: Icon, label, value }) => (
-          <section key={label} className="card card-hover flex items-center gap-4 p-6">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-strong text-brand-soft">
-              <Icon size={20} />
+          <section key={label} className="card card-hover flex items-center gap-3 px-4 py-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-strong text-brand-soft">
+              <Icon size={17} />
             </span>
             <div>
-              <p className="text-3xl font-semibold tabular-nums leading-none">{value}</p>
-              <p className="mt-1 text-sm text-muted">{label}</p>
+              <p className="text-xl font-semibold tabular-nums leading-none">{value}</p>
+              <p className="mt-1 text-xs text-muted">{label}</p>
             </div>
           </section>
         ))}
       </div>
 
-      {/* one-click integration skill */}
-      {canRegister && (
-        <div className="reveal mt-8" style={{ animationDelay: "120ms" }}>
-          <section className="card card-hover-border p-6">
-            <div className="flex items-start gap-4">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-white">
-                <Sparkles size={20} />
-              </span>
-              <div>
-                <h2 className="text-base font-semibold leading-tight">
-                  {t.dashboard.skill.heading}
-                </h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted">
-                  {t.dashboard.skill.desc}
-                </p>
-                <p className="mt-1 max-w-2xl text-xs text-faint">
-                  {t.dashboard.skill.flowNote}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5">
-              <SkillInstall
-                sh={skillCmds.sh}
-                ps1={skillCmds.ps1}
-                zipUrl="/api/skill"
-                t={t.dashboard.skill}
-              />
-            </div>
-          </section>
-        </div>
-      )}
-
-      {/* your apps */}
-      <div className="reveal mt-8" style={{ animationDelay: "180ms" }}>
+      {/* your apps — the centerpiece */}
+      <div className="reveal mt-10" style={{ animationDelay: "120ms" }}>
         <ProviderApps
           apps={appViews}
           appUrl={appUrl}
           canRegister={canRegister}
           supportedScopes={[...SUPPORTED_SCOPES]}
           scopeInfo={t.authorize.scopes}
+          skillCmds={skillCmds}
           t={t.dashboard}
         />
       </div>
 
-      {/* income report */}
-      <section className="reveal mt-10" style={{ animationDelay: "240ms" }}>
-        <div className="flex items-center gap-2.5">
-          <Coins size={18} className="text-brand-soft" />
-          <h2 className="text-lg font-semibold">{t.dashboard.income.heading}</h2>
-        </div>
-        <p className="mt-1 max-w-xl text-sm text-muted">
-          {t.dashboard.income.desc}
-        </p>
-
-        {income.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">{t.dashboard.income.empty}</p>
-        ) : (
-          <div className="card card-hover mt-4 overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-xs uppercase tracking-wide text-faint">
-                  <th className="p-4 font-medium">{t.dashboard.income.thDate}</th>
-                  <th className="p-4 font-medium">{t.dashboard.income.thApp}</th>
-                  <th className="p-4 font-medium">{t.dashboard.income.thFrom}</th>
-                  <th className="p-4 text-right font-medium">
-                    {t.dashboard.income.thAmount}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="glass-divide">
-                {income.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="transition-colors hover:bg-surface-strong"
-                  >
-                    <td className="p-4 font-mono text-xs text-faint">
-                      {fmtDate(entry.createdAt)}
-                    </td>
-                    <td className="p-4">
-                      <span className="font-medium">
-                        {entry.appName ?? t.dashboard.income.unknownApp}
-                      </span>
-                      {entry.reason && (
-                        <span className="block text-xs text-muted">
-                          {entry.reason}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4 text-muted">
-                      {entry.fromName ?? t.dashboard.income.unknownFrom}
-                    </td>
-                    <td className="p-4 text-right font-medium tabular-nums text-success">
-                      +{entry.amount}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {/* income — secondary, recent first, expandable */}
+      <div className="reveal mt-10" style={{ animationDelay: "180ms" }}>
+        <IncomeReport entries={incomeRows} t={t.dashboard.income} />
+      </div>
     </main>
   );
 }

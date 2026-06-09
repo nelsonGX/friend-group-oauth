@@ -20,6 +20,7 @@ export function ProviderApps({
   canRegister,
   supportedScopes,
   scopeInfo,
+  skillCmds,
   t,
 }: {
   apps: AppView[];
@@ -27,6 +28,7 @@ export function ProviderApps({
   canRegister: boolean;
   supportedScopes: string[];
   scopeInfo: Record<string, string>;
+  skillCmds: { sh: string; ps1: string };
   t: DashDict;
 }) {
   const [creating, setCreating] = useState(false);
@@ -115,8 +117,10 @@ export function ProviderApps({
           onClose={() => setCreating(false)}
           supportedScopes={supportedScopes}
           scopeInfo={scopeInfo}
+          skillCmds={skillCmds}
           t={t.wizard}
           forms={t.forms}
+          skillT={t.skill}
         />
       )}
       {selected && (

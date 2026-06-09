@@ -135,6 +135,8 @@ const zhTW: Dictionary = {
       thAmount: "金額",
       unknownApp: "已刪除的應用程式",
       unknownFrom: "未知",
+      showAll: "顯示全部（{n}）",
+      showLess: "收合",
     },
     skill: {
       heading: "一鍵整合",
@@ -191,6 +193,9 @@ const zhTW: Dictionary = {
       next: "下一步",
       create: "建立應用程式",
       creating: "建立中…",
+      or: "或",
+      manual: "手動建立",
+      manualHint: "想自己手動設定？",
       nameRequired: "請為你的應用程式命名以繼續。",
       uriRequired: "請至少新增一個重新導向 URI。",
       uriInvalid: "{uri} 不是有效的網址。",
@@ -320,6 +325,20 @@ const zhTW: Dictionary = {
     registerProviderDesc: "為朋友的網站建立 OAuth 憑證。",
     providers: "提供者",
     users: "使用者",
+    stats: {
+      users: "使用者",
+      withAccess: "{n} 位具存取權",
+      providers: "提供者",
+      active: "{n} 個啟用中",
+      circulation: "流通中的點數",
+      earned: "總收益",
+    },
+    searchProviders: "搜尋提供者…",
+    searchUsers: "搜尋使用者…",
+    noResults: "沒有符合的項目。",
+    grant: "授予",
+    listed: "已上架",
+    you: "你",
     th: {
       name: "名稱",
       clientId: "client_id",
@@ -390,7 +409,7 @@ const zhTW: Dictionary = {
       "你尚未取得此平台的存取權。請確認你在 Discord 伺服器中並具備所需的身分組。",
     scopes: {
       identify: "你的 Discord 身分（使用者名稱、頭像）",
-      roles: "你的伺服器身分組與存取狀態",
+      roles: "你的存取狀態（是否在伺服器中、是否具備所需身分組）",
       credits: "你的點數餘額",
     },
     renderErrors: {
