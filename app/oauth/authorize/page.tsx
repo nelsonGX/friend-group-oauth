@@ -17,11 +17,22 @@ const SCOPE_LABELS: Record<string, string> = {
 function ErrorView({ message }: { message: string }) {
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-red-500/30 p-8 text-center">
-        <h1 className="text-lg font-semibold text-red-600 dark:text-red-400">
+      <div className="reveal card w-full max-w-md border-danger/30 p-8 text-center">
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-danger/30 bg-danger/10 text-danger">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 8v5m0 3.5h.01M10.3 3.9L2.4 18a1.9 1.9 0 001.7 2.9h15.8a1.9 1.9 0 001.7-2.9L13.7 3.9a1.9 1.9 0 00-3.4 0z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+        <h1 className="mt-4 text-lg font-semibold text-danger">
           Authorization error
         </h1>
-        <p className="mt-2 text-sm opacity-80">{message}</p>
+        <p className="mt-2 text-sm text-muted">{message}</p>
       </div>
     </main>
   );
@@ -99,20 +110,52 @@ export default async function AuthorizePage({
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-black/10 dark:border-white/15 p-8">
-        <h1 className="text-xl font-semibold">Authorize {client.name}</h1>
-        <p className="mt-2 text-sm opacity-70">
+      <div className="reveal card w-full max-w-md p-8">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-white shadow-[0_12px_30px_-12px_rgba(88,101,242,0.9)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M12 2.5l8 4v5c0 4.6-3.1 8.4-8 10-4.9-1.6-8-5.4-8-10v-5l8-4z"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-faint">
+              Authorize access
+            </p>
+            <h1 className="text-xl font-semibold leading-tight">{client.name}</h1>
+          </div>
+        </div>
+
+        <p className="mt-5 text-sm text-muted">
           Signed in as{" "}
-          <span className="font-medium">
+          <span className="font-medium text-ink">
             {user.globalName ?? user.username}
           </span>
-          . <span className="font-medium">{client.name}</span> wants to access:
+          . <span className="font-medium text-ink">{client.name}</span> would
+          like to access:
         </p>
 
-        <ul className="mt-4 space-y-2 text-sm">
+        <ul className="mt-4 space-y-2">
           {scopes.map((s) => (
-            <li key={s} className="flex items-start gap-2">
-              <span aria-hidden>•</span>
+            <li
+              key={s}
+              className="flex items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
+            >
+              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand/15 text-brand-soft">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M5 12.5l4.5 4.5L19 6.5"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
               <span>{SCOPE_LABELS[s] ?? s}</span>
             </li>
           ))}
@@ -134,7 +177,7 @@ export default async function AuthorizePage({
             type="submit"
             name="decision"
             value="deny"
-            className="flex-1 rounded-md border border-black/15 dark:border-white/20 px-4 py-2 text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/10"
+            className="btn btn-ghost flex-1"
           >
             Deny
           </button>
@@ -142,11 +185,15 @@ export default async function AuthorizePage({
             type="submit"
             name="decision"
             value="approve"
-            className="flex-1 rounded-md bg-[#5865F2] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#4752c4]"
+            className="btn btn-primary flex-1"
           >
             Approve
           </button>
         </form>
+
+        <p className="mt-4 text-center text-xs text-faint">
+          You can revoke this access anytime from your dashboard.
+        </p>
       </div>
     </main>
   );

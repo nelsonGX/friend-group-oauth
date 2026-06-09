@@ -13,19 +13,13 @@ import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 const secretInitial: SecretState = { ok: false, message: "" };
 const appInitial: AppState = { ok: false, message: "" };
 
-const inputClass =
-  "w-full rounded-md border border-black/15 dark:border-white/20 bg-transparent px-3 py-2 text-sm";
-const buttonClass =
-  "rounded-md bg-[#5865F2] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#4752c4] disabled:opacity-50";
+const inputClass = "input";
+const buttonClass = "btn btn-primary text-sm";
 
 function Notice({ ok, message }: { ok: boolean; message: string }) {
   if (!message) return null;
   return (
-    <p
-      className={`text-sm ${
-        ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-      }`}
-    >
+    <p className={`text-sm ${ok ? "text-success" : "text-danger"}`}>
       {message}
     </p>
   );
@@ -54,12 +48,12 @@ export function NewAppForm() {
       </button>
       <Notice ok={state.ok} message={state.message} />
       {state.ok && state.clientId && state.secret && (
-        <div className="space-y-1 rounded-md bg-black/5 dark:bg-white/10 p-3 font-mono text-xs break-all">
+        <div className="sunken space-y-1 p-3 font-mono text-xs break-all">
           <div>
-            <span className="opacity-60">client_id:</span> {state.clientId}
+            <span className="text-faint">client_id:</span> {state.clientId}
           </div>
           <div>
-            <span className="opacity-60">client_secret:</span> {state.secret}
+            <span className="text-faint">client_secret:</span> {state.secret}
           </div>
         </div>
       )}
@@ -74,7 +68,7 @@ function RegenerateSecret({ clientId }: { clientId: string }) {
       <form action={action}>
         <input type="hidden" name="clientId" value={clientId} />
         <button
-          className="text-sm underline opacity-70 hover:opacity-100 disabled:opacity-40"
+          className="link text-sm underline underline-offset-2 disabled:opacity-40"
           disabled={pending}
         >
           {pending ? "Regenerating…" : "Regenerate secret"}
@@ -82,7 +76,7 @@ function RegenerateSecret({ clientId }: { clientId: string }) {
       </form>
       <Notice ok={state.ok} message={state.message} />
       {state.ok && state.secret && (
-        <div className="mt-1 rounded-md bg-black/5 dark:bg-white/10 p-2 font-mono text-xs break-all">
+        <div className="sunken mt-1 p-2 font-mono text-xs break-all">
           {state.secret}
         </div>
       )}
@@ -108,7 +102,7 @@ function EditRedirects({
         defaultValue={redirectUris.join("\n")}
       />
       <button
-        className="text-sm underline opacity-70 hover:opacity-100 disabled:opacity-40"
+        className="link text-sm underline underline-offset-2 disabled:opacity-40"
         disabled={pending}
       >
         {pending ? "Saving…" : "Save redirect URIs"}
@@ -121,8 +115,8 @@ function EditRedirects({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-      <span className="w-28 shrink-0 opacity-60">{label}</span>
-      <span className="break-all">{value}</span>
+      <span className="w-28 shrink-0 text-faint">{label}</span>
+      <span className="break-all text-muted">{value}</span>
     </div>
   );
 }
@@ -141,7 +135,7 @@ function CopyButton({ text }: { text: string }) {
           setCopied(false);
         }
       }}
-      className={buttonClass}
+      className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 text-sm`}
     >
       {copied ? "Copied!" : "Copy prompt"}
     </button>
@@ -172,21 +166,37 @@ export function AppSetup({
   });
 
   return (
-    <details className="mt-3 text-xs">
-      <summary className="cursor-pointer select-none text-sm underline opacity-70 hover:opacity-100">
+    <details className="group mt-3 text-xs">
+      <summary className="link inline-flex cursor-pointer select-none items-center gap-1.5 text-sm underline underline-offset-2">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden
+          className="transition-transform duration-200 group-open:rotate-90"
+        >
+          <path
+            d="M9 6l6 6-6 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
         Setup instructions
       </summary>
 
       <div className="mt-3 space-y-4">
         <div>
-          <div className="flex items-center justify-between gap-3">
-            <p className="opacity-60">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-muted">
               Paste this into your coding agent (Claude Code, Cursor, …). It has
               your values filled in — just add the client secret.
             </p>
             <CopyButton text={prompt} />
           </div>
-          <pre className="mt-2 max-h-72 overflow-auto rounded-md bg-black/5 dark:bg-white/10 p-3 font-mono whitespace-pre-wrap break-words">
+          <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono whitespace-pre-wrap break-words text-muted">
 {prompt}
           </pre>
         </div>
@@ -202,7 +212,7 @@ export function AppSetup({
         </div>
 
         <div>
-          <p className="mb-1 opacity-60">Redirect URIs (must match exactly)</p>
+          <p className="mb-1 text-muted">Redirect URIs (must match exactly)</p>
           <EditRedirects clientId={clientId} redirectUris={redirectUris} />
         </div>
 

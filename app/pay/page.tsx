@@ -8,9 +8,9 @@ import { confirmPayment } from "./actions";
 function Notice({ title, message }: { title: string; message: string }) {
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-black/10 dark:border-white/15 p-8 text-center">
+      <div className="reveal card w-full max-w-md p-8 text-center">
         <h1 className="text-lg font-semibold">{title}</h1>
-        <p className="mt-2 text-sm opacity-80">{message}</p>
+        <p className="mt-2 text-sm text-muted">{message}</p>
       </div>
     </main>
   );
@@ -61,33 +61,48 @@ export default async function PayPage({
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border border-black/10 dark:border-white/15 p-8">
-        <h1 className="text-xl font-semibold">Confirm payment</h1>
-        <p className="mt-1 text-sm opacity-70">
-          to <span className="font-medium">{client?.name ?? intent.clientId}</span>
+      <div className="reveal card w-full max-w-md p-8">
+        <p className="text-xs uppercase tracking-wide text-faint">
+          Confirm payment
         </p>
+        <h1 className="mt-1 text-xl font-semibold">
+          Pay <span className="text-ink">{client?.name ?? intent.clientId}</span>
+        </h1>
 
-        <div className="mt-6 rounded-lg bg-black/5 dark:bg-white/5 p-4">
+        <div className="mt-6 rounded-2xl border border-border bg-surface p-5">
           <div className="flex items-baseline justify-between">
-            <span className="text-sm opacity-70">Amount</span>
-            <span className="text-2xl font-semibold">{intent.amount} credits</span>
+            <span className="text-sm text-muted">Amount</span>
+            <span className="text-3xl font-semibold tracking-tight">
+              {intent.amount}
+              <span className="ml-1.5 text-base font-normal text-muted">
+                credits
+              </span>
+            </span>
           </div>
           {intent.description && (
-            <p className="mt-2 text-sm opacity-80">{intent.description}</p>
+            <p className="mt-3 border-t border-border pt-3 text-sm text-muted">
+              {intent.description}
+            </p>
           )}
         </div>
 
-        <p className="mt-4 text-sm opacity-70">
-          Your balance:{" "}
-          <span className="font-medium">{balance} credits</span>
-          {!insufficient && (
-            <> → {balance - intent.amount} after payment</>
-          )}
-        </p>
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+          <span className="text-muted">Your balance</span>
+          <span className="font-medium">
+            {balance}
+            {!insufficient && (
+              <span className="text-faint">
+                {" "}
+                → <span className="text-success">{balance - intent.amount}</span>{" "}
+                after
+              </span>
+            )}
+          </span>
+        </div>
 
         {insufficient && (
-          <p className="mt-3 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-            Insufficient credits. You need {intent.amount - balance} more.
+          <p className="mt-3 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5 text-sm text-danger">
+            Insufficient credits — you need {intent.amount - balance} more.
           </p>
         )}
 
@@ -97,7 +112,7 @@ export default async function PayPage({
             type="submit"
             name="decision"
             value="cancel"
-            className="flex-1 rounded-md border border-black/15 dark:border-white/20 px-4 py-2 text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/10"
+            className="btn btn-ghost flex-1"
           >
             Cancel
           </button>
@@ -106,7 +121,7 @@ export default async function PayPage({
             name="decision"
             value="approve"
             disabled={insufficient}
-            className="flex-1 rounded-md bg-[#5865F2] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#4752c4] disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-primary flex-1"
           >
             Pay {intent.amount}
           </button>

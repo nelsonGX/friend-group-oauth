@@ -4,9 +4,7 @@ export default async function LoginPage({
   searchParams: Promise<{ return?: string; error?: string }>;
 }) {
   const sp = await searchParams;
-  const query = sp.return
-    ? `?return=${encodeURIComponent(sp.return)}`
-    : "";
+  const query = sp.return ? `?return=${encodeURIComponent(sp.return)}` : "";
 
   const errors: Record<string, string> = {
     no_access:
@@ -20,24 +18,37 @@ export default async function LoginPage({
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-xl border border-black/10 dark:border-white/15 p-8 text-center">
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <p className="mt-2 text-sm opacity-70">
+      <div className="reveal card w-full max-w-sm p-8 text-center">
+        <span className="pulse-ring mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-soft to-violet text-white shadow-[0_16px_40px_-12px_rgba(88,101,242,0.9)]">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M19.7 5.3A16 16 0 0015.6 4l-.3.5a14.9 14.9 0 014.4 2.2 13.5 13.5 0 00-11.5 0A14.9 14.9 0 0112.7 4.5L12.4 4A16 16 0 008.3 5.3 16.7 16.7 0 005.5 17a16 16 0 004.9 2.5l.6-1a10.5 10.5 0 01-1.6-.8l.4-.3a11.4 11.4 0 009.4 0l.4.3a10.5 10.5 0 01-1.6.8l.6 1A16 16 0 0022.5 17a16.7 16.7 0 00-2.8-11.7zM9.7 14.3c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7zm4.6 0c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7z" />
+          </svg>
+        </span>
+
+        <h1 className="mt-5 text-xl font-semibold">Welcome back</h1>
+        <p className="mt-2 text-sm text-muted">
           Use your Discord account to continue.
         </p>
 
         {errorMessage && (
-          <p className="mt-4 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+          <p className="mt-5 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5 text-left text-sm text-danger">
             {errorMessage}
           </p>
         )}
 
         <a
           href={`/api/auth/discord/start${query}`}
-          className="mt-6 inline-flex w-full items-center justify-center rounded-md bg-[#5865F2] px-4 py-2.5 font-medium text-white transition hover:bg-[#4752c4]"
+          className="btn btn-primary mt-6 w-full py-3"
         >
-          Login with Discord
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M19.7 5.3A16 16 0 0015.6 4l-.3.5a14.9 14.9 0 014.4 2.2 13.5 13.5 0 00-11.5 0A14.9 14.9 0 0112.7 4.5L12.4 4A16 16 0 008.3 5.3 16.7 16.7 0 005.5 17a16 16 0 004.9 2.5l.6-1a10.5 10.5 0 01-1.6-.8l.4-.3a11.4 11.4 0 009.4 0l.4.3a10.5 10.5 0 01-1.6.8l.6 1A16 16 0 0022.5 17a16.7 16.7 0 00-2.8-11.7zM9.7 14.3c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7zm4.6 0c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7z" />
+          </svg>
+          Continue with Discord
         </a>
+
+        <p className="mt-5 text-xs text-faint">
+          Access requires membership in the group&apos;s Discord server.
+        </p>
       </div>
     </main>
   );
