@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Menu, X, Compass, LayoutDashboard, LogOut, LogIn } from "lucide-react";
 
 export type NavStrings = {
   dashboard: string;
@@ -11,60 +12,79 @@ export type NavStrings = {
   menu: string;
 };
 
-/**
- * The header's action links — Developer panel / Explore / Log out when signed
- * in, otherwise Sign in. Rendered twice: inline in the bar on ≥sm, and stacked
- * inside the mobile dropdown on <sm. `variant` switches between the two shapes;
- * `onNavigate` lets the dropdown close itself when a link is tapped.
- */
-function NavLinks({
+/** Desktop (≥sm) actions — the inline button row, unchanged. */
+function BarLinks({ user, t }: { user: boolean; t: NavStrings }) {
+  if (!user) {
+    return (
+      <Link href="/login" className="btn btn-primary !px-3.5 !py-1.5">
+        {t.signIn}
+      </Link>
+    );
+  }
+  return (
+    <>
+      <Link href="/dashboard" className="btn btn-ghost !px-3 !py-1.5">
+        {t.dashboard}
+      </Link>
+      <Link href="/explore" className="btn btn-primary !px-3.5 !py-1.5">
+        {t.explore}
+      </Link>
+      <form action="/api/auth/logout" method="post">
+        <button className="btn btn-ghost !px-3 !py-1.5">{t.logout}</button>
+      </form>
+    </>
+  );
+}
+
+// Shared shape for a row inside the mobile menu card. Icons inherit the row's
+// text color (no own color) so they transition together on hover/press.
+const row =
+  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors";
+
+/** Mobile (<sm) actions — icon rows inside the floating menu card. */
+function MenuLinks({
   user,
   t,
-  variant,
   onNavigate,
 }: {
   user: boolean;
   t: NavStrings;
-  variant: "bar" | "menu";
-  onNavigate?: () => void;
+  onNavigate: () => void;
 }) {
-  // In the dropdown the controls go full-width and a touch taller for tapping.
-  const wide = variant === "menu" ? "w-full " : "";
-
   if (!user) {
     return (
       <Link
         href="/login"
         onClick={onNavigate}
-        className={`btn btn-primary ${wide}!px-3.5 !py-1.5`}
+        className={`${row} text-brand-soft hover:bg-surface-strong`}
       >
+        <LogIn size={17} />
         {t.signIn}
       </Link>
     );
   }
-
   return (
     <>
       <Link
         href="/dashboard"
         onClick={onNavigate}
-        className={`btn btn-ghost ${wide}!px-3 !py-1.5`}
+        className={`${row} text-muted hover:bg-surface-strong hover:text-ink`}
       >
+        <LayoutDashboard size={17} />
         {t.dashboard}
       </Link>
       <Link
         href="/explore"
         onClick={onNavigate}
-        className={`btn btn-primary ${wide}!px-3.5 !py-1.5`}
+        className={`${row} text-brand-soft hover:bg-surface-strong`}
       >
+        <Compass size={17} />
         {t.explore}
       </Link>
-      <form
-        action="/api/auth/logout"
-        method="post"
-        className={variant === "menu" ? "w-full" : undefined}
-      >
-        <button className={`btn btn-ghost ${wide}!px-3 !py-1.5`}>
+      <div className="my-1 h-px bg-border" />
+      <form action="/api/auth/logout" method="post">
+        <button className={`${row} text-muted hover:bg-danger/10 hover:text-danger`}>
+          <LogOut size={17} />
           {t.logout}
         </button>
       </form>
@@ -75,7 +95,7 @@ function NavLinks({
 /**
  * Responsive header navigation. The language switcher (a Server Component) is
  * passed in as `switcher` and stays visible at every width; the action links
- * collapse behind a hamburger toggle below the `sm` breakpoint.
+ * sit inline on ≥sm and collapse into a floating menu card below `sm`.
  */
 export function HeaderNav({
   user,
@@ -99,48 +119,26 @@ export function HeaderNav({
   }, [open]);
 
   return (
-    <nav className="flex items-center gap-1.5 text-sm">
+    <nav className="flex items-center gap-2 text-sm">
       {switcher}
 
       {/* ≥sm: actions inline in the bar. */}
       <div className="hidden items-center gap-1.5 sm:flex">
-        <NavLinks user={user} t={t} variant="bar" />
+        <BarLinks user={user} t={t} />
       </div>
 
-      {/* <sm: hamburger toggle. */}
+      {/* <sm: icon toggle. */}
       <button
         type="button"
         aria-label={t.menu}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="btn btn-ghost !px-2 !py-2 sm:hidden"
+        className="-mr-1 inline-flex items-center justify-center rounded-lg p-2 text-muted transition-colors hover:bg-surface-strong hover:text-ink sm:hidden"
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          aria-hidden="true"
-        >
-          {open ? (
-            <>
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </>
-          ) : (
-            <>
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </>
-          )}
-        </svg>
+        {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* <sm: dropdown panel anchored under the (sticky, positioned) header. */}
+      {/* <sm: blurred scrim + floating menu card, anchored under the header. */}
       {open && (
         <>
           <button
@@ -148,17 +146,13 @@ export function HeaderNav({
             aria-hidden="true"
             tabIndex={-1}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 top-14 z-40 cursor-default bg-black/40 sm:hidden"
+            className="fade-in fixed inset-x-0 bottom-0 top-14 z-40 cursor-default bg-black/40 backdrop-blur-sm sm:hidden"
           />
-          <div className="absolute inset-x-0 top-full z-50 border-b border-border bg-bg sm:hidden">
-            <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-3">
-              <NavLinks
-                user={user}
-                t={t}
-                variant="menu"
-                onNavigate={() => setOpen(false)}
-              />
-            </div>
+          <div
+            role="menu"
+            className="modal-pop absolute right-0 top-full z-50 mt-2 w-60 origin-top-right rounded-2xl border border-border-strong bg-bg-soft p-1.5 shadow-2xl shadow-black/50 sm:hidden"
+          >
+            <MenuLinks user={user} t={t} onNavigate={() => setOpen(false)} />
           </div>
         </>
       )}
