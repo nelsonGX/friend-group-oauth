@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
 import { getBalance, getIncome, getProviderEarnings } from "@/lib/credits";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
