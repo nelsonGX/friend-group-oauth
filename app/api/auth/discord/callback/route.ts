@@ -47,12 +47,14 @@ export async function GET(request: Request) {
   }
 
   let allowed = false;
+  let inGuild = false;
   try {
     const accessToken = await exchangeCode(code);
     const discordUser = await getDiscordUser(accessToken);
     const member = await getGuildMember(discordUser.id);
     const access = evaluateAccess(member);
     allowed = access.allowed;
+    inGuild = access.inGuild;
 
     const isAdmin = env.ADMIN_DISCORD_IDS.includes(discordUser.id);
     const profile = {
@@ -87,6 +89,8 @@ export async function GET(request: Request) {
     redirect("/login?error=discord");
   }
 
-  // Gated users land on the dashboard, which explains their access status.
-  redirect(allowed ? returnTo : "/login?error=no_access");
+  // Users who aren't in the server at all get a dedicated full-screen gate that
+  // prompts them to switch accounts. Members who are in the server but lack a
+  // required role land on /explore, which shows their access status inline.
+  redirect(allowed || inGuild ? returnTo : "/no-access");
 }

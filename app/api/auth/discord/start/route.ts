@@ -13,6 +13,9 @@ import { env } from "@/lib/env";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const returnTo = sanitizeReturnPath(url.searchParams.get("return"));
+  // Only "consent" is honored — used by the "switch account" action to force
+  // Discord's screen so a user can pick a different account.
+  const prompt = url.searchParams.get("prompt") === "consent" ? "consent" : undefined;
   const state = randomToken(16);
 
   const jwt = await new SignJWT({ state, returnTo })
@@ -30,5 +33,5 @@ export async function GET(request: Request) {
     maxAge: 600,
   });
 
-  return NextResponse.redirect(buildAuthorizeUrl(state));
+  return NextResponse.redirect(buildAuthorizeUrl(state, prompt));
 }

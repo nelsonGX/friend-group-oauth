@@ -47,6 +47,8 @@ function activityLabel(entry: ActivityEntry, d: Dictionary["dashboard"]): string
 export default async function ExplorePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?return=/explore");
+  // Not in the server at all — show the dedicated "switch account" gate instead.
+  if (!user.inGuild) redirect("/no-access");
 
   const { t } = await getDictionary();
   const db = getDb();

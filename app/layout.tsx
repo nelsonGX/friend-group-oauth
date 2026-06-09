@@ -75,13 +75,6 @@ export default async function RootLayout({
         </header>
 
         <div className="flex flex-1 flex-col">{children}</div>
-
-        <footer className="border-t border-border/60 py-6">
-          <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-6 text-xs text-faint sm:flex-row">
-            <span>{t.footer.tagline}</span>
-            <span>{t.footer.selfHosted}</span>
-          </div>
-        </footer>
       </body>
     </html>
   );

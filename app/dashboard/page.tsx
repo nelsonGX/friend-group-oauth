@@ -21,6 +21,8 @@ function fmtDate(d: Date) {
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?return=/dashboard");
+  // Not in the server at all — show the dedicated "switch account" gate instead.
+  if (!user.inGuild) redirect("/no-access");
 
   const { t } = await getDictionary();
   const db = getDb();

@@ -14,10 +14,6 @@ const en = {
     logout: "Log out",
     menu: "Menu",
   },
-  footer: {
-    tagline: "Friend Group Auth — Discord login & shared credits.",
-    selfHosted: "Self-hosted by the group, for the group.",
-  },
   switcher: {
     label: "Language",
   },
@@ -60,6 +56,16 @@ const en = {
       invalid_state: "Your login session expired. Please try again.",
       default: "Login failed.",
     },
+  },
+  gate: {
+    notInGuildTitle: "You're not in the server",
+    notInGuildMessage:
+      "This platform is just for members of the group's Discord server. The account you signed in with isn't a member, so there's nothing here for it yet.",
+    signedInAs: "Signed in as {name}",
+    switchAccount: "Switch account",
+    joinHint:
+      "Think this is a mistake? Ask someone in the group to invite you, then sign in again.",
+    logOut: "Log out",
   },
   explore: {
     title: "Explore",

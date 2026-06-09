@@ -22,8 +22,15 @@ export interface AccessEvaluation {
   roles: string[];
 }
 
-/** Build the Discord authorize URL the user is redirected to at login. */
-export function buildAuthorizeUrl(state: string): string {
+/**
+ * Build the Discord authorize URL the user is redirected to at login. Pass
+ * `prompt: "consent"` to force Discord's authorization screen even when the app
+ * was already authorized — that screen is where a user can switch accounts.
+ */
+export function buildAuthorizeUrl(
+  state: string,
+  prompt?: "consent" | "none",
+): string {
   const params = new URLSearchParams({
     client_id: env.DISCORD_CLIENT_ID,
     redirect_uri: env.DISCORD_REDIRECT_URI,
@@ -31,6 +38,7 @@ export function buildAuthorizeUrl(state: string): string {
     scope: "identify",
     state,
   });
+  if (prompt) params.set("prompt", prompt);
   return `https://discord.com/oauth2/authorize?${params.toString()}`;
 }
 

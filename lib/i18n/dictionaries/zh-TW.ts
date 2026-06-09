@@ -13,10 +13,6 @@ const zhTW: Dictionary = {
     logout: "登出",
     menu: "選單",
   },
-  footer: {
-    tagline: "Friend Group Auth — Discord 登入與共享點數。",
-    selfHosted: "由社群自行架設，為社群而生。",
-  },
   switcher: {
     label: "語言",
   },
@@ -59,6 +55,15 @@ const zhTW: Dictionary = {
       invalid_state: "你的登入工作階段已過期，請再試一次。",
       default: "登入失敗。",
     },
+  },
+  gate: {
+    notInGuildTitle: "你不在伺服器內",
+    notInGuildMessage:
+      "本平台僅供社群 Discord 伺服器的成員使用。你登入的帳號並非成員，因此目前這裡沒有可用的內容。",
+    signedInAs: "目前登入身分：{name}",
+    switchAccount: "切換帳號",
+    joinHint: "覺得這是誤判嗎？請社群裡的人邀請你加入，然後再重新登入。",
+    logOut: "登出",
   },
   explore: {
     title: "探索",
