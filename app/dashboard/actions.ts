@@ -10,6 +10,8 @@ import { format } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
+import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
+import { env } from "@/lib/env";
 
 type ActionDict = Dictionary["dashboardActions"];
 
@@ -36,6 +38,8 @@ export interface SecretState {
   ok: boolean;
   message: string;
   secret?: string;
+  /** A complete, copy-paste integration prompt with this secret baked in. */
+  prompt?: string;
 }
 
 /** Regenerate the client secret for a provider the user owns (or admin). */
@@ -66,7 +70,14 @@ export async function regenerateSecret(
     .set({ clientSecretHash: hashSecret(secret) })
     .where(eq(clients.clientId, clientId));
   revalidatePath("/dashboard");
-  return { ok: true, message: d.newSecret, secret };
+  const prompt = buildIntegrationPrompt({
+    appUrl: env.APP_URL,
+    clientId,
+    clientSecret: secret,
+    redirectUri: client.redirectUris[0] ?? "https://your-site.example/callback",
+    scopes: client.allowedScopes,
+  });
+  return { ok: true, message: d.newSecret, secret, prompt };
 }
 
 /** Split a textarea/comma list into trimmed, non-empty entries. */
@@ -92,6 +103,8 @@ export interface AppState {
   message: string;
   clientId?: string;
   secret?: string;
+  /** A complete, copy-paste integration prompt with this secret baked in. */
+  prompt?: string;
 }
 
 /**
@@ -140,11 +153,19 @@ export async function createOwnApp(
   });
 
   revalidatePath("/dashboard");
+  const prompt = buildIntegrationPrompt({
+    appUrl: env.APP_URL,
+    clientId,
+    clientSecret: secret,
+    redirectUri: redirectUris[0],
+    scopes: requested,
+  });
   return {
     ok: true,
     message: d.appRegistered,
     clientId,
     secret,
+    prompt,
   };
 }
 

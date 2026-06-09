@@ -6,11 +6,16 @@
 export function buildIntegrationPrompt(opts: {
   appUrl: string;
   clientId: string;
+  /** Plaintext secret, available only at creation/regeneration. When omitted,
+   *  a placeholder is used (the secret can't be recovered later — it's hashed). */
+  clientSecret?: string;
   redirectUri: string;
   scopes: string[];
 }): string {
   const scope = (opts.scopes.length ? opts.scopes : ["identify"]).join(" ");
   const scopeParam = encodeURIComponent(scope);
+  const clientSecret =
+    opts.clientSecret ?? "PASTE_THE_SECRET_SHOWN_WHEN_YOU_REGISTERED";
   return `You are integrating my web app with our group's "Friend Group Auth" server — a
 standard OAuth 2.0 + PKCE provider that also handles a credit/payment system.
 Implement BOTH login and (if my app charges) the pay flow, following this spec
@@ -19,7 +24,7 @@ exactly. Do not invent endpoints or parameters beyond what's written here.
 ## Config (these are mine — use them)
 - AUTH_BASE_URL = "${opts.appUrl}"
 - CLIENT_ID     = "${opts.clientId}"
-- CLIENT_SECRET = "PASTE_THE_SECRET_SHOWN_WHEN_YOU_REGISTERED"  # server-side secret, never exposed to the browser
+- CLIENT_SECRET = "${clientSecret}"  # server-side secret, never exposed to the browser
 - REDIRECT_URI  = "${opts.redirectUri}"  # must match a registered redirect URI exactly
 
 ## Hard rules

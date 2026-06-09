@@ -61,6 +61,7 @@ export function NewAppForm({ t }: { t: FormsDict }) {
           </div>
         </div>
       )}
+      {state.ok && state.prompt && <OneShotPrompt prompt={state.prompt} t={t} />}
     </form>
   );
 }
@@ -84,6 +85,7 @@ function RegenerateSecret({ clientId, t }: { clientId: string; t: FormsDict }) {
           {state.secret}
         </div>
       )}
+      {state.ok && state.prompt && <OneShotPrompt prompt={state.prompt} t={t} />}
     </div>
   );
 }
@@ -146,6 +148,25 @@ function CopyButton({ text, t }: { text: string; t: FormsDict }) {
       {copied ? <Check size={15} /> : <Copy size={15} />}
       {copied ? t.copied : t.copyPrompt}
     </button>
+  );
+}
+
+/**
+ * Renders a complete, copy-paste integration prompt with the freshly issued
+ * secret baked in. Shown only at creation/regeneration — the one moment the
+ * plaintext secret exists (it's hashed at rest and never recoverable after).
+ */
+function OneShotPrompt({ prompt, t }: { prompt: string; t: FormsDict }) {
+  return (
+    <div className="mt-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs text-muted">{t.pastePrompt}</p>
+        <CopyButton text={prompt} t={t} />
+      </div>
+      <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap break-words text-muted">
+{prompt}
+      </pre>
+    </div>
   );
 }
 
