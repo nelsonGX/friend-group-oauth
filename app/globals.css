@@ -10,7 +10,7 @@
 @theme {
   /* Comfortable dark — lifted off pure black so the page reads as a dim room
      rather than a void, but not so light it washes out. */
-  --color-bg: #161922;
+  --color-bg: #191A1F;
   --color-bg-soft: #1c2029;
   /* Solid surfaces a step above the base so cards read as panels, not glass. */
   --color-surface: #1e212b;
