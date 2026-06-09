@@ -4,12 +4,14 @@ import { desc } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { getDictionary } from "@/lib/i18n";
 import { getBalance, getProviderEarnings } from "@/lib/credits";
 import { GrantCreditsForm, NewClientForm } from "./AdminForms";
 import { toggleClientActive, toggleClientTrusted } from "./actions";
 
 export default async function AdminPage() {
   await requireAdmin();
+  const { t } = await getDictionary();
   const db = getDb();
 
   const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
@@ -24,15 +26,15 @@ export default async function AdminPage() {
         style={{ animationDelay: "0ms" }}
       >
         <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.admin.title}</h1>
           <span className="badge badge-success">
             <span className="dot" />
-            elevated
+            {t.admin.elevated}
           </span>
         </div>
         <Link href="/dashboard" className="btn btn-ghost !py-2 text-sm">
           <ArrowLeft size={15} />
-          Dashboard
+          {t.admin.dashboard}
         </Link>
       </div>
 
@@ -41,39 +43,35 @@ export default async function AdminPage() {
           className="reveal card p-6"
           style={{ animationDelay: "80ms" }}
         >
-          <h2 className="font-semibold">Grant credits</h2>
-          <p className="mb-4 mt-1 text-sm text-muted">
-            Manual top-up after a user pays you out-of-band.
-          </p>
-          <GrantCreditsForm />
+          <h2 className="font-semibold">{t.admin.grantCredits}</h2>
+          <p className="mb-4 mt-1 text-sm text-muted">{t.admin.grantCreditsDesc}</p>
+          <GrantCreditsForm t={t.admin.forms} />
         </section>
 
         <section
           className="reveal card p-6"
           style={{ animationDelay: "150ms" }}
         >
-          <h2 className="font-semibold">Register a provider</h2>
-          <p className="mb-4 mt-1 text-sm text-muted">
-            Create OAuth credentials for a friend&apos;s site.
-          </p>
-          <NewClientForm />
+          <h2 className="font-semibold">{t.admin.registerProvider}</h2>
+          <p className="mb-4 mt-1 text-sm text-muted">{t.admin.registerProviderDesc}</p>
+          <NewClientForm t={t.admin.forms} />
         </section>
       </div>
 
       <section className="reveal mt-9" style={{ animationDelay: "220ms" }}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-          Providers <span className="text-muted">({allClients.length})</span>
+          {t.admin.providers} <span className="text-muted">({allClients.length})</span>
         </h2>
         <div className="card mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border text-xs uppercase tracking-wide text-faint">
               <tr>
-                <th className="p-4 font-medium">Name</th>
-                <th className="p-4 font-medium">client_id</th>
-                <th className="p-4 font-medium">Scopes</th>
-                <th className="p-4 font-medium">Earned</th>
-                <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium">Actions</th>
+                <th className="p-4 font-medium">{t.admin.th.name}</th>
+                <th className="p-4 font-medium">{t.admin.th.clientId}</th>
+                <th className="p-4 font-medium">{t.admin.th.scopes}</th>
+                <th className="p-4 font-medium">{t.admin.th.earned}</th>
+                <th className="p-4 font-medium">{t.admin.th.status}</th>
+                <th className="p-4 font-medium">{t.admin.th.actions}</th>
               </tr>
             </thead>
             <tbody className="glass-divide">
@@ -88,9 +86,9 @@ export default async function AdminPage() {
                       <span
                         className={`badge ${c.isActive ? "badge-success" : "badge-danger"}`}
                       >
-                        {c.isActive ? "active" : "disabled"}
+                        {c.isActive ? t.admin.active : t.admin.disabled}
                       </span>
-                      {c.trusted && <span className="badge">trusted</span>}
+                      {c.trusted && <span className="badge">{t.admin.trusted}</span>}
                     </span>
                   </td>
                   <td className="p-4">
@@ -98,13 +96,13 @@ export default async function AdminPage() {
                       <form action={toggleClientActive}>
                         <input type="hidden" name="clientId" value={c.clientId} />
                         <button className="link text-sm underline underline-offset-2">
-                          {c.isActive ? "disable" : "enable"}
+                          {c.isActive ? t.admin.disable : t.admin.enable}
                         </button>
                       </form>
                       <form action={toggleClientTrusted}>
                         <input type="hidden" name="clientId" value={c.clientId} />
                         <button className="link text-sm underline underline-offset-2">
-                          {c.trusted ? "untrust" : "trust"}
+                          {c.trusted ? t.admin.untrust : t.admin.trust}
                         </button>
                       </form>
                     </div>
@@ -114,7 +112,7 @@ export default async function AdminPage() {
               {allClients.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-6 text-center text-muted">
-                    No providers yet.
+                    {t.admin.noProviders}
                   </td>
                 </tr>
               )}
@@ -125,16 +123,16 @@ export default async function AdminPage() {
 
       <section className="reveal mt-9" style={{ animationDelay: "300ms" }}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-          Users <span className="text-muted">({allUsers.length})</span>
+          {t.admin.users} <span className="text-muted">({allUsers.length})</span>
         </h2>
         <div className="card mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border text-xs uppercase tracking-wide text-faint">
               <tr>
-                <th className="p-4 font-medium">User</th>
-                <th className="p-4 font-medium">Discord ID</th>
-                <th className="p-4 font-medium">Access</th>
-                <th className="p-4 font-medium">Balance</th>
+                <th className="p-4 font-medium">{t.admin.th.user}</th>
+                <th className="p-4 font-medium">{t.admin.th.discordId}</th>
+                <th className="p-4 font-medium">{t.admin.th.access}</th>
+                <th className="p-4 font-medium">{t.admin.th.balance}</th>
               </tr>
             </thead>
             <tbody className="glass-divide">
@@ -143,7 +141,7 @@ export default async function AdminPage() {
                   <td className="p-4 font-medium">
                     {u.globalName ?? u.username}
                     {u.isAdmin && (
-                      <span className="badge ml-2 align-middle">admin</span>
+                      <span className="badge ml-2 align-middle">{t.admin.adminBadge}</span>
                     )}
                   </td>
                   <td className="p-4 font-mono text-xs text-muted">{u.discordId}</td>
@@ -151,7 +149,7 @@ export default async function AdminPage() {
                     <span
                       className={`badge ${u.allowed ? "badge-success" : "badge-danger"}`}
                     >
-                      {u.allowed ? "allowed" : "no access"}
+                      {u.allowed ? t.admin.allowed : t.admin.noAccessBadge}
                     </span>
                   </td>
                   <td className="p-4 tabular-nums">{balances[i]}</td>

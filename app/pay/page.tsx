@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
+import { format } from "@/lib/i18n/format";
 import { getClientByClientId } from "@/lib/oauth";
 import { getBalance } from "@/lib/credits";
 import { getIntent } from "@/lib/payments";
@@ -22,14 +24,16 @@ export default async function PayPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
+  const { t } = await getDictionary();
+  const n = t.pay.notices;
   const intentId = Array.isArray(sp.intent) ? sp.intent[0] : sp.intent;
   if (!intentId) {
-    return <Notice title="Invalid request" message="No payment specified." />;
+    return <Notice title={n.invalidRequestTitle} message={n.invalidRequestMsg} />;
   }
 
   const intent = await getIntent(intentId);
   if (!intent) {
-    return <Notice title="Unknown payment" message="This payment link is not valid." />;
+    return <Notice title={n.unknownTitle} message={n.unknownMsg} />;
   }
 
   const user = await getCurrentUser();
@@ -38,21 +42,16 @@ export default async function PayPage({
   }
 
   if (intent.status === "completed") {
-    return <Notice title="Already paid" message="This payment has already been completed." />;
+    return <Notice title={n.alreadyPaidTitle} message={n.alreadyPaidMsg} />;
   }
   if (intent.status === "cancelled") {
-    return <Notice title="Cancelled" message="This payment was cancelled." />;
+    return <Notice title={n.cancelledTitle} message={n.cancelledMsg} />;
   }
   if (intent.expiresAt < new Date()) {
-    return <Notice title="Expired" message="This payment request has expired." />;
+    return <Notice title={n.expiredTitle} message={n.expiredMsg} />;
   }
   if (!user.allowed) {
-    return (
-      <Notice
-        title="No access"
-        message="You don't have access to this platform yet."
-      />
-    );
+    return <Notice title={n.noAccessTitle} message={n.noAccessMsg} />;
   }
 
   const client = await getClientByClientId(intent.clientId);
@@ -63,19 +62,21 @@ export default async function PayPage({
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="reveal card w-full max-w-md p-8">
         <p className="text-xs uppercase tracking-wide text-faint">
-          Confirm payment
+          {t.pay.confirmPayment}
         </p>
         <h1 className="mt-1 text-xl font-semibold">
-          Pay <span className="text-ink">{client?.name ?? intent.clientId}</span>
+          {t.pay.payTo.split("{name}")[0]}
+          <span className="text-ink">{client?.name ?? intent.clientId}</span>
+          {t.pay.payTo.split("{name}")[1] ?? ""}
         </h1>
 
         <div className="mt-6 rounded-2xl border border-border bg-surface p-5">
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted">Amount</span>
+            <span className="text-sm text-muted">{t.pay.amount}</span>
             <span className="text-3xl font-semibold tracking-tight">
               {intent.amount}
               <span className="ml-1.5 text-base font-normal text-muted">
-                credits
+                {t.pay.credits}
               </span>
             </span>
           </div>
@@ -87,14 +88,14 @@ export default async function PayPage({
         </div>
 
         <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm">
-          <span className="text-muted">Your balance</span>
+          <span className="text-muted">{t.pay.yourBalance}</span>
           <span className="font-medium">
             {balance}
             {!insufficient && (
               <span className="text-faint">
                 {" "}
                 → <span className="text-success">{balance - intent.amount}</span>{" "}
-                after
+                {t.pay.after}
               </span>
             )}
           </span>
@@ -102,7 +103,7 @@ export default async function PayPage({
 
         {insufficient && (
           <p className="mt-3 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5 text-sm text-danger">
-            Insufficient credits — you need {intent.amount - balance} more.
+            {format(t.pay.insufficient, { needed: intent.amount - balance })}
           </p>
         )}
 
@@ -114,7 +115,7 @@ export default async function PayPage({
             value="cancel"
             className="btn btn-ghost flex-1"
           >
-            Cancel
+            {t.pay.cancel}
           </button>
           <button
             type="submit"
@@ -123,7 +124,7 @@ export default async function PayPage({
             disabled={insufficient}
             className="btn btn-primary flex-1"
           >
-            Pay {intent.amount}
+            {format(t.pay.payAmount, { amount: intent.amount })}
           </button>
         </form>
       </div>

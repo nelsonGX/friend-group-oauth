@@ -10,6 +10,9 @@ import {
   type SecretState,
 } from "./actions";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
+import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+
+type FormsDict = Dictionary["dashboard"]["forms"];
 
 const secretInitial: SecretState = { ok: false, message: "" };
 const appInitial: AppState = { ok: false, message: "" };
@@ -27,25 +30,25 @@ function Notice({ ok, message }: { ok: boolean; message: string }) {
 }
 
 /** Self-service: register a new provider app you own. */
-export function NewAppForm() {
+export function NewAppForm({ t }: { t: FormsDict }) {
   const [state, action, pending] = useActionState(createOwnApp, appInitial);
   return (
     <form action={action} className="space-y-3">
-      <input className={inputClass} name="name" placeholder="App name" />
+      <input className={inputClass} name="name" placeholder={t.appNamePlaceholder} />
       <textarea
         className={inputClass}
         name="redirectUris"
         rows={2}
-        placeholder="Redirect URIs (one per line or comma-separated)"
+        placeholder={t.redirectUrisPlaceholder}
       />
       <input
         className={inputClass}
         name="scopes"
         defaultValue="identify roles"
-        placeholder="Scopes (identify roles credits)"
+        placeholder={t.scopesPlaceholder}
       />
       <button className={buttonClass} disabled={pending}>
-        {pending ? "Registering…" : "Register app"}
+        {pending ? t.registering : t.registerApp}
       </button>
       <Notice ok={state.ok} message={state.message} />
       {state.ok && state.clientId && state.secret && (
@@ -62,7 +65,7 @@ export function NewAppForm() {
   );
 }
 
-function RegenerateSecret({ clientId }: { clientId: string }) {
+function RegenerateSecret({ clientId, t }: { clientId: string; t: FormsDict }) {
   const [state, action, pending] = useActionState(regenerateSecret, secretInitial);
   return (
     <div>
@@ -72,7 +75,7 @@ function RegenerateSecret({ clientId }: { clientId: string }) {
           className="link text-sm underline underline-offset-2 disabled:opacity-40"
           disabled={pending}
         >
-          {pending ? "Regenerating…" : "Regenerate secret"}
+          {pending ? t.regenerating : t.regenerateSecret}
         </button>
       </form>
       <Notice ok={state.ok} message={state.message} />
@@ -88,9 +91,11 @@ function RegenerateSecret({ clientId }: { clientId: string }) {
 function EditRedirects({
   clientId,
   redirectUris,
+  t,
 }: {
   clientId: string;
   redirectUris: string[];
+  t: FormsDict;
 }) {
   const [state, action, pending] = useActionState(updateAppRedirects, secretInitial);
   return (
@@ -106,7 +111,7 @@ function EditRedirects({
         className="link text-sm underline underline-offset-2 disabled:opacity-40"
         disabled={pending}
       >
-        {pending ? "Saving…" : "Save redirect URIs"}
+        {pending ? t.saving : t.saveRedirectUris}
       </button>
       <Notice ok={state.ok} message={state.message} />
     </form>
@@ -122,7 +127,7 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, t }: { text: string; t: FormsDict }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -139,7 +144,7 @@ function CopyButton({ text }: { text: string }) {
       className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 text-sm`}
     >
       {copied ? <Check size={15} /> : <Copy size={15} />}
-      {copied ? "Copied!" : "Copy prompt"}
+      {copied ? t.copied : t.copyPrompt}
     </button>
   );
 }
@@ -154,11 +159,13 @@ export function AppSetup({
   clientId,
   scopes,
   redirectUris,
+  t,
 }: {
   appUrl: string;
   clientId: string;
   scopes: string[];
   redirectUris: string[];
+  t: FormsDict;
 }) {
   const prompt = buildIntegrationPrompt({
     appUrl,
@@ -174,17 +181,14 @@ export function AppSetup({
           size={14}
           className="transition-transform duration-200 group-open:rotate-90"
         />
-        Setup instructions
+        {t.setupInstructions}
       </summary>
 
       <div className="mt-3 space-y-4">
         <div>
           <div className="flex items-start justify-between gap-3">
-            <p className="text-muted">
-              Paste this into your coding agent (Claude Code, Cursor, …). It has
-              your values filled in — just add the client secret.
-            </p>
-            <CopyButton text={prompt} />
+            <p className="text-muted">{t.pastePrompt}</p>
+            <CopyButton text={prompt} t={t} />
           </div>
           <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono whitespace-pre-wrap break-words text-muted">
 {prompt}
@@ -202,11 +206,11 @@ export function AppSetup({
         </div>
 
         <div>
-          <p className="mb-1 text-muted">Redirect URIs (must match exactly)</p>
-          <EditRedirects clientId={clientId} redirectUris={redirectUris} />
+          <p className="mb-1 text-muted">{t.redirectUrisMustMatch}</p>
+          <EditRedirects clientId={clientId} redirectUris={redirectUris} t={t} />
         </div>
 
-        <RegenerateSecret clientId={clientId} />
+        <RegenerateSecret clientId={clientId} t={t} />
       </div>
     </details>
   );

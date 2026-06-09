@@ -1,0 +1,230 @@
+/**
+ * Canonical (English) dictionary. This is the source of truth for the
+ * `Dictionary` type — every other locale must structurally match it.
+ *
+ * Values are plain strings so any slice can be passed across the server/client
+ * boundary into Client Components. Strings with `{placeholder}` tokens are
+ * interpolated at the call site with {@link format}.
+ */
+const en = {
+  nav: {
+    dashboard: "Dashboard",
+    signIn: "Sign in",
+    logout: "Log out",
+  },
+  footer: {
+    tagline: "Friend Group Auth — Discord login & shared credits.",
+    selfHosted: "Self-hosted by the group, for the group.",
+  },
+  switcher: {
+    label: "Language",
+  },
+  home: {
+    badge: "One login for the whole group",
+    titleLine1: "One Discord login.",
+    titleLine2: "Shared credits everywhere.",
+    subtitle:
+      "A single sign-in and a shared credit balance for all of our self-hosted tools. Authenticate once; use it everywhere the group builds.",
+    openDashboard: "Open dashboard",
+    signInWithDiscord: "Sign in with Discord",
+    features: {
+      login: {
+        title: "Discord login",
+        desc: "OAuth2 with server membership and role gating, so only the group gets in.",
+      },
+      oauth: {
+        title: "OAuth provider",
+        desc: "Standard OAuth2 + PKCE that any of our other sites can authenticate against.",
+      },
+      credits: {
+        title: "Shared credits",
+        desc: "One balance every tool can charge against — top up once, spend anywhere.",
+      },
+    },
+    integrationPre: "Building a site that uses this? See",
+    integrationPost: ".",
+  },
+  login: {
+    welcomeBack: "Welcome back",
+    useDiscord: "Use your Discord account to continue.",
+    continueWithDiscord: "Continue with Discord",
+    accessNote: "Access requires membership in the group's Discord server.",
+    errors: {
+      no_access:
+        "You're signed in, but you don't have access yet. You need to be in the Discord server with the required role.",
+      discord: "Something went wrong talking to Discord. Please try again.",
+      state_mismatch: "Your login session expired. Please try again.",
+      invalid_request: "Invalid login request. Please try again.",
+      invalid_state: "Your login session expired. Please try again.",
+      default: "Login failed.",
+    },
+  },
+  dashboard: {
+    accessGranted: "Access granted",
+    noAccess: "No access — check your role",
+    admin: "Admin",
+    logout: "Log out",
+    creditBalance: "Credit balance",
+    credits: "credits",
+    connectedApps: "Connected apps",
+    noAppsConnected: "No apps connected yet.",
+    revoke: "Revoke",
+    providerApps: "Provider apps",
+    providerAppsDesc:
+      "Building a site for the group? Register it as an OAuth app to log members in and charge credits.",
+    earnedBadge: "{n} earned",
+    disabled: "disabled",
+    trusted: "trusted",
+    registerNewApp: "Register a new app",
+    needAccess:
+      "You need access (server membership + role) before you can register an app.",
+    recentActivity: "Recent activity",
+    noTransactions: "No transactions yet.",
+    topUp: "Top-up",
+    charge: "Charge",
+    forms: {
+      appNamePlaceholder: "App name",
+      redirectUrisPlaceholder: "Redirect URIs (one per line or comma-separated)",
+      scopesPlaceholder: "Scopes (identify roles credits)",
+      registering: "Registering…",
+      registerApp: "Register app",
+      regenerating: "Regenerating…",
+      regenerateSecret: "Regenerate secret",
+      saving: "Saving…",
+      saveRedirectUris: "Save redirect URIs",
+      setupInstructions: "Setup instructions",
+      pastePrompt:
+        "Paste this into your coding agent (Claude Code, Cursor, …). It has your values filled in — just add the client secret.",
+      copied: "Copied!",
+      copyPrompt: "Copy prompt",
+      redirectUrisMustMatch: "Redirect URIs (must match exactly)",
+    },
+  },
+  dashboardActions: {
+    notAuthorized: "Not authorized.",
+    missingClient: "Missing client.",
+    notYourClient: "Not your client.",
+    newSecret: "New secret generated — copy it now.",
+    notSignedIn: "Not signed in.",
+    needAccessToRegister: "You need access before you can register an app.",
+    appNameRequired: "App name is required.",
+    addRedirectUri: "Add at least one redirect URI.",
+    invalidRedirectUri: "Invalid redirect URI: {uri}",
+    unknownScopes: "Unknown scope(s): {scopes}",
+    appRegistered: "App registered. Copy the secret now — it won't be shown again.",
+    missingApp: "Missing app.",
+    notYourApp: "Not your app.",
+    redirectUrisUpdated: "Redirect URIs updated.",
+  },
+  admin: {
+    title: "Admin",
+    elevated: "elevated",
+    dashboard: "Dashboard",
+    grantCredits: "Grant credits",
+    grantCreditsDesc: "Manual top-up after a user pays you out-of-band.",
+    registerProvider: "Register a provider",
+    registerProviderDesc: "Create OAuth credentials for a friend's site.",
+    providers: "Providers",
+    users: "Users",
+    th: {
+      name: "Name",
+      clientId: "client_id",
+      scopes: "Scopes",
+      earned: "Earned",
+      status: "Status",
+      actions: "Actions",
+      user: "User",
+      discordId: "Discord ID",
+      access: "Access",
+      balance: "Balance",
+    },
+    active: "active",
+    disabled: "disabled",
+    trusted: "trusted",
+    enable: "enable",
+    disable: "disable",
+    trust: "trust",
+    untrust: "untrust",
+    noProviders: "No providers yet.",
+    adminBadge: "admin",
+    allowed: "allowed",
+    noAccessBadge: "no access",
+    forms: {
+      discordIdPlaceholder: "Discord user ID",
+      amountPlaceholder: "Amount (credits)",
+      reasonPlaceholder: "Reason (optional)",
+      appNamePlaceholder: "App name",
+      redirectUrisPlaceholder: "Redirect URIs (one per line or comma-separated)",
+      scopesPlaceholder: "Scopes (e.g. identify roles credits)",
+      ownerDiscordIdPlaceholder: "Owner Discord ID (optional)",
+      trustedLabel: "Trusted (skip the consent screen)",
+      granting: "Granting…",
+      grantCredits: "Grant credits",
+      creating: "Creating…",
+      createClient: "Create client",
+    },
+  },
+  adminActions: {
+    notAuthorized: "Not authorized.",
+    provideIdAndAmount: "Provide a Discord ID and a positive integer amount.",
+    noUserWithId:
+      "No user with that Discord ID (they must log in here once first).",
+    granted: "Granted {amount} credits to {user}. New balance: {balance}.",
+    nameAndRedirectRequired:
+      "Name and at least one redirect URI are required.",
+    invalidRedirectUri: "Invalid redirect URI: {uri}",
+    unknownScopes: "Unknown scope(s): {scopes}",
+    clientCreated: "Client created. Copy the secret now — it will not be shown again.",
+  },
+  authorize: {
+    error: "Authorization error",
+    authorizeAccess: "Authorize access",
+    signedInAsPre: "Signed in as",
+    wouldLikeToAccess: "would like to access:",
+    deny: "Deny",
+    approve: "Approve",
+    revokeNote: "You can revoke this access anytime from your dashboard.",
+    noAccessMessage:
+      "You don't have access to this platform yet. Make sure you're in the Discord server with the required role.",
+    scopes: {
+      identify: "Your Discord identity (username, avatar)",
+      roles: "Your server roles and access status",
+      credits: "Your credit balance",
+    },
+    renderErrors: {
+      missing_client_id: "Missing client_id.",
+      unknown_client: "Unknown or inactive client.",
+      invalid_redirect_uri: "Invalid redirect_uri for this client.",
+    },
+  },
+  pay: {
+    confirmPayment: "Confirm payment",
+    payTo: "Pay {name}",
+    amount: "Amount",
+    credits: "credits",
+    yourBalance: "Your balance",
+    after: "after",
+    insufficient: "Insufficient credits — you need {needed} more.",
+    cancel: "Cancel",
+    payAmount: "Pay {amount}",
+    notices: {
+      invalidRequestTitle: "Invalid request",
+      invalidRequestMsg: "No payment specified.",
+      unknownTitle: "Unknown payment",
+      unknownMsg: "This payment link is not valid.",
+      alreadyPaidTitle: "Already paid",
+      alreadyPaidMsg: "This payment has already been completed.",
+      cancelledTitle: "Cancelled",
+      cancelledMsg: "This payment was cancelled.",
+      expiredTitle: "Expired",
+      expiredMsg: "This payment request has expired.",
+      noAccessTitle: "No access",
+      noAccessMsg: "You don't have access to this platform yet.",
+    },
+  },
+};
+
+/** Structural shape every locale must provide (string-valued leaves). */
+export type Dictionary = typeof en;
+
+export default en;

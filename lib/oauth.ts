@@ -89,9 +89,16 @@ export interface AuthorizeParams {
   codeChallengeMethod?: string;
 }
 
+/** Stable keys for render errors, so the UI can localize the message. */
+export type RenderErrorCode =
+  | "missing_client_id"
+  | "unknown_client"
+  | "invalid_redirect_uri";
+
 export type AuthorizeError =
   // Cannot safely redirect (untrusted client/redirect) — render an error page.
-  | { kind: "render"; message: string }
+  // `message` is an English fallback; `code` lets the page localize it.
+  | { kind: "render"; message: string; code?: RenderErrorCode }
   // Validated redirect_uri — bounce back to the client with an OAuth error.
   | { kind: "redirect"; error: string; description?: string };
 
@@ -104,19 +111,26 @@ export async function validateAuthorizeRequest(
   p: AuthorizeParams,
 ): Promise<AuthorizeValidation> {
   if (!p.clientId) {
-    return { ok: false, error: { kind: "render", message: "Missing client_id." } };
+    return {
+      ok: false,
+      error: { kind: "render", code: "missing_client_id", message: "Missing client_id." },
+    };
   }
   const client = await getClientByClientId(p.clientId);
   if (!client || !client.isActive) {
     return {
       ok: false,
-      error: { kind: "render", message: "Unknown or inactive client." },
+      error: { kind: "render", code: "unknown_client", message: "Unknown or inactive client." },
     };
   }
   if (!p.redirectUri || !client.redirectUris.includes(p.redirectUri)) {
     return {
       ok: false,
-      error: { kind: "render", message: "Invalid redirect_uri for this client." },
+      error: {
+        kind: "render",
+        code: "invalid_redirect_uri",
+        message: "Invalid redirect_uri for this client.",
+      },
     };
   }
   // redirect_uri is trusted from here — OAuth errors go back to the client.

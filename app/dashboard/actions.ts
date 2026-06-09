@@ -5,8 +5,13 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accessTokens, clients, refreshTokens } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
+import { format } from "@/lib/i18n/format";
+import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
+
+type ActionDict = Dictionary["dashboardActions"];
 
 /** Revoke all of the current user's tokens for one connected app. */
 export async function revokeAppAccess(formData: FormData) {
@@ -38,10 +43,12 @@ export async function regenerateSecret(
   _prev: SecretState,
   formData: FormData,
 ): Promise<SecretState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
   const user = await getCurrentUser();
-  if (!user) return { ok: false, message: "Not authorized." };
+  if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
-  if (!clientId) return { ok: false, message: "Missing client." };
+  if (!clientId) return { ok: false, message: d.missingClient };
 
   const db = getDb();
   const [client] = await db
@@ -50,7 +57,7 @@ export async function regenerateSecret(
     .where(eq(clients.clientId, clientId))
     .limit(1);
   if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
-    return { ok: false, message: "Not your client." };
+    return { ok: false, message: d.notYourClient };
   }
 
   const secret = randomToken(32);
@@ -59,7 +66,7 @@ export async function regenerateSecret(
     .set({ clientSecretHash: hashSecret(secret) })
     .where(eq(clients.clientId, clientId));
   revalidatePath("/dashboard");
-  return { ok: true, message: "New secret generated — copy it now.", secret };
+  return { ok: true, message: d.newSecret, secret };
 }
 
 /** Split a textarea/comma list into trimmed, non-empty entries. */
@@ -68,13 +75,13 @@ function parseList(raw: string | undefined): string[] {
 }
 
 /** Validate redirect URIs (absolute URLs). Returns an error message or null. */
-function validateRedirectUris(uris: string[]): string | null {
-  if (uris.length === 0) return "Add at least one redirect URI.";
+function validateRedirectUris(uris: string[], d: ActionDict): string | null {
+  if (uris.length === 0) return d.addRedirectUri;
   for (const uri of uris) {
     try {
       new URL(uri);
     } catch {
-      return `Invalid redirect URI: ${uri}`;
+      return format(d.invalidRedirectUri, { uri });
     }
   }
   return null;
@@ -96,10 +103,12 @@ export async function createOwnApp(
   _prev: AppState,
   formData: FormData,
 ): Promise<AppState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
   const user = await getCurrentUser();
-  if (!user) return { ok: false, message: "Not signed in." };
+  if (!user) return { ok: false, message: d.notSignedIn };
   if (!user.allowed && !user.isAdmin) {
-    return { ok: false, message: "You need access before you can register an app." };
+    return { ok: false, message: d.needAccessToRegister };
   }
 
   const name = formData.get("name")?.toString().trim();
@@ -107,14 +116,14 @@ export async function createOwnApp(
   const scopes = parseList(formData.get("scopes")?.toString());
   const requested = scopes.length ? scopes : ["identify"];
 
-  if (!name) return { ok: false, message: "App name is required." };
-  const uriError = validateRedirectUris(redirectUris);
+  if (!name) return { ok: false, message: d.appNameRequired };
+  const uriError = validateRedirectUris(redirectUris, d);
   if (uriError) return { ok: false, message: uriError };
   const invalid = requested.filter(
     (s) => !(SUPPORTED_SCOPES as readonly string[]).includes(s),
   );
   if (invalid.length) {
-    return { ok: false, message: `Unknown scope(s): ${invalid.join(", ")}` };
+    return { ok: false, message: format(d.unknownScopes, { scopes: invalid.join(", ") }) };
   }
 
   const db = getDb();
@@ -133,7 +142,7 @@ export async function createOwnApp(
   revalidatePath("/dashboard");
   return {
     ok: true,
-    message: "App registered. Copy the secret now — it won't be shown again.",
+    message: d.appRegistered,
     clientId,
     secret,
   };
@@ -144,13 +153,15 @@ export async function updateAppRedirects(
   _prev: SecretState,
   formData: FormData,
 ): Promise<SecretState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
   const user = await getCurrentUser();
-  if (!user) return { ok: false, message: "Not authorized." };
+  if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
-  if (!clientId) return { ok: false, message: "Missing app." };
+  if (!clientId) return { ok: false, message: d.missingApp };
 
   const redirectUris = parseList(formData.get("redirectUris")?.toString());
-  const uriError = validateRedirectUris(redirectUris);
+  const uriError = validateRedirectUris(redirectUris, d);
   if (uriError) return { ok: false, message: uriError };
 
   const db = getDb();
@@ -160,7 +171,7 @@ export async function updateAppRedirects(
     .where(eq(clients.clientId, clientId))
     .limit(1);
   if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
-    return { ok: false, message: "Not your app." };
+    return { ok: false, message: d.notYourApp };
   }
 
   await db
@@ -168,5 +179,5 @@ export async function updateAppRedirects(
     .set({ redirectUris })
     .where(eq(clients.clientId, clientId));
   revalidatePath("/dashboard");
-  return { ok: true, message: "Redirect URIs updated." };
+  return { ok: true, message: d.redirectUrisUpdated };
 }

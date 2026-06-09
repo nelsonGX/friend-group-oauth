@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { TriangleAlert, ShieldCheck, Check } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
 import {
   buildClientRedirect,
   issueAuthorizationCode,
@@ -9,22 +10,14 @@ import {
 } from "@/lib/oauth";
 import { decideAuthorization } from "./actions";
 
-const SCOPE_LABELS: Record<string, string> = {
-  identify: "Your Discord identity (username, avatar)",
-  roles: "Your server roles and access status",
-  credits: "Your credit balance",
-};
-
-function ErrorView({ message }: { message: string }) {
+function ErrorView({ title, message }: { title: string; message: string }) {
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="reveal card w-full max-w-md border-danger/30 p-8 text-center">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-danger/30 bg-danger/10 text-danger">
           <TriangleAlert size={24} strokeWidth={1.7} />
         </span>
-        <h1 className="mt-4 text-lg font-semibold text-danger">
-          Authorization error
-        </h1>
+        <h1 className="mt-4 text-lg font-semibold text-danger">{title}</h1>
         <p className="mt-2 text-sm text-muted">{message}</p>
       </div>
     </main>
@@ -37,6 +30,8 @@ export default async function AuthorizePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
+  const { t } = await getDictionary();
+  const scopeLabels: Record<string, string> = t.authorize.scopes;
   const str = (v: string | string[] | undefined) =>
     Array.isArray(v) ? v[0] : v;
 
@@ -53,7 +48,10 @@ export default async function AuthorizePage({
   const result = await validateAuthorizeRequest(params);
   if (!result.ok) {
     if (result.error.kind === "render") {
-      return <ErrorView message={result.error.message} />;
+      const errs = t.authorize.renderErrors;
+      const code = result.error.code;
+      const message = code && code in errs ? errs[code as keyof typeof errs] : result.error.message;
+      return <ErrorView title={t.authorize.error} message={message} />;
     }
     redirect(
       buildClientRedirect(params.redirectUri!, {
@@ -84,7 +82,7 @@ export default async function AuthorizePage({
 
   if (!user.allowed) {
     return (
-      <ErrorView message="You don't have access to this platform yet. Make sure you're in the Discord server with the required role." />
+      <ErrorView title={t.authorize.error} message={t.authorize.noAccessMessage} />
     );
   }
 
@@ -110,19 +108,19 @@ export default async function AuthorizePage({
           </span>
           <div>
             <p className="text-xs uppercase tracking-wide text-faint">
-              Authorize access
+              {t.authorize.authorizeAccess}
             </p>
             <h1 className="text-xl font-semibold leading-tight">{client.name}</h1>
           </div>
         </div>
 
         <p className="mt-5 text-sm text-muted">
-          Signed in as{" "}
+          {t.authorize.signedInAsPre}{" "}
           <span className="font-medium text-ink">
             {user.globalName ?? user.username}
           </span>
-          . <span className="font-medium text-ink">{client.name}</span> would
-          like to access:
+          . <span className="font-medium text-ink">{client.name}</span>{" "}
+          {t.authorize.wouldLikeToAccess}
         </p>
 
         <ul className="mt-4 space-y-2">
@@ -134,7 +132,7 @@ export default async function AuthorizePage({
               <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand/15 text-brand-soft">
                 <Check size={12} strokeWidth={2.4} />
               </span>
-              <span>{SCOPE_LABELS[s] ?? s}</span>
+              <span>{scopeLabels[s] ?? s}</span>
             </li>
           ))}
         </ul>
@@ -157,7 +155,7 @@ export default async function AuthorizePage({
             value="deny"
             className="btn btn-ghost flex-1"
           >
-            Deny
+            {t.authorize.deny}
           </button>
           <button
             type="submit"
@@ -165,12 +163,12 @@ export default async function AuthorizePage({
             value="approve"
             className="btn btn-primary flex-1"
           >
-            Approve
+            {t.authorize.approve}
           </button>
         </form>
 
         <p className="mt-4 text-center text-xs text-faint">
-          You can revoke this access anytime from your dashboard.
+          {t.authorize.revokeNote}
         </p>
       </div>
     </main>

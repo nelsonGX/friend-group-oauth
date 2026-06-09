@@ -5,6 +5,8 @@ import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
+import { format } from "@/lib/i18n/format";
 import { topUp } from "@/lib/credits";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
@@ -26,17 +28,16 @@ export async function grantCredits(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  if (!(await assertAdmin())) return { ok: false, message: "Not authorized." };
+  const { t } = await getDictionary();
+  const d = t.adminActions;
+  if (!(await assertAdmin())) return { ok: false, message: d.notAuthorized };
 
   const discordId = formData.get("discordId")?.toString().trim();
   const amount = Number(formData.get("amount"));
   const reason = formData.get("reason")?.toString().trim() || "Admin top-up";
 
   if (!discordId || !Number.isInteger(amount) || amount <= 0) {
-    return {
-      ok: false,
-      message: "Provide a Discord ID and a positive integer amount.",
-    };
+    return { ok: false, message: d.provideIdAndAmount };
   }
 
   const db = getDb();
@@ -46,17 +47,14 @@ export async function grantCredits(
     .where(eq(users.discordId, discordId))
     .limit(1);
   if (!target) {
-    return {
-      ok: false,
-      message: "No user with that Discord ID (they must log in here once first).",
-    };
+    return { ok: false, message: d.noUserWithId };
   }
 
   const balance = await topUp({ userId: target.id, amount, reason });
   revalidatePath("/admin");
   return {
     ok: true,
-    message: `Granted ${amount} credits to ${target.username}. New balance: ${balance}.`,
+    message: format(d.granted, { amount, user: target.username, balance }),
   };
 }
 
@@ -65,7 +63,9 @@ export async function createClient(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  if (!(await assertAdmin())) return { ok: false, message: "Not authorized." };
+  const { t } = await getDictionary();
+  const d = t.adminActions;
+  if (!(await assertAdmin())) return { ok: false, message: d.notAuthorized };
 
   const name = formData.get("name")?.toString().trim();
   const redirectUris = (formData.get("redirectUris")?.toString() ?? "")
@@ -78,20 +78,20 @@ export async function createClient(
   const ownerDiscordId = formData.get("ownerDiscordId")?.toString().trim();
 
   if (!name || redirectUris.length === 0) {
-    return { ok: false, message: "Name and at least one redirect URI are required." };
+    return { ok: false, message: d.nameAndRedirectRequired };
   }
   for (const uri of redirectUris) {
     try {
       new URL(uri);
     } catch {
-      return { ok: false, message: `Invalid redirect URI: ${uri}` };
+      return { ok: false, message: format(d.invalidRedirectUri, { uri }) };
     }
   }
   const invalid = scopes.filter(
     (s) => !(SUPPORTED_SCOPES as readonly string[]).includes(s),
   );
   if (invalid.length) {
-    return { ok: false, message: `Unknown scope(s): ${invalid.join(", ")}` };
+    return { ok: false, message: format(d.unknownScopes, { scopes: invalid.join(", ") }) };
   }
 
   const db = getDb();
@@ -120,7 +120,7 @@ export async function createClient(
   revalidatePath("/admin");
   return {
     ok: true,
-    message: "Client created. Copy the secret now — it will not be shown again.",
+    message: d.clientCreated,
     clientId,
     secret,
   };

@@ -6,21 +6,24 @@ import {
   grantCredits,
   type ActionState,
 } from "./actions";
+import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+
+type FormsDict = Dictionary["admin"]["forms"];
 
 const initial: ActionState = { ok: false, message: "" };
 
 const inputClass = "input";
 const buttonClass = "btn btn-primary text-sm";
 
-export function GrantCreditsForm() {
+export function GrantCreditsForm({ t }: { t: FormsDict }) {
   const [state, action, pending] = useActionState(grantCredits, initial);
   return (
     <form action={action} className="space-y-3">
-      <input className={inputClass} name="discordId" placeholder="Discord user ID" />
-      <input className={inputClass} name="amount" type="number" min="1" placeholder="Amount (credits)" />
-      <input className={inputClass} name="reason" placeholder="Reason (optional)" />
+      <input className={inputClass} name="discordId" placeholder={t.discordIdPlaceholder} />
+      <input className={inputClass} name="amount" type="number" min="1" placeholder={t.amountPlaceholder} />
+      <input className={inputClass} name="reason" placeholder={t.reasonPlaceholder} />
       <button className={buttonClass} disabled={pending}>
-        {pending ? "Granting…" : "Grant credits"}
+        {pending ? t.granting : t.grantCredits}
       </button>
       {state.message && (
         <p className={`text-sm ${state.ok ? "text-success" : "text-danger"}`}>
@@ -31,30 +34,30 @@ export function GrantCreditsForm() {
   );
 }
 
-export function NewClientForm() {
+export function NewClientForm({ t }: { t: FormsDict }) {
   const [state, action, pending] = useActionState(createClient, initial);
   return (
     <form action={action} className="space-y-3">
-      <input className={inputClass} name="name" placeholder="App name" />
+      <input className={inputClass} name="name" placeholder={t.appNamePlaceholder} />
       <textarea
         className={inputClass}
         name="redirectUris"
         rows={2}
-        placeholder="Redirect URIs (one per line or comma-separated)"
+        placeholder={t.redirectUrisPlaceholder}
       />
       <input
         className={inputClass}
         name="scopes"
         defaultValue="identify"
-        placeholder="Scopes (e.g. identify roles credits)"
+        placeholder={t.scopesPlaceholder}
       />
-      <input className={inputClass} name="ownerDiscordId" placeholder="Owner Discord ID (optional)" />
+      <input className={inputClass} name="ownerDiscordId" placeholder={t.ownerDiscordIdPlaceholder} />
       <label className="flex items-center gap-2 text-sm text-muted">
         <input type="checkbox" name="trusted" className="accent-brand" />
-        Trusted (skip the consent screen)
+        {t.trustedLabel}
       </label>
       <button className={buttonClass} disabled={pending}>
-        {pending ? "Creating…" : "Create client"}
+        {pending ? t.creating : t.createClient}
       </button>
       {state.message && (
         <p className={`text-sm ${state.ok ? "text-success" : "text-danger"}`}>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,10 +50,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
+  const { locale, t } = await getDictionary();
 
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="relative min-h-full flex flex-col">
@@ -59,17 +62,18 @@ export default async function RootLayout({
           <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
             <Brand />
             <nav className="flex items-center gap-1.5 text-sm">
+              <LanguageSwitcher active={locale} label={t.switcher.label} />
               {user ? (
                 <>
                   <Link
                     href="/dashboard"
                     className="btn btn-primary !px-3.5 !py-1.5"
                   >
-                    Dashboard
+                    {t.nav.dashboard}
                   </Link>
                   <form action="/api/auth/logout" method="post">
                     <button className="btn btn-ghost !px-3 !py-1.5">
-                      Log out
+                      {t.nav.logout}
                     </button>
                   </form>
                 </>
@@ -78,7 +82,7 @@ export default async function RootLayout({
                   href="/login"
                   className="btn btn-primary !px-3.5 !py-1.5"
                 >
-                  Sign in
+                  {t.nav.signIn}
                 </Link>
               )}
             </nav>
@@ -89,8 +93,8 @@ export default async function RootLayout({
 
         <footer className="border-t border-border/60 py-6">
           <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-6 text-xs text-faint sm:flex-row">
-            <span>Friend Group Auth — Discord login &amp; shared credits.</span>
-            <span>Self-hosted by the group, for the group.</span>
+            <span>{t.footer.tagline}</span>
+            <span>{t.footer.selfHosted}</span>
           </div>
         </footer>
       </body>

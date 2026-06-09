@@ -1,28 +1,18 @@
 import Link from "next/link";
 import { Users, KeyRound, Wallet } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
 import { DiscordIcon } from "@/components/DiscordIcon";
-
-const features = [
-  {
-    t: "Discord login",
-    d: "OAuth2 with server membership and role gating, so only the group gets in.",
-    Icon: Users,
-  },
-  {
-    t: "OAuth provider",
-    d: "Standard OAuth2 + PKCE that any of our other sites can authenticate against.",
-    Icon: KeyRound,
-  },
-  {
-    t: "Shared credits",
-    d: "One balance every tool can charge against — top up once, spend anywhere.",
-    Icon: Wallet,
-  },
-];
 
 export default async function Home() {
   const user = await getCurrentUser();
+  const { t } = await getDictionary();
+
+  const features = [
+    { ...t.home.features.login, Icon: Users },
+    { ...t.home.features.oauth, Icon: KeyRound },
+    { ...t.home.features.credits, Icon: Wallet },
+  ];
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-12 px-5 py-20 text-center">
@@ -32,25 +22,23 @@ export default async function Home() {
           style={{ animationDelay: "0ms" }}
         >
           <span className="dot text-brand-soft" />
-          One login for the whole group
+          {t.home.badge}
         </span>
 
         <h1
           className="reveal max-w-3xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl"
           style={{ animationDelay: "70ms" }}
         >
-          One Discord login.
+          {t.home.titleLine1}
           <br />
-          <span className="text-gradient">Shared credits everywhere.</span>
+          <span className="text-gradient">{t.home.titleLine2}</span>
         </h1>
 
         <p
           className="reveal mt-6 max-w-xl text-balance text-base leading-relaxed text-muted sm:text-lg"
           style={{ animationDelay: "140ms" }}
         >
-          A single sign-in and a shared credit balance for all of our
-          self-hosted tools. Authenticate once; use it everywhere the group
-          builds.
+          {t.home.subtitle}
         </p>
 
         <div
@@ -59,16 +47,16 @@ export default async function Home() {
         >
           {user ? (
             <Link href="/dashboard" className="btn btn-primary px-6 py-3 text-[0.95rem]">
-              Open dashboard
+              {t.home.openDashboard}
             </Link>
           ) : (
             <>
               <Link href="/login" className="btn btn-primary px-6 py-3 text-[0.95rem]">
                 <DiscordIcon size={18} />
-                Sign in with Discord
+                {t.home.signInWithDiscord}
               </Link>
               <Link href="/dashboard" className="btn btn-secondary px-6 py-3 text-[0.95rem]">
-                Open dashboard
+                {t.home.openDashboard}
               </Link>
             </>
           )}
@@ -78,15 +66,15 @@ export default async function Home() {
       <section className="grid w-full max-w-3xl gap-4 text-left sm:grid-cols-3">
         {features.map((f, i) => (
           <div
-            key={f.t}
+            key={f.title}
             className="reveal card card-hover p-5"
             style={{ animationDelay: `${300 + i * 90}ms` }}
           >
             <span className="mb-3 grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface text-brand-soft">
               <f.Icon size={22} strokeWidth={1.7} />
             </span>
-            <h2 className="font-medium">{f.t}</h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted">{f.d}</p>
+            <h2 className="font-medium">{f.title}</h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted">{f.desc}</p>
           </div>
         ))}
       </section>
@@ -95,11 +83,11 @@ export default async function Home() {
         className="reveal text-sm text-faint"
         style={{ animationDelay: "600ms" }}
       >
-        Building a site that uses this? See{" "}
+        {t.home.integrationPre}{" "}
         <code className="rounded bg-surface-strong px-1.5 py-0.5 font-mono text-[0.8rem] text-muted">
           docs/INTEGRATION.md
         </code>
-        .
+        {t.home.integrationPost}
       </p>
     </main>
   );

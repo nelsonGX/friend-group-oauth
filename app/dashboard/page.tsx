@@ -5,6 +5,8 @@ import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accessTokens, clients } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
+import { format } from "@/lib/i18n/format";
 import { getBalance, getLedger, getProviderEarnings } from "@/lib/credits";
 import { env } from "@/lib/env";
 import { revokeAppAccess } from "./actions";
@@ -18,6 +20,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?return=/dashboard");
 
+  const { t } = await getDictionary();
   const db = getDb();
   const balance = await getBalance(user.id);
   const entries = await getLedger(user.id, 25);
@@ -67,7 +70,7 @@ export default async function DashboardPage() {
               className={`badge mt-1 ${user.allowed ? "badge-success" : "badge-danger"}`}
             >
               <span className="dot" />
-              {user.allowed ? "Access granted" : "No access — check your role"}
+              {user.allowed ? t.dashboard.accessGranted : t.dashboard.noAccess}
             </span>
           </div>
         </div>
@@ -75,13 +78,13 @@ export default async function DashboardPage() {
           {user.isAdmin && (
             <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
               <Shield size={15} />
-              Admin
+              {t.dashboard.admin}
             </Link>
           )}
           <form action="/api/auth/logout" method="post">
             <button className="btn btn-ghost !py-2 text-sm">
               <LogOut size={15} />
-              Log out
+              {t.dashboard.logout}
             </button>
           </form>
         </div>
@@ -100,11 +103,11 @@ export default async function DashboardPage() {
               aria-hidden
               className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand/25 blur-3xl"
             />
-            <p className="text-sm text-muted">Credit balance</p>
+            <p className="text-sm text-muted">{t.dashboard.creditBalance}</p>
             <p className="mt-1 text-5xl font-semibold tracking-tight">
               <span className="shimmer-text">{balance}</span>
               <span className="ml-2 align-middle text-base font-normal text-faint">
-                credits
+                {t.dashboard.credits}
               </span>
             </p>
           </section>
@@ -112,10 +115,10 @@ export default async function DashboardPage() {
           {/* connected apps */}
           <section className="reveal" style={{ animationDelay: "140ms" }}>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-              Connected apps
+              {t.dashboard.connectedApps}
             </h2>
             {connected.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">No apps connected yet.</p>
+              <p className="mt-3 text-sm text-muted">{t.dashboard.noAppsConnected}</p>
             ) : (
               <ul className="card card-hover mt-3 glass-divide overflow-hidden">
                 {connected.map((c) => (
@@ -129,7 +132,7 @@ export default async function DashboardPage() {
                     <form action={revokeAppAccess}>
                       <input type="hidden" name="clientId" value={c.clientId} />
                       <button className="text-sm text-danger transition-opacity hover:opacity-80">
-                        Revoke
+                        {t.dashboard.revoke}
                       </button>
                     </form>
                   </li>
@@ -144,11 +147,10 @@ export default async function DashboardPage() {
           {/* provider apps */}
           <section className="reveal" style={{ animationDelay: "200ms" }}>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-              Provider apps
+              {t.dashboard.providerApps}
             </h2>
             <p className="mt-2 text-sm text-muted">
-              Building a site for the group? Register it as an OAuth app to log
-              members in and charge credits.
+              {t.dashboard.providerAppsDesc}
             </p>
 
             {owned.length > 0 && (
@@ -158,12 +160,14 @@ export default async function DashboardPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-medium">{c.name}</span>
                       <div className="flex items-center gap-2 text-xs">
-                        <span className="badge">{ownedEarnings[i]} earned</span>
+                        <span className="badge">
+                          {format(t.dashboard.earnedBadge, { n: ownedEarnings[i] })}
+                        </span>
                         {!c.isActive && (
-                          <span className="badge badge-danger">disabled</span>
+                          <span className="badge badge-danger">{t.dashboard.disabled}</span>
                         )}
                         {c.trusted && (
-                          <span className="badge badge-success">trusted</span>
+                          <span className="badge badge-success">{t.dashboard.trusted}</span>
                         )}
                       </div>
                     </div>
@@ -175,6 +179,7 @@ export default async function DashboardPage() {
                       clientId={c.clientId}
                       scopes={c.allowedScopes}
                       redirectUris={c.redirectUris}
+                      t={t.dashboard.forms}
                     />
                   </li>
                 ))}
@@ -182,16 +187,13 @@ export default async function DashboardPage() {
             )}
 
             <div className="card mt-4 p-5">
-              <h3 className="text-sm font-semibold">Register a new app</h3>
+              <h3 className="text-sm font-semibold">{t.dashboard.registerNewApp}</h3>
               {canRegister ? (
                 <div className="mt-3">
-                  <NewAppForm />
+                  <NewAppForm t={t.dashboard.forms} />
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-muted">
-                  You need access (server membership + role) before you can
-                  register an app.
-                </p>
+                <p className="mt-2 text-sm text-muted">{t.dashboard.needAccess}</p>
               )}
             </div>
           </section>
@@ -199,10 +201,10 @@ export default async function DashboardPage() {
           {/* activity */}
           <section className="reveal" style={{ animationDelay: "260ms" }}>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
-              Recent activity
+              {t.dashboard.recentActivity}
             </h2>
             {entries.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">No transactions yet.</p>
+              <p className="mt-3 text-sm text-muted">{t.dashboard.noTransactions}</p>
             ) : (
               <div className="card card-hover mt-3 overflow-hidden">
                 <table className="w-full text-left text-sm">
@@ -216,7 +218,7 @@ export default async function DashboardPage() {
                           {fmt(e.createdAt)}
                         </td>
                         <td className="p-4 text-muted">
-                          {e.reason ?? (e.delta > 0 ? "Top-up" : "Charge")}
+                          {e.reason ?? (e.delta > 0 ? t.dashboard.topUp : t.dashboard.charge)}
                         </td>
                         <td
                           className={`p-4 text-right font-medium tabular-nums ${

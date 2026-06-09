@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { getDictionary } from "@/lib/i18n";
 import { sanitizeReturnPath } from "@/lib/url";
 import { DiscordIcon } from "@/components/DiscordIcon";
 
@@ -14,17 +15,13 @@ export default async function LoginPage({
   const user = await getCurrentUser();
   if (user) redirect(sanitizeReturnPath(sp.return));
 
+  const { t } = await getDictionary();
   const query = sp.return ? `?return=${encodeURIComponent(sp.return)}` : "";
 
-  const errors: Record<string, string> = {
-    no_access:
-      "You're signed in, but you don't have access yet. You need to be in the Discord server with the required role.",
-    discord: "Something went wrong talking to Discord. Please try again.",
-    state_mismatch: "Your login session expired. Please try again.",
-    invalid_request: "Invalid login request. Please try again.",
-    invalid_state: "Your login session expired. Please try again.",
-  };
-  const errorMessage = sp.error ? errors[sp.error] ?? "Login failed." : null;
+  const errors = t.login.errors;
+  const errorMessage = sp.error
+    ? errors[sp.error as keyof typeof errors] ?? errors.default
+    : null;
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -33,10 +30,8 @@ export default async function LoginPage({
           <DiscordIcon size={26} />
         </span>
 
-        <h1 className="mt-5 text-xl font-semibold">Welcome back</h1>
-        <p className="mt-2 text-sm text-muted">
-          Use your Discord account to continue.
-        </p>
+        <h1 className="mt-5 text-xl font-semibold">{t.login.welcomeBack}</h1>
+        <p className="mt-2 text-sm text-muted">{t.login.useDiscord}</p>
 
         {errorMessage && (
           <p className="mt-5 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5 text-left text-sm text-danger">
@@ -49,12 +44,10 @@ export default async function LoginPage({
           className="btn btn-primary mt-6 w-full py-3"
         >
           <DiscordIcon size={20} />
-          Continue with Discord
+          {t.login.continueWithDiscord}
         </a>
 
-        <p className="mt-5 text-xs text-faint">
-          Access requires membership in the group&apos;s Discord server.
-        </p>
+        <p className="mt-5 text-xs text-faint">{t.login.accessNote}</p>
       </div>
     </main>
   );
