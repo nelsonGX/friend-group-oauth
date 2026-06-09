@@ -1,36 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Friend Group Auth
 
-## Getting Started
+A small, self-hosted **OAuth 2.0 + PKCE** authorization server with a **credit
+system**, built for a Discord friend group that shares self-hosted tools.
 
-First, run the development server:
+- **Log in with Discord**, gated on server membership + a required role.
+- Acts as an **OAuth provider** so the group's other sites integrate with any
+  standard OAuth client library.
+- **Credits**: users hold a balance (admins top up manually); provider sites
+  charge against it through a hosted confirm flow.
+
+Integrating a site? See [`docs/INTEGRATION.md`](docs/INTEGRATION.md) and the
+copy-paste agent prompt in
+[`docs/llm-integration-prompt.md`](docs/llm-integration-prompt.md).
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · Postgres + Drizzle ORM · `jose` sessions ·
+Tailwind v4. Discord membership/roles are read via the bot REST API (no
+persistent gateway bot).
+
+## Prerequisites
+
+- Node 20+ and a Postgres database.
+- A [Discord application](https://discord.com/developers/applications) with:
+  - OAuth2 credentials (client id + secret),
+  - a **bot** added to your server (so we can read members via REST),
+  - your **guild (server) id** and the **role id(s)** that grant access.
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env      # then fill it in (see below)
+npm run db:migrate        # apply the schema to DATABASE_URL
+npm run dev               # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Fill in `.env` (all documented in `.env.example`):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Var | What |
+| --- | --- |
+| `APP_URL` | Public base URL, no trailing slash. Drives the Discord redirect URI. |
+| `DATABASE_URL` | Postgres connection string. |
+| `SESSION_SECRET` | Signing key. Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
+| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | From your Discord app's OAuth2 settings. |
+| `DISCORD_BOT_TOKEN` | Bot token; the bot must be a member of your guild. |
+| `DISCORD_GUILD_ID` | Your server id. |
+| `DISCORD_REQUIRED_ROLE_IDS` | Comma-separated role ids. Empty = membership-only. |
+| `ADMIN_DISCORD_IDS` | Comma-separated Discord user ids bootstrapped as admins. |
 
-## Learn More
+> In the Discord app's OAuth2 settings, add the redirect URI
+> **`{APP_URL}/api/auth/discord/callback`** exactly.
 
-To learn more about Next.js, take a look at the following resources:
+### First run
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Start the app and visit `/login`. Sign in with a Discord account whose id is
+   in `ADMIN_DISCORD_IDS` — it becomes an admin.
+2. Go to `/admin` to grant credits and register provider apps. Registering an
+   app shows its `client_id` + `client_secret` **once** — copy the secret then.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Verification
 
-## Deploy on Vercel
+The credit ledger and the OAuth/PKCE flow are covered by in-process checks that
+run against an embedded Postgres (PGlite) — no external database needed:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run verify          # OAuth (11 checks) + credits (14 checks)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> PGlite is used **only** for these checks. The app itself requires a real
+> Postgres via `DATABASE_URL`.
+
+## Deploy (VPS)
+
+Build and run the production server:
+
+```bash
+npm run build
+APP_URL=https://auth.example.com npm run start   # listens on :3000
+```
+
+Run it under a process manager and put TLS in front. Example **systemd** unit:
+
+```ini
+# /etc/systemd/system/friend-auth.service
+[Unit]
+Description=Friend Group Auth
+After=network.target postgresql.service
+
+[Service]
+WorkingDirectory=/srv/friend-group-oauth
+EnvironmentFile=/srv/friend-group-oauth/.env
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Example **Caddy** reverse proxy (handles HTTPS automatically):
+
+```
+auth.example.com {
+    reverse_proxy localhost:3000
+}
+```
+
+Then set `APP_URL=https://auth.example.com` and make sure the Discord redirect
+URI matches.
+
+## Project layout
+
+```
+app/                # routes: login, oauth/authorize, pay, dashboard, admin, api/*
+db/                 # Drizzle schema, client, migrations
+lib/                # env, session, discord, crypto, oauth, credits, payments, admin
+scripts/            # PGlite-backed verification harness + suites
+docs/               # integration guide + LLM agent prompt
+proxy.ts            # auth gate for /dashboard and /admin
+```
+
+> Note: this repo pins a modified Next.js whose conventions differ from older
+> versions (async `cookies()`/`headers()`, `proxy.ts` instead of
+> `middleware.ts`). See `AGENTS.md`.
