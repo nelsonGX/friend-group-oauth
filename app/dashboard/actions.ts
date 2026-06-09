@@ -264,3 +264,55 @@ export async function updateAppWebhook(
   revalidatePath("/dashboard");
   return { ok: true, message: d.webhookSaved, secret, configured: true };
 }
+
+/**
+ * Update an app's public directory presence: title, description, icon, website,
+ * and whether it's listed in /explore. Owner (or admin) only. All text fields are
+ * optional — blank clears them; `listed` is the opt-in toggle.
+ */
+export async function updateAppListing(
+  _prev: SecretState,
+  formData: FormData,
+): Promise<SecretState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: d.notAuthorized };
+  const clientId = formData.get("clientId")?.toString();
+  if (!clientId) return { ok: false, message: d.missingApp };
+
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
+    return { ok: false, message: d.notYourApp };
+  }
+
+  const displayTitle = formData.get("displayTitle")?.toString().trim() || null;
+  const description = formData.get("description")?.toString().trim() || null;
+  const iconUrl = formData.get("iconUrl")?.toString().trim() || null;
+  const websiteUrl = formData.get("websiteUrl")?.toString().trim() || null;
+  const listed = formData.get("listed") != null;
+
+  // Validate the two URL fields when present.
+  for (const url of [iconUrl, websiteUrl]) {
+    if (!url) continue;
+    try {
+      const u = new URL(url);
+      if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error();
+    } catch {
+      return { ok: false, message: format(d.invalidUrl, { url }) };
+    }
+  }
+
+  await db
+    .update(clients)
+    .set({ displayTitle, description, iconUrl, websiteUrl, listed })
+    .where(eq(clients.clientId, clientId));
+  revalidatePath("/dashboard");
+  revalidatePath("/explore");
+  return { ok: true, message: d.displaySaved };
+}

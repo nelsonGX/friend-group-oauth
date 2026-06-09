@@ -66,6 +66,12 @@ export default async function RootLayout({
               {user ? (
                 <>
                   <Link
+                    href="/explore"
+                    className="btn btn-ghost !px-3 !py-1.5"
+                  >
+                    {t.nav.explore}
+                  </Link>
+                  <Link
                     href="/dashboard"
                     className="btn btn-primary !px-3.5 !py-1.5"
                   >

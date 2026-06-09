@@ -85,6 +85,16 @@ export const clients = pgTable("clients", {
   /** Plaintext HMAC signing key for webhook payloads (a low-sensitivity key,
    *  separate from client_secret; shown once when the webhook is configured). */
   webhookSecret: text("webhook_secret"),
+  /** Public-facing display title for the /explore directory; falls back to `name`. */
+  displayTitle: text("display_title"),
+  /** Short blurb shown on the directory card. */
+  description: text("description"),
+  /** Link to an icon image shown on the directory card. */
+  iconUrl: text("icon_url"),
+  /** Homepage the directory's "Visit" button links to. */
+  websiteUrl: text("website_url"),
+  /** Whether the owner has opted this app into the public /explore directory. */
+  listed: boolean("listed").notNull().default(false),
   ...timestamps,
 });
 

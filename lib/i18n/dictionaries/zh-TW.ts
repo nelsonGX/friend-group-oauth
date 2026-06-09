@@ -8,6 +8,7 @@ import type { Dictionary } from "./en";
 const zhTW: Dictionary = {
   nav: {
     dashboard: "控制台",
+    explore: "探索",
     signIn: "登入",
     logout: "登出",
   },
@@ -57,6 +58,16 @@ const zhTW: Dictionary = {
       invalid_state: "你的登入工作階段已過期，請再試一次。",
       default: "登入失敗。",
     },
+  },
+  explore: {
+    title: "探索",
+    heading: "社群應用程式",
+    subtitle: "社群打造並分享的工具。登入一次，即可使用其中任何一個。",
+    connected: "已連結",
+    visit: "前往",
+    emptyTitle: "目前空空如也",
+    emptyDesc:
+      "尚未有應用程式發佈到目錄。等開發者開啟某個應用程式後，它就會顯示在這裡。",
   },
   dashboard: {
     accessGranted: "已授予存取權",
@@ -135,6 +146,7 @@ const zhTW: Dictionary = {
       tabRedirects: "重新導向 URI",
       tabWebhook: "Webhook",
       tabSecret: "密鑰",
+      tabDisplay: "顯示",
       endpoints: "API 端點",
       secretTitle: "Client secret",
       secretDesc:
@@ -170,6 +182,18 @@ const zhTW: Dictionary = {
       webhookUrlPlaceholder: "https://yourapp.com/webhooks/payments",
       saveWebhook: "儲存 Webhook",
       webhookSecretLabel: "簽章密鑰（僅顯示一次——請立即保存）：",
+      displayDesc:
+        "控制你的應用程式在社群「探索」目錄中的呈現方式。在你開啟「顯示於目錄」之前，它會保持隱藏。",
+      displayTitleLabel: "顯示標題",
+      displayTitlePlaceholder: "我的酷炫應用程式",
+      descriptionLabel: "說明",
+      descriptionPlaceholder: "用一句話描述你的應用程式做什麼。",
+      iconUrlLabel: "圖示網址",
+      iconUrlPlaceholder: "https://mysite.com/icon.png",
+      websiteUrlLabel: "網站網址",
+      websiteUrlPlaceholder: "https://mysite.com",
+      listedLabel: "顯示於「探索」目錄",
+      saveDisplay: "儲存顯示設定",
     },
   },
   dashboardActions: {
@@ -189,6 +213,8 @@ const zhTW: Dictionary = {
     redirectUrisUpdated: "重新導向 URI 已更新。",
     webhookSaved: "Webhook 已儲存——請立即複製簽章密鑰。",
     webhookCleared: "Webhook 已停用。",
+    invalidUrl: "無效的網址：{url}",
+    displaySaved: "顯示設定已儲存。",
   },
   admin: {
     title: "管理",

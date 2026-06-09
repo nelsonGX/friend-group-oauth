@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import {
   CopyButton,
+  EditListing,
   EditRedirects,
   Field,
   RegenerateSecret,
@@ -23,6 +24,11 @@ export interface AppView {
   trusted: boolean;
   earned: number;
   webhookUrl: string | null;
+  displayTitle: string | null;
+  description: string | null;
+  iconUrl: string | null;
+  websiteUrl: string | null;
+  listed: boolean;
   createdAt: string;
 }
 
@@ -30,7 +36,7 @@ type DetailsDict = Dictionary["dashboard"]["details"];
 type AppsDict = Dictionary["dashboard"]["apps"];
 type FormsDict = Dictionary["dashboard"]["forms"];
 
-type Tab = "integration" | "redirects" | "webhook" | "secret";
+type Tab = "display" | "integration" | "redirects" | "webhook" | "secret";
 
 /** Tabbed management surface for one provider app, opened from its card. */
 export function AppDetailsModal({
@@ -48,7 +54,7 @@ export function AppDetailsModal({
   forms: FormsDict;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<Tab>("integration");
+  const [tab, setTab] = useState<Tab>("display");
 
   const prompt = buildIntegrationPrompt({
     appUrl,
@@ -58,6 +64,7 @@ export function AppDetailsModal({
   });
 
   const tabs: { key: Tab; label: string }[] = [
+    { key: "display", label: t.tabDisplay },
     { key: "integration", label: t.tabIntegration },
     { key: "redirects", label: t.tabRedirects },
     { key: "webhook", label: t.tabWebhook },
@@ -95,6 +102,21 @@ export function AppDetailsModal({
       </div>
 
       <div className="mt-4">
+        {tab === "display" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">{forms.displayDesc}</p>
+            <EditListing
+              clientId={app.clientId}
+              displayTitle={app.displayTitle}
+              description={app.description}
+              iconUrl={app.iconUrl}
+              websiteUrl={app.websiteUrl}
+              listed={app.listed}
+              t={forms}
+            />
+          </div>
+        )}
+
         {tab === "integration" && (
           <div className="space-y-4">
             <div>

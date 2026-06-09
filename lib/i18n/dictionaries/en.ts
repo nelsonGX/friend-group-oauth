@@ -9,6 +9,7 @@
 const en = {
   nav: {
     dashboard: "Dashboard",
+    explore: "Explore",
     signIn: "Sign in",
     logout: "Log out",
   },
@@ -58,6 +59,17 @@ const en = {
       invalid_state: "Your login session expired. Please try again.",
       default: "Login failed.",
     },
+  },
+  explore: {
+    title: "Explore",
+    heading: "Group apps",
+    subtitle:
+      "Tools the group has built and shared. Sign in once and use any of them.",
+    connected: "Connected",
+    visit: "Visit",
+    emptyTitle: "Nothing here yet",
+    emptyDesc:
+      "No apps have been published to the directory yet. Once a developer turns one on, it'll show up here.",
   },
   dashboard: {
     accessGranted: "Access granted",
@@ -138,6 +150,7 @@ const en = {
       tabRedirects: "Redirect URIs",
       tabWebhook: "Webhook",
       tabSecret: "Secret",
+      tabDisplay: "Display",
       endpoints: "API endpoints",
       secretTitle: "Client secret",
       secretDesc:
@@ -173,6 +186,18 @@ const en = {
       webhookUrlPlaceholder: "https://yourapp.com/webhooks/payments",
       saveWebhook: "Save webhook",
       webhookSecretLabel: "Signing secret (shown once — store it now):",
+      displayDesc:
+        "Control how your app appears in the group's Explore directory. It's hidden until you turn on “Show in directory”.",
+      displayTitleLabel: "Display title",
+      displayTitlePlaceholder: "My Cool App",
+      descriptionLabel: "Description",
+      descriptionPlaceholder: "What your app does, in a sentence.",
+      iconUrlLabel: "Icon URL",
+      iconUrlPlaceholder: "https://mysite.com/icon.png",
+      websiteUrlLabel: "Website URL",
+      websiteUrlPlaceholder: "https://mysite.com",
+      listedLabel: "Show in the Explore directory",
+      saveDisplay: "Save display settings",
     },
   },
   dashboardActions: {
@@ -192,6 +217,8 @@ const en = {
     redirectUrisUpdated: "Redirect URIs updated.",
     webhookSaved: "Webhook saved — copy the signing secret now.",
     webhookCleared: "Webhook disabled.",
+    invalidUrl: "Invalid URL: {url}",
+    displaySaved: "Display settings saved.",
   },
   admin: {
     title: "Admin",

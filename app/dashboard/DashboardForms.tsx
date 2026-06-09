@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import {
   regenerateSecret,
+  updateAppListing,
   updateAppRedirects,
   updateAppWebhook,
   type SecretState,
@@ -115,6 +116,95 @@ export function WebhookSettings({
           </div>
         </div>
       )}
+    </form>
+  );
+}
+
+export function EditListing({
+  clientId,
+  displayTitle,
+  description,
+  iconUrl,
+  websiteUrl,
+  listed,
+  t,
+}: {
+  clientId: string;
+  displayTitle: string | null;
+  description: string | null;
+  iconUrl: string | null;
+  websiteUrl: string | null;
+  listed: boolean;
+  t: FormsDict;
+}) {
+  const [state, action, pending] = useActionState(updateAppListing, secretInitial);
+  return (
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="clientId" value={clientId} />
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="displayTitle">
+          {t.displayTitleLabel}
+        </label>
+        <input
+          id="displayTitle"
+          className={inputClass}
+          name="displayTitle"
+          placeholder={t.displayTitlePlaceholder}
+          defaultValue={displayTitle ?? ""}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="description">
+          {t.descriptionLabel}
+        </label>
+        <textarea
+          id="description"
+          className={inputClass}
+          name="description"
+          rows={2}
+          placeholder={t.descriptionPlaceholder}
+          defaultValue={description ?? ""}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="iconUrl">
+          {t.iconUrlLabel}
+        </label>
+        <input
+          id="iconUrl"
+          className={inputClass}
+          type="url"
+          name="iconUrl"
+          placeholder={t.iconUrlPlaceholder}
+          defaultValue={iconUrl ?? ""}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="websiteUrl">
+          {t.websiteUrlLabel}
+        </label>
+        <input
+          id="websiteUrl"
+          className={inputClass}
+          type="url"
+          name="websiteUrl"
+          placeholder={t.websiteUrlPlaceholder}
+          defaultValue={websiteUrl ?? ""}
+        />
+      </div>
+      <label className="flex items-center gap-2.5 text-sm">
+        <input
+          type="checkbox"
+          name="listed"
+          defaultChecked={listed}
+          className="h-4 w-4 accent-brand"
+        />
+        {t.listedLabel}
+      </label>
+      <button className="btn btn-secondary text-sm" disabled={pending}>
+        {pending ? t.saving : t.saveDisplay}
+      </button>
+      <Notice ok={state.ok} message={state.message} />
     </form>
   );
 }

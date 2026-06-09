@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, LogOut, Link2, Boxes } from "lucide-react";
+import { Shield, LogOut, Link2, Boxes, Compass } from "lucide-react";
 import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accessTokens, clients } from "@/db/schema";
@@ -54,6 +54,11 @@ export default async function DashboardPage() {
     trusted: c.trusted,
     earned: ownedEarnings[i],
     webhookUrl: c.webhookUrl,
+    displayTitle: c.displayTitle,
+    description: c.description,
+    iconUrl: c.iconUrl,
+    websiteUrl: c.websiteUrl,
+    listed: c.listed,
     createdAt: c.createdAt.toISOString(),
   }));
 
@@ -95,6 +100,10 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/explore" className="btn btn-ghost !py-2 text-sm">
+            <Compass size={15} />
+            {t.nav.explore}
+          </Link>
           {user.isAdmin && (
             <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
               <Shield size={15} />
