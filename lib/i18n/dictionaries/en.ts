@@ -170,6 +170,7 @@ const en = {
       tabWebhook: "Webhook",
       tabSecret: "Secret",
       tabDisplay: "Display",
+      tabDanger: "Danger",
       endpoints: "API endpoints",
       secretTitle: "Client secret",
       secretDesc:
@@ -177,6 +178,9 @@ const en = {
       webhookTitle: "Payment webhook",
       webhookDesc:
         "We'll POST a signed notification here whenever a payment settles, so you aren't reliant on the browser redirect. Saving a URL reveals a signing secret once. Leave blank to disable.",
+      deleteTitle: "Delete this app",
+      deleteDesc:
+        "Permanently delete this app. Everyone signed in through it loses access, and its client ID and secret stop working. This can't be undone.",
       close: "Close",
       created: "Created {date}",
     },
@@ -217,6 +221,12 @@ const en = {
       websiteUrlPlaceholder: "https://mysite.com",
       listedLabel: "Show in the Explore directory",
       saveDisplay: "Save display settings",
+      deleteApp: "Delete app",
+      deleting: "Deleting…",
+      deleteConfirm:
+        "Permanently delete this app and revoke everyone's access? This can't be undone.",
+      deleteConfirmYes: "Yes, delete it",
+      cancel: "Cancel",
     },
   },
   device: {
@@ -265,6 +275,7 @@ const en = {
     webhookCleared: "Webhook disabled.",
     invalidUrl: "Invalid URL: {url}",
     displaySaved: "Display settings saved.",
+    appDeleted: "App deleted.",
   },
   admin: {
     title: "Admin",

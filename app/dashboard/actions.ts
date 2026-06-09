@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { accessTokens, clients, refreshTokens } from "@/db/schema";
+import { accessTokens, authorizationCodes, clients, refreshTokens } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
@@ -310,4 +310,43 @@ export async function updateAppListing(
   revalidatePath("/dashboard");
   revalidatePath("/explore");
   return { ok: true, message: d.displaySaved };
+}
+
+/**
+ * Permanently delete an app the user owns (or any, if admin). The token tables
+ * key on the *text* `client_id` with no FK cascade, so we clear those by hand;
+ * `ledger.providerId` is ON DELETE SET NULL, so accounting history survives the
+ * delete while the provider link is dropped.
+ */
+export async function deleteOwnApp(
+  _prev: SecretState,
+  formData: FormData,
+): Promise<SecretState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: d.notAuthorized };
+  const clientId = formData.get("clientId")?.toString();
+  if (!clientId) return { ok: false, message: d.missingApp };
+
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
+    return { ok: false, message: d.notYourApp };
+  }
+
+  await db.delete(accessTokens).where(eq(accessTokens.clientId, clientId));
+  await db.delete(refreshTokens).where(eq(refreshTokens.clientId, clientId));
+  await db
+    .delete(authorizationCodes)
+    .where(eq(authorizationCodes.clientId, clientId));
+  await db.delete(clients).where(eq(clients.clientId, clientId));
+
+  revalidatePath("/dashboard");
+  revalidatePath("/explore");
+  return { ok: true, message: d.appDeleted };
 }

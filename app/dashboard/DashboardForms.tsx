@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { Copy, Check, Trash2 } from "lucide-react";
 import {
+  deleteOwnApp,
   regenerateSecret,
   updateAppListing,
   updateAppRedirects,
@@ -209,8 +210,66 @@ export function EditListing({
   );
 }
 
-export function Field({ label, value }: { label: string; value: string }) {
+/**
+ * Danger-zone control: a two-step delete (button → inline confirm) so a stray
+ * click can't wipe an app. On success the server revalidates the dashboard and
+ * `onDeleted` closes the surrounding modal so the now-gone app doesn't linger.
+ */
+export function DeleteApp({
+  clientId,
+  t,
+  onDeleted,
+}: {
+  clientId: string;
+  t: FormsDict;
+  onDeleted: () => void;
+}) {
+  const [state, action, pending] = useActionState(deleteOwnApp, secretInitial);
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (state.ok) onDeleted();
+  }, [state.ok, onDeleted]);
+
+  if (!confirming) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="btn btn-danger text-sm"
+        >
+          <Trash2 size={15} />
+          {t.deleteApp}
+        </button>
+      </div>
+    );
+  }
+
   return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="clientId" value={clientId} />
+      <p className="text-sm text-danger">{t.deleteConfirm}</p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="btn btn-ghost text-sm"
+          disabled={pending}
+        >
+          {t.cancel}
+        </button>
+        <button className="btn btn-danger text-sm" disabled={pending}>
+          <Trash2 size={15} />
+          {pending ? t.deleting : t.deleteConfirmYes}
+        </button>
+      </div>
+      <Notice ok={state.ok} message={state.message} />
+    </form>
+  );
+}
+
+export function Field({ label, value }: { label: string; value: string }) {  return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
       <span className="w-28 shrink-0 text-faint">{label}</span>
       <span className="break-all text-muted">{value}</span>

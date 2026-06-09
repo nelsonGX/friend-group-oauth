@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import {
   CopyButton,
+  DeleteApp,
   EditListing,
   EditRedirects,
   Field,
@@ -36,7 +37,7 @@ type DetailsDict = Dictionary["dashboard"]["details"];
 type AppsDict = Dictionary["dashboard"]["apps"];
 type FormsDict = Dictionary["dashboard"]["forms"];
 
-type Tab = "display" | "integration" | "redirects" | "webhook" | "secret";
+type Tab = "display" | "integration" | "redirects" | "webhook" | "secret" | "danger";
 
 /** Tabbed management surface for one provider app, opened from its card. */
 export function AppDetailsModal({
@@ -69,6 +70,7 @@ export function AppDetailsModal({
     { key: "redirects", label: t.tabRedirects },
     { key: "webhook", label: t.tabWebhook },
     { key: "secret", label: t.tabSecret },
+    { key: "danger", label: t.tabDanger },
   ];
 
   return (
@@ -176,6 +178,17 @@ export function AppDetailsModal({
               {t.secretDesc}
             </p>
             <RegenerateSecret clientId={app.clientId} t={forms} />
+          </div>
+        )}
+
+        {tab === "danger" && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">{t.deleteTitle}</h4>
+            <p className="flex items-start gap-2 text-sm text-muted">
+              <AlertTriangle size={15} className="mt-0.5 shrink-0 text-danger" />
+              {t.deleteDesc}
+            </p>
+            <DeleteApp clientId={app.clientId} t={forms} onDeleted={onClose} />
           </div>
         )}
       </div>

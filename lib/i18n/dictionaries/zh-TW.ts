@@ -166,6 +166,7 @@ const zhTW: Dictionary = {
       tabWebhook: "Webhook",
       tabSecret: "密鑰",
       tabDisplay: "顯示",
+      tabDanger: "危險區",
       endpoints: "API 端點",
       secretTitle: "Client secret",
       secretDesc:
@@ -173,6 +174,9 @@ const zhTW: Dictionary = {
       webhookTitle: "付款 Webhook",
       webhookDesc:
         "每當付款完成時，我們會在這裡 POST 一則已簽章的通知，讓你不必依賴瀏覽器重新導向。儲存網址時會顯示一次簽章密鑰。留空即可停用。",
+      deleteTitle: "刪除此應用程式",
+      deleteDesc:
+        "永久刪除此應用程式。透過它登入的所有人都會失去存取權，其 client ID 與密鑰也會停止運作。此操作無法復原。",
       close: "關閉",
       created: "建立於 {date}",
     },
@@ -213,6 +217,11 @@ const zhTW: Dictionary = {
       websiteUrlPlaceholder: "https://mysite.com",
       listedLabel: "顯示於「探索」目錄",
       saveDisplay: "儲存顯示設定",
+      deleteApp: "刪除應用程式",
+      deleting: "刪除中…",
+      deleteConfirm: "永久刪除此應用程式並撤銷所有人的存取權？此操作無法復原。",
+      deleteConfirmYes: "是的，刪除它",
+      cancel: "取消",
     },
   },
   device: {
@@ -259,6 +268,7 @@ const zhTW: Dictionary = {
     webhookCleared: "Webhook 已停用。",
     invalidUrl: "無效的網址：{url}",
     displaySaved: "顯示設定已儲存。",
+    appDeleted: "應用程式已刪除。",
   },
   admin: {
     title: "管理",
