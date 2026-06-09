@@ -172,6 +172,7 @@ export const refreshTokens = pgTable(
  * `transfer_out` debit and a `transfer_in` credit. `counterpartyUserId` records
  * the other side, and `kind` lets the UI label each row.
  * `ref` is a unique idempotency key (nullable for admin top-ups).
+ * `kind`: topup | charge | income | transfer_in | transfer_out | redeem | adjustment
  */
 export const ledger = pgTable(
   "ledger",
@@ -280,6 +281,49 @@ export const deviceAuthorizations = pgTable(
   (t) => [index("device_authorizations_user_code_idx").on(t.userCode)],
 );
 
+/**
+ * Admin-created codes a member can redeem for credits (coupons / gift codes).
+ * Stored in plaintext — a low-sensitivity, admin-distributed value (like
+ * `clients.webhookSecret`) — so admins can list and re-share active codes. Each
+ * successful redemption writes a `redeem` ledger row keyed on the redemption id.
+ * Usage is bounded by `maxRedemptions` (null = unlimited) and limited to once per
+ * user by the unique index on the `redemptions` table.
+ */
+export const redeemCodes = pgTable("redeem_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  /** Credits granted per redemption. */
+  amount: integer("amount").notNull(),
+  /** Max redemptions across all users; null = unlimited. */
+  maxRedemptions: integer("max_redemptions"),
+  /** Optional expiry; null = never expires. */
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  active: boolean("active").notNull().default(true),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  ...timestamps,
+});
+
+/** One member's redemption of a code. Unique (codeId, userId) enforces once-per-user. */
+export const redemptions = pgTable(
+  "redemptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    codeId: uuid("code_id")
+      .notNull()
+      .references(() => redeemCodes.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("redemptions_code_user_idx").on(t.codeId, t.userId),
+    index("redemptions_code_id_idx").on(t.codeId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ledger: many(ledger),
@@ -301,7 +345,21 @@ export const ledgerRelations = relations(ledger, ({ one }) => ({
   }),
 }));
 
+export const redeemCodesRelations = relations(redeemCodes, ({ many }) => ({
+  redemptions: many(redemptions),
+}));
+
+export const redemptionsRelations = relations(redemptions, ({ one }) => ({
+  code: one(redeemCodes, {
+    fields: [redemptions.codeId],
+    references: [redeemCodes.id],
+  }),
+  user: one(users, { fields: [redemptions.userId], references: [users.id] }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type LedgerEntry = typeof ledger.$inferSelect;
 export type DeviceAuthorization = typeof deviceAuthorizations.$inferSelect;
+export type RedeemCode = typeof redeemCodes.$inferSelect;
+export type Redemption = typeof redemptions.$inferSelect;

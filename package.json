@@ -12,7 +12,8 @@
     "verify:oauth": "tsx scripts/verify-oauth.ts",
     "verify:credits": "tsx scripts/verify-credits.ts",
     "verify:devices": "tsx scripts/verify-devices.ts",
-    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices"
+    "verify:redeem": "tsx scripts/verify-redeem.ts",
+    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem"
   },
   "dependencies": {
     "@tanem/react-nprogress": "^6.0.3",

@@ -8,8 +8,14 @@ import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { transfer } from "@/lib/credits";
+import { redeemCode } from "@/lib/redeem";
 
 export interface TransferState {
+  ok: boolean;
+  message: string;
+}
+
+export interface RedeemState {
   ok: boolean;
   message: string;
 }
@@ -79,4 +85,44 @@ export async function transferCredits(
       name: target.globalName ?? target.username,
     }),
   };
+}
+
+/**
+ * Redeem a code for credits. Same access gating as the transfer flow (signed in
+ * and `allowed`); the atomic limit/expiry/once-per-user checks live in
+ * {@link redeemCode}. Each failure reason maps to a user-facing message.
+ */
+export async function redeemCreditCode(
+  _prev: RedeemState,
+  formData: FormData,
+): Promise<RedeemState> {
+  const { t } = await getDictionary();
+  const r = t.explore.redeem;
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: r.notAllowed };
+  if (!user.allowed && !user.isAdmin) {
+    return { ok: false, message: r.notAllowed };
+  }
+
+  const code = formData.get("code")?.toString().trim();
+  if (!code) return { ok: false, message: r.codeRequired };
+
+  const result = await redeemCode({ userId: user.id, code });
+  if (!result.ok) {
+    switch (result.reason) {
+      case "not_found":
+        return { ok: false, message: r.notFound };
+      case "expired":
+        return { ok: false, message: r.expired };
+      case "inactive":
+        return { ok: false, message: r.inactive };
+      case "exhausted":
+        return { ok: false, message: r.exhausted };
+      case "already_redeemed":
+        return { ok: false, message: r.alreadyRedeemed };
+    }
+  }
+
+  revalidatePath("/explore");
+  return { ok: true, message: format(r.success, { amount: result.amount }) };
 }

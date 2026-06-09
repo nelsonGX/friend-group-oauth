@@ -8,12 +8,14 @@ import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { topUp } from "@/lib/credits";
+import { createRedeemCode as mintRedeemCode } from "@/lib/redeem";
+import { redeemCodes } from "@/db/schema";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 
-async function assertAdmin(): Promise<boolean> {
+async function assertAdmin(): Promise<string | null> {
   const user = await getCurrentUser();
-  return !!user?.isAdmin;
+  return user?.isAdmin ? user.id : null;
 }
 
 export interface ActionState {
@@ -21,6 +23,7 @@ export interface ActionState {
   message: string;
   clientId?: string;
   secret?: string;
+  code?: string;
 }
 
 /** Grant credits to a user identified by Discord ID (manual top-up). */
@@ -147,5 +150,73 @@ export async function toggleClientTrusted(formData: FormData) {
     .update(clients)
     .set({ trusted: sql`not ${clients.trusted}` })
     .where(eq(clients.clientId, clientId));
+  revalidatePath("/admin");
+}
+
+/** Mint a redeem code worth `amount` credits. Returns the code once for sharing. */
+export async function createRedeemCode(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { t } = await getDictionary();
+  const d = t.adminActions;
+  const adminId = await assertAdmin();
+  if (!adminId) return { ok: false, message: d.notAuthorized };
+
+  const amount = Number(formData.get("amount"));
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return { ok: false, message: d.invalidRedeemAmount };
+  }
+
+  // Blank max-uses → unlimited; blank expiry → never. Both are positive ints if set.
+  const maxRaw = formData.get("maxRedemptions")?.toString().trim();
+  let maxRedemptions: number | null = null;
+  if (maxRaw) {
+    const n = Number(maxRaw);
+    if (!Number.isInteger(n) || n <= 0) {
+      return { ok: false, message: d.invalidMaxRedemptions };
+    }
+    maxRedemptions = n;
+  }
+
+  const daysRaw = formData.get("expiresInDays")?.toString().trim();
+  let expiresAt: Date | null = null;
+  if (daysRaw) {
+    const days = Number(daysRaw);
+    if (!Number.isInteger(days) || days <= 0) {
+      return { ok: false, message: d.invalidExpiresInDays };
+    }
+    expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  }
+
+  const custom = formData.get("code")?.toString().trim() || undefined;
+
+  let created;
+  try {
+    created = await mintRedeemCode({
+      amount,
+      maxRedemptions,
+      expiresAt,
+      createdByUserId: adminId,
+      code: custom,
+    });
+  } catch {
+    // Almost always a unique collision on a caller-supplied custom code.
+    return { ok: false, message: d.redeemCodeExists };
+  }
+
+  revalidatePath("/admin");
+  return { ok: true, message: d.redeemCodeCreated, code: created.code };
+}
+
+/** Toggle a redeem code's active state. */
+export async function toggleRedeemCodeActive(formData: FormData) {
+  if (!(await assertAdmin())) return;
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+  await getDb()
+    .update(redeemCodes)
+    .set({ active: sql`not ${redeemCodes.active}` })
+    .where(eq(redeemCodes.id, id));
   revalidatePath("/admin");
 }

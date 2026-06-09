@@ -189,6 +189,15 @@ export function CreateAppWizard({
                       value={uri}
                       placeholder={t.redirectPlaceholder}
                       onChange={(e) => setUri(i, e.target.value)}
+                      onKeyDown={(e) => {
+                        // Without this, Enter in the lone URI field triggers the
+                        // browser's implicit form submission — running the create
+                        // action and skipping the scopes step. Advance instead.
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          next();
+                        }
+                      }}
                     />
                     {uris.length > 1 && (
                       <button
@@ -277,11 +286,21 @@ export function CreateAppWizard({
               {t.back}
             </button>
             {step < TOTAL_STEPS ? (
-              <button type="button" onClick={next} className="btn btn-primary text-sm">
+              <button
+                key="wizard-next"
+                type="button"
+                onClick={next}
+                className="btn btn-primary text-sm"
+              >
                 {t.next}
               </button>
             ) : (
-              <button className="btn btn-primary text-sm" disabled={pending}>
+              <button
+                key="wizard-create"
+                type="submit"
+                className="btn btn-primary text-sm"
+                disabled={pending}
+              >
                 {pending ? t.creating : t.create}
               </button>
             )}

@@ -50,6 +50,13 @@
       "when": 1781021696006,
       "tag": "0006_public_boomerang",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781028839374,
+      "tag": "0007_perfect_sentry",
+      "breakpoints": true
     }
   ]
 }

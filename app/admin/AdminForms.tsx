@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import {
   createClient,
+  createRedeemCode,
   grantCredits,
   type ActionState,
 } from "./actions";
@@ -96,6 +97,49 @@ export function NewClientForm({ t }: { t: FormsDict }) {
           <div className="mt-1">
             <span className="text-faint">client_secret:</span> {state.secret}
           </div>
+        </div>
+      )}
+    </form>
+  );
+}
+
+export function NewRedeemCodeForm({ t }: { t: FormsDict }) {
+  const [state, action, pending] = useActionState(createRedeemCode, initial);
+  return (
+    <form action={action} className="space-y-3">
+      <input
+        className={inputClass}
+        name="amount"
+        type="number"
+        min="1"
+        placeholder={t.amountPlaceholder}
+      />
+      <input
+        className={inputClass}
+        name="maxRedemptions"
+        type="number"
+        min="1"
+        placeholder={t.maxRedemptionsPlaceholder}
+      />
+      <input
+        className={inputClass}
+        name="expiresInDays"
+        type="number"
+        min="1"
+        placeholder={t.expiresInDaysPlaceholder}
+      />
+      <input className={inputClass} name="code" placeholder={t.customCodePlaceholder} />
+      <button className={buttonClass} disabled={pending}>
+        {pending ? t.creatingCode : t.createCode}
+      </button>
+      {state.message && (
+        <p className={`text-sm ${state.ok ? "text-success" : "text-danger"}`}>
+          {state.message}
+        </p>
+      )}
+      {state.ok && state.code && (
+        <div className="sunken p-3 font-mono text-sm tracking-wide break-all">
+          {state.code}
         </div>
       )}
     </form>

@@ -10,6 +10,7 @@ import { format } from "@/lib/i18n/format";
 import { getBalance, getActivity, type ActivityEntry } from "@/lib/credits";
 import { ConnectedApps } from "../dashboard/ConnectedApps";
 import { WalletActions } from "./WalletActions";
+import { RedeemCode } from "./RedeemCode";
 import { CreditBalance } from "./CreditBalance";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
@@ -34,6 +35,8 @@ function activityLabel(entry: ActivityEntry, d: Dictionary["dashboard"]): string
       );
     case "topup":
       return entry.reason ?? d.topUp;
+    case "redeem":
+      return entry.reason ?? d.redeem;
     default:
       return entry.reason ?? (entry.delta > 0 ? d.topUp : d.charge);
   }
@@ -232,6 +235,7 @@ export default async function ExplorePage() {
         </section>
 
         <aside className="reveal space-y-6 lg:sticky lg:top-20" style={{ animationDelay: "120ms" }}>
+          {user.allowed && <RedeemCode t={e.redeem} />}
           {user.allowed && <WalletActions t={e.wallet} />}
           <ConnectedApps
             apps={connected.map((c) => ({ clientId: c.clientId, name: c.name }))}

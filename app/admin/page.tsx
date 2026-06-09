@@ -7,7 +7,13 @@ import { requireAdmin } from "@/lib/admin";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { getBalance, getProviderEarnings } from "@/lib/credits";
-import { AdminClient, type AdminProviderRow, type AdminUserRow } from "./AdminClient";
+import { listRedeemCodes } from "@/lib/redeem";
+import {
+  AdminClient,
+  type AdminProviderRow,
+  type AdminRedeemRow,
+  type AdminUserRow,
+} from "./AdminClient";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
@@ -18,6 +24,18 @@ export default async function AdminPage() {
   const balances = await Promise.all(allUsers.map((u) => getBalance(u.id)));
   const allClients = await db.select().from(clients).orderBy(desc(clients.createdAt));
   const earnings = await Promise.all(allClients.map((c) => getProviderEarnings(c.id)));
+  const codes = await listRedeemCodes();
+
+  const redeemRows: AdminRedeemRow[] = codes.map((c) => ({
+    id: c.id,
+    code: c.code,
+    amount: c.amount,
+    redemptionCount: c.redemptionCount,
+    maxRedemptions: c.maxRedemptions,
+    expires: c.expiresAt ? c.expiresAt.toISOString().slice(0, 10) : null,
+    expired: c.expiresAt ? c.expiresAt < new Date() : false,
+    active: c.active,
+  }));
 
   const userRows: AdminUserRow[] = allUsers.map((u, i) => ({
     id: u.id,
@@ -110,7 +128,12 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      <AdminClient users={userRows} providers={providerRows} t={t.admin} />
+      <AdminClient
+        users={userRows}
+        providers={providerRows}
+        redeemCodes={redeemRows}
+        t={t.admin}
+      />
     </main>
   );
 }
