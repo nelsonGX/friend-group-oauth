@@ -105,8 +105,11 @@ const zhTW: Dictionary = {
       copy: "複製",
       copied: "已複製！",
       orDownload: "或下載 zip",
+      promptLabel: "然後把這段貼給你的程式碼代理（Claude Code、Codex、Cursor…）：",
+      examplePrompt:
+        "請閱讀 .claude/skills/friend-group-auth/SKILL.md（以及旁邊的 reference.md）並依照它在這個應用程式中設定 Friend Group Auth：加入「使用 Discord 登入」，且只允許我們社群的成員進入。如果這個應用程式有任何收費，也一併接上點數付款。請沿用我現有的框架與工作階段設定。",
       installNote:
-        "在你的專案根目錄執行此指令，然後請你的程式碼代理設定 Friend Group Auth。",
+        "在你的專案根目錄執行此指令。它會安裝到 .claude/skills/ 與 .agents/skills/——Claude Code 會自動載入；其他代理則由上方的提示詞指向該檔案。",
       flowNote:
         "執行時，代理會開啟一個瀏覽器分頁讓你核准——不需要手動複製任何密鑰。",
     },

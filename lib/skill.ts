@@ -12,6 +12,13 @@ import type { ZipEntry } from "@/lib/zip";
 
 const SKILL_DIR = "friend-group-auth";
 
+/**
+ * Directories the installer writes the skill into, so different agents discover
+ * it: `.claude/skills` (Claude Code's native skills dir) and `.agents/skills` (a
+ * vendor-neutral location for other agents). Same files in each.
+ */
+const SKILL_TARGET_DIRS = [".claude/skills", ".agents/skills"];
+
 export function skillFileName(): string {
   return "friend-group-auth-skill.zip";
 }
@@ -41,43 +48,53 @@ export function installCommands(): { sh: string; ps1: string } {
 }
 
 /**
- * POSIX shell installer: writes the skill into ./.claude/skills/ in the current
- * directory. The file bodies go in quoted heredocs so nothing is expanded (the
- * skill text is full of `$` and backticks).
+ * POSIX shell installer: writes the skill into each target dir under the current
+ * directory. File bodies go in quoted heredocs so nothing is expanded (the skill
+ * text is full of `$` and backticks).
  */
 export function buildInstallSh(): string {
+  const calls = SKILL_TARGET_DIRS.map((d) => `install_to "${d}"`).join("\n");
   return `#!/bin/sh
 set -e
-DIR=".claude/skills/${SKILL_DIR}"
-mkdir -p "$DIR"
-cat > "$DIR/SKILL.md" <<'FGA_SKILL_EOF'
+
+install_to() {
+  dir="$1/${SKILL_DIR}"
+  mkdir -p "$dir"
+  cat > "$dir/SKILL.md" <<'FGA_SKILL_EOF'
 ${bundleContent("SKILL.md")}
 FGA_SKILL_EOF
-cat > "$DIR/reference.md" <<'FGA_REFERENCE_EOF'
+  cat > "$dir/reference.md" <<'FGA_REFERENCE_EOF'
 ${bundleContent("reference.md")}
 FGA_REFERENCE_EOF
-echo "Installed the Friend Group Auth skill to $DIR/"
+  echo "Installed the Friend Group Auth skill to $dir/"
+}
+
+${calls}
 echo "Now ask your coding agent to set up Friend Group Auth."
 `;
 }
 
 /**
- * PowerShell installer (Windows). Uses single-quoted here-strings so the skill
- * text is written literally.
+ * PowerShell installer (Windows). Single-quoted here-strings keep the skill text
+ * literal; the content is written into each target dir.
  */
 export function buildInstallPs1(): string {
+  const calls = SKILL_TARGET_DIRS.map((d) => `Install-Skill "${d}"`).join("\n");
   return `$ErrorActionPreference = 'Stop'
-$dir = ".claude/skills/${SKILL_DIR}"
-New-Item -ItemType Directory -Force -Path $dir | Out-Null
 $skill = @'
 ${bundleContent("SKILL.md")}
 '@
 $reference = @'
 ${bundleContent("reference.md")}
 '@
-Set-Content -Path (Join-Path $dir 'SKILL.md') -Value $skill -Encoding utf8
-Set-Content -Path (Join-Path $dir 'reference.md') -Value $reference -Encoding utf8
-Write-Host "Installed the Friend Group Auth skill to $dir/"
+function Install-Skill($base) {
+  $dir = Join-Path $base '${SKILL_DIR}'
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  Set-Content -Path (Join-Path $dir 'SKILL.md') -Value $skill -Encoding utf8
+  Set-Content -Path (Join-Path $dir 'reference.md') -Value $reference -Encoding utf8
+  Write-Host "Installed the Friend Group Auth skill to $dir/"
+}
+${calls}
 Write-Host "Now ask your coding agent to set up Friend Group Auth."
 `;
 }

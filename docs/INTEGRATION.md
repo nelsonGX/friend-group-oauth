@@ -16,11 +16,13 @@ Throughout, `AUTH` is the base URL of the auth server (e.g.
 > irm AUTH/api/skill/install.ps1 | iex               # Windows PowerShell
 > ```
 >
-> That drops the skill into `.claude/skills/`. Then ask your coding agent to set
-> up Friend Group Auth — it registers your OAuth app for you (redirect URIs
-> included) via a browser-approval step (you just click **Approve**; no secrets to
-> copy), then writes the login and payment code. The manual steps below remain
-> available as the reference and fallback.
+> That installs the skill into `.claude/skills/friend-group-auth/` **and**
+> `.agents/skills/friend-group-auth/`. **Claude Code** picks it up automatically;
+> **other agents** (Codex, Cursor, …) can read
+> `.agents/skills/friend-group-auth/SKILL.md`. Either way the agent registers your
+> OAuth app for you (redirect URIs included) via a browser-approval step (you just
+> click **Approve**; no secrets to copy), then writes the login and payment code.
+> The manual steps below remain available as the reference and fallback.
 
 > **Tip:** every endpoint below is also published as a machine-readable
 > [RFC 8414](https://www.rfc-editor.org/rfc/rfc8414) discovery document at

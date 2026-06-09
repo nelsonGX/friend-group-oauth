@@ -108,8 +108,11 @@ const en = {
       copy: "Copy",
       copied: "Copied!",
       orDownload: "or download the zip",
+      promptLabel: "Then paste this to your coding agent (Claude Code, Codex, Cursor, …):",
+      examplePrompt:
+        "Read .claude/skills/friend-group-auth/SKILL.md (and reference.md next to it) and follow it to set up Friend Group Auth in this app: add “Log in with Discord” and only let our group members in. If the app charges for anything, also wire up credit payments. Match my existing framework and session setup.",
       installNote:
-        "Run the command in your project root, then ask your coding agent to set up Friend Group Auth.",
+        "Run the command in your project root. It installs to .claude/skills/ and .agents/skills/ — Claude Code picks it up automatically; for other agents the prompt above points them at the file.",
       flowNote:
         "When it runs, the agent opens a browser tab for you to approve — no secrets to copy by hand.",
     },
