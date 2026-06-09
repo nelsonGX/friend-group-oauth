@@ -46,7 +46,12 @@ const zhTW: Dictionary = {
     useDiscord: "使用你的 Discord 帳號繼續。",
     continueWithDiscord: "使用 Discord 繼續",
     continueOnPhone: "或在手機上繼續",
-    phoneHint: "用手機相機掃描，在手機上完成登入。",
+    phoneHint: "用手機相機掃描並在手機上核准，這個瀏覽器就會登入。",
+    phoneStarting: "正在準備代碼…",
+    phoneApproved: "已核准——正在為你登入…",
+    phoneExpired: "此代碼已過期。",
+    phoneRetry: "顯示新的代碼",
+    phoneError: "無法啟動，請再試一次。",
     accessNote: "需具備社群 Discord 伺服器的成員身分才能存取。",
     errors: {
       no_access:
@@ -57,6 +62,23 @@ const zhTW: Dictionary = {
       invalid_state: "你的登入工作階段已過期，請再試一次。",
       default: "登入失敗。",
     },
+  },
+  handoff: {
+    title: "登入請求",
+    intro: "另一台裝置上的瀏覽器要求登入。核准後，那個瀏覽器就會以你的身分登入。",
+    warning:
+      "只有在你剛剛於自己掌控的裝置上掃描了 QR code 時才核准。若這不是你本人，請拒絕。",
+    signedInAs: "要以 {name} 的身分登入嗎？",
+    approve: "核准",
+    approving: "核准中…",
+    reject: "拒絕",
+    approvedTitle: "都設定好了",
+    approvedBody: "另一台裝置現在已登入。你可以關閉此分頁。",
+    deniedTitle: "已拒絕請求",
+    deniedBody: "沒有任何裝置被登入。",
+    expiredTitle: "連結已過期",
+    expiredBody: "此登入請求已過期或已被使用。請回到另一台裝置取得新的代碼。",
+    needLogin: "你需要先登入才能核准。",
   },
   gate: {
     notInGuildTitle: "你不在伺服器內",

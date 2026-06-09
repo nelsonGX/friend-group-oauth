@@ -2,9 +2,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { sanitizeReturnPath } from "@/lib/url";
-import { env } from "@/lib/env";
-import { qrSvg } from "@/lib/qr";
 import { DiscordIcon } from "@/components/DiscordIcon";
+import { PhoneHandoff } from "./PhoneHandoff";
 
 export default async function LoginPage({
   searchParams,
@@ -21,12 +20,12 @@ export default async function LoginPage({
   const query = sp.return ? `?return=${encodeURIComponent(sp.return)}` : "";
 
   // When the user landed here mid-flow (e.g. an app asked them to authorize),
-  // offer a hand-off to their phone: a QR of the same destination, which they
-  // can finish on a device where they're already signed in. Skip it for a bare
-  // visit to /login, where there's nothing in particular to continue.
-  const phoneQr = sp.return
-    ? await qrSvg(`${env.APP_URL}${sanitizeReturnPath(sp.return)}`)
-    : null;
+  // offer a cross-device hand-off: show a QR they scan with a phone, approve
+  // there, and this browser gets signed in. Skip it for a bare visit to /login
+  // (nothing to continue), and for the phone leg of a hand-off itself (a return
+  // back to /handoff/... — no point nesting another QR).
+  const returnPath = sanitizeReturnPath(sp.return);
+  const offerPhone = Boolean(sp.return) && !returnPath.startsWith("/handoff/");
 
   const errors = t.login.errors;
   const errorMessage = sp.error
@@ -57,25 +56,7 @@ export default async function LoginPage({
           {t.login.continueWithDiscord}
         </a>
 
-        {phoneQr && (
-          <div className="mt-7">
-            <div className="flex items-center gap-3 text-faint">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-xs uppercase tracking-wide">
-                {t.login.continueOnPhone}
-              </span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <div className="mt-4 flex flex-col items-center gap-3">
-              <div
-                className="rounded-xl bg-white p-3 ring-1 ring-border [&>svg]:block [&>svg]:h-40 [&>svg]:w-40"
-                // QR SVG is generated server-side from our own URL — trusted markup.
-                dangerouslySetInnerHTML={{ __html: phoneQr }}
-              />
-              <p className="text-xs text-faint">{t.login.phoneHint}</p>
-            </div>
-          </div>
-        )}
+        {offerPhone && <PhoneHandoff returnPath={returnPath} t={t.login} />}
 
         <p className="mt-5 text-xs text-faint">{t.login.accessNote}</p>
       </div>

@@ -283,6 +283,36 @@ export const deviceAuthorizations = pgTable(
 );
 
 /**
+ * A pending "sign this browser in for me" request, approved on a second device
+ * (the same RFC 8628-style device flow as {@link deviceAuthorizations}, but for
+ * this server's *own* login rather than app registration). The initiating
+ * browser holds a secret `poll_token` (stored hashed) and shows a QR encoding
+ * the public, unguessable `publicId`. A phone opens that URL, logs in, and
+ * approves; the next poll from the initiating browser mints its session and
+ * consumes the row. Short-lived (~5 min); the hashed poll token is the only
+ * bearer that can claim the resulting session.
+ */
+export const loginHandoffs = pgTable(
+  "login_handoffs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Hash of the secret the initiating browser polls with; never plaintext. */
+    pollTokenHash: text("poll_token_hash").notNull().unique(),
+    /** Unguessable id embedded in the QR; the approving phone looks the row up by it. */
+    publicId: text("public_id").notNull().unique(),
+    /** pending | approved | denied | consumed */
+    status: text("status").notNull().default("pending"),
+    /** The approving user (set on approval); whose session the browser receives. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    /** Last poll time, for slow-down enforcement. */
+    lastPolledAt: timestamp("last_polled_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("login_handoffs_public_id_idx").on(t.publicId)],
+);
+
+/**
  * Admin-created codes a member can redeem for credits (coupons / gift codes).
  * Stored in plaintext — a low-sensitivity, admin-distributed value (like
  * `clients.webhookSecret`) — so admins can list and re-share active codes. Each
@@ -412,6 +442,7 @@ export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type LedgerEntry = typeof ledger.$inferSelect;
 export type DeviceAuthorization = typeof deviceAuthorizations.$inferSelect;
+export type LoginHandoff = typeof loginHandoffs.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;
 export type Redemption = typeof redemptions.$inferSelect;
 export type Withdrawal = typeof withdrawals.$inferSelect;

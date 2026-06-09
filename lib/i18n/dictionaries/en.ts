@@ -47,7 +47,12 @@ const en = {
     useDiscord: "Use your Discord account to continue.",
     continueWithDiscord: "Continue with Discord",
     continueOnPhone: "Or continue on phone",
-    phoneHint: "Scan with your phone's camera to finish signing in there.",
+    phoneHint: "Scan with your phone's camera, approve there, and this browser signs in.",
+    phoneStarting: "Preparing a code…",
+    phoneApproved: "Approved — signing you in…",
+    phoneExpired: "This code expired.",
+    phoneRetry: "Show a new code",
+    phoneError: "Couldn't start. Try again.",
     accessNote: "Access requires membership in the group's Discord server.",
     errors: {
       no_access:
@@ -58,6 +63,26 @@ const en = {
       invalid_state: "Your login session expired. Please try again.",
       default: "Login failed.",
     },
+  },
+  handoff: {
+    title: "Sign-in request",
+    intro:
+      "A browser on another device asked to sign in. Approve it and that browser will be signed in as you.",
+    warning:
+      "Only approve this if you just scanned a QR code on a device you control. If this wasn't you, reject it.",
+    signedInAs: "Sign in {name}?",
+    approve: "Approve",
+    approving: "Approving…",
+    reject: "Reject",
+    approvedTitle: "You're all set",
+    approvedBody:
+      "The other device is now signed in. You can close this tab.",
+    deniedTitle: "Request rejected",
+    deniedBody: "No device was signed in.",
+    expiredTitle: "Link expired",
+    expiredBody:
+      "This sign-in request expired or was already used. Go back to the other device and get a new code.",
+    needLogin: "You need to be signed in to approve this.",
   },
   gate: {
     notInGuildTitle: "You're not in the server",
