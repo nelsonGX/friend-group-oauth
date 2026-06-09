@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { HeaderNav } from "@/components/HeaderNav";
 import { TopProgress } from "@/components/TopProgress";
 import "./globals.css";
 
@@ -61,39 +62,15 @@ export default async function RootLayout({
       <body className="relative min-h-full flex flex-col">
         <TopProgress />
         <header className="sticky top-0 z-30 border-b border-border bg-bg">
-          <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
+          <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
             <Brand />
-            <nav className="flex items-center gap-1.5 text-sm">
-              <LanguageSwitcher active={locale} label={t.switcher.label} />
-              {user ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="btn btn-ghost !px-3 !py-1.5"
-                  >
-                    {t.nav.dashboard}
-                  </Link>
-                  <Link
-                    href="/explore"
-                    className="btn btn-primary !px-3.5 !py-1.5"
-                  >
-                    {t.nav.explore}
-                  </Link>
-                  <form action="/api/auth/logout" method="post">
-                    <button className="btn btn-ghost !px-3 !py-1.5">
-                      {t.nav.logout}
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <Link
-                  href="/login"
-                  className="btn btn-primary !px-3.5 !py-1.5"
-                >
-                  {t.nav.signIn}
-                </Link>
-              )}
-            </nav>
+            <HeaderNav
+              user={!!user}
+              t={t.nav}
+              switcher={
+                <LanguageSwitcher active={locale} label={t.switcher.label} />
+              }
+            />
           </div>
         </header>
 

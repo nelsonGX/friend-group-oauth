@@ -162,6 +162,28 @@ async function main() {
 
   check("payer accrues no income rows", (await getIncome(user.id)).length === 0);
 
+  // --- Self-payment is a no-op (no circular credits) ---
+  const devBalanceBefore = await getBalance(dev.id); // 20, from the income above
+  const devEarnedBefore = await getProviderEarnings(ownedApp.id);
+  const devIncomeBefore = (await getIncome(dev.id)).length;
+  const self = await charge({
+    userId: dev.id,
+    providerId: ownedApp.id,
+    amount: 10,
+    ref: "self1",
+    reason: "self",
+  });
+  check("paying your own app reports success", self.ok);
+  check("self-payment leaves balance unchanged", (await getBalance(dev.id)) === devBalanceBefore);
+  check(
+    "self-payment doesn't inflate earnings",
+    (await getProviderEarnings(ownedApp.id)) === devEarnedBefore,
+  );
+  check(
+    "self-payment adds no income row",
+    (await getIncome(dev.id)).length === devIncomeBefore,
+  );
+
   // --- Peer transfers ---
   const t1 = await transfer({ fromUserId: dev.id, toUserId: user.id, amount: 5, reason: "thanks" });
   check("transfer debits the sender", t1.ok && (await getBalance(dev.id)) === 15);

@@ -12,6 +12,7 @@ const en = {
     explore: "Explore",
     signIn: "Sign in",
     logout: "Log out",
+    menu: "Menu",
   },
   footer: {
     tagline: "Friend Group Auth — Discord login & shared credits.",

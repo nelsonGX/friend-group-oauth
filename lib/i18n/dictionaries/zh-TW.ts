@@ -11,6 +11,7 @@ const zhTW: Dictionary = {
     explore: "探索",
     signIn: "登入",
     logout: "登出",
+    menu: "選單",
   },
   footer: {
     tagline: "Friend Group Auth — Discord 登入與共享點數。",

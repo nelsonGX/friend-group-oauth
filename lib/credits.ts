@@ -56,6 +56,10 @@ export type ChargeResult =
  * the same amount is credited to the owner as `income` in the same transaction,
  * so a payment to an app is really a transfer into the developer's balance. Apps
  * with no owner behave as before — the debit is recorded, but nobody is credited.
+ *
+ * Paying your own app is a no-op: it would just move credits in a circle, so we
+ * write nothing and report success, keeping balance, earnings, and income
+ * consistent (you can't earn from yourself).
  */
 export async function charge(opts: {
   userId: string;
@@ -89,11 +93,6 @@ export async function charge(opts: {
       return { ok: true, balance: await balanceNow(), duplicate: true };
     }
 
-    const balance = await balanceNow();
-    if (balance < opts.amount) {
-      return { ok: false, reason: "insufficient_funds", balance };
-    }
-
     // Resolve the provider's owner, so the charge can be credited to them.
     let ownerUserId: string | null = null;
     if (opts.providerId) {
@@ -103,6 +102,17 @@ export async function charge(opts: {
         .where(eq(clients.id, opts.providerId))
         .limit(1);
       ownerUserId = client?.ownerUserId ?? null;
+    }
+
+    // Paying your own app moves credits in a circle — write nothing so balance,
+    // earnings, and income all stay consistent.
+    if (ownerUserId === opts.userId) {
+      return { ok: true, balance: await balanceNow(), duplicate: false };
+    }
+
+    const balance = await balanceNow();
+    if (balance < opts.amount) {
+      return { ok: false, reason: "insufficient_funds", balance };
     }
 
     await tx.insert(ledger).values({
@@ -115,8 +125,8 @@ export async function charge(opts: {
       ref: opts.ref,
     });
 
-    // Credit the developer who owns the app (skip self-payments).
-    if (ownerUserId && ownerUserId !== opts.userId) {
+    // Credit the developer who owns the app (a self-payment was handled above).
+    if (ownerUserId) {
       await tx.insert(ledger).values({
         userId: ownerUserId,
         providerId: opts.providerId,

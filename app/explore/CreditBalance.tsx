@@ -62,25 +62,30 @@ export function CreditBalance({
         {entries.length === 0 ? (
           <p className="text-sm text-muted">{t.noTransactions}</p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <tbody className="glass-divide">
-              {entries.map((entry) => (
-                <tr key={entry.id}>
-                  <td className="py-3 pr-4 font-mono text-xs text-faint">
-                    {entry.time}
-                  </td>
-                  <td className="py-3 pr-4 text-muted">{entry.label}</td>
-                  <td
-                    className={`py-3 text-right font-medium tabular-nums ${
-                      entry.delta > 0 ? "text-success" : "text-ink"
-                    }`}
-                  >
-                    {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          // Full-bleed rows: cancel the modal body's padding so each row spans
+          // edge to edge (aligning with the header divider) and carries its own.
+          <ul className="-mx-6 -my-5 glass-divide">
+            {entries.map((entry) => (
+              <li
+                key={entry.id}
+                className="flex items-center gap-4 px-6 py-3 text-sm transition-colors hover:bg-surface-strong"
+              >
+                <span className="shrink-0 font-mono text-xs text-faint">
+                  {entry.time}
+                </span>
+                <span className="min-w-0 flex-1 break-words text-muted">
+                  {entry.label}
+                </span>
+                <span
+                  className={`shrink-0 font-medium tabular-nums ${
+                    entry.delta > 0 ? "text-success" : "text-ink"
+                  }`}
+                >
+                  {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </Modal>
     </>
