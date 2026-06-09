@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { paymentIntents, type Client } from "@/db/schema";
 
@@ -45,25 +45,6 @@ export async function createIntent(opts: {
   }
 
   const db = getDb();
-  const [existing] = await db
-    .select()
-    .from(paymentIntents)
-    .where(
-      and(
-        eq(paymentIntents.clientId, opts.client.clientId),
-        eq(paymentIntents.ref, opts.ref),
-      ),
-    )
-    .limit(1);
-  if (existing) {
-    const sameTerms =
-      existing.amount === opts.amount &&
-      (existing.description ?? null) === (opts.description ?? null);
-    return sameTerms
-      ? { ok: true, intent: existing }
-      : { ok: false, error: "conflict" };
-  }
-
   const [intent] = await db
     .insert(paymentIntents)
     .values({
@@ -75,8 +56,30 @@ export async function createIntent(opts: {
       state: opts.state,
       expiresAt: new Date(Date.now() + INTENT_TTL_MS),
     })
+    .onConflictDoNothing({
+      target: [paymentIntents.clientId, paymentIntents.ref],
+    })
     .returning();
-  return { ok: true, intent };
+  if (intent) return { ok: true, intent };
+
+  const [existing] = await db
+    .select()
+    .from(paymentIntents)
+    .where(
+      and(
+        eq(paymentIntents.clientId, opts.client.clientId),
+        eq(paymentIntents.ref, opts.ref),
+      ),
+    )
+    .limit(1);
+  if (!existing) return { ok: false, error: "conflict" };
+
+  const sameTerms =
+    existing.amount === opts.amount &&
+    (existing.description ?? null) === (opts.description ?? null);
+  return sameTerms
+    ? { ok: true, intent: existing }
+    : { ok: false, error: "conflict" };
 }
 
 export async function getIntent(id: string): Promise<PaymentIntent | null> {
@@ -98,7 +101,13 @@ export async function completeIntent(
   const [intent] = await db
     .update(paymentIntents)
     .set({ status: "completed", userId })
-    .where(and(eq(paymentIntents.id, id), eq(paymentIntents.status, "pending")))
+    .where(
+      and(
+        eq(paymentIntents.id, id),
+        eq(paymentIntents.status, "pending"),
+        gt(paymentIntents.expiresAt, new Date()),
+      ),
+    )
     .returning();
   return intent ?? null;
 }

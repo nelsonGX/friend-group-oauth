@@ -1,4 +1,9 @@
 import { eq } from "drizzle-orm";
+import { isIP } from "node:net";
+import { lookup } from "node:dns/promises";
+import http from "node:http";
+import https from "node:https";
+import type { LookupFunction } from "node:net";
 import { getDb } from "@/db";
 import { paymentIntents } from "@/db/schema";
 import { type PaymentIntent } from "@/lib/payments";
@@ -20,6 +25,131 @@ const BACKOFF_MS = [0, 500, 1500];
 const TIMEOUT_MS = 4000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type HeaderMap = Record<string, string>;
+
+function isPrivateIPv4(address: string): boolean {
+  const parts = address.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return true;
+  }
+  const [a, b] = parts;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    a >= 224
+  );
+}
+
+function isPrivateIPv6(address: string): boolean {
+  const normalized = address.toLowerCase();
+  const mappedIpv4 = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1];
+  if (mappedIpv4) return isPrivateIPv4(mappedIpv4);
+  return (
+    normalized === "::1" ||
+    normalized === "::" ||
+    normalized.startsWith("fc") ||
+    normalized.startsWith("fd") ||
+    normalized.startsWith("fe80:") ||
+    normalized.startsWith("ff")
+  );
+}
+
+function isBlockedAddress(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return isPrivateIPv4(address);
+  if (family === 6) return isPrivateIPv6(address);
+  return true;
+}
+
+export async function validateWebhookUrl(
+  rawUrl: string,
+): Promise<{ ok: true; url: string } | { ok: false; reason: string }> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return { ok: false, reason: "invalid_url" };
+  }
+
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    return { ok: false, reason: "invalid_scheme" };
+  }
+  if (url.username || url.password) {
+    return { ok: false, reason: "userinfo_not_allowed" };
+  }
+
+  const host = url.hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost")) {
+    return { ok: false, reason: "private_host" };
+  }
+  if (isIP(host)) {
+    return isBlockedAddress(host)
+      ? { ok: false, reason: "private_host" }
+      : { ok: true, url: url.toString() };
+  }
+
+  let addresses: { address: string }[];
+  try {
+    addresses = await lookup(host, { all: true, verbatim: true });
+  } catch {
+    return { ok: false, reason: "host_lookup_failed" };
+  }
+  if (!addresses.length || addresses.some((a) => isBlockedAddress(a.address))) {
+    return { ok: false, reason: "private_host" };
+  }
+
+  return { ok: true, url: url.toString() };
+}
+
+async function safeLookup(hostname: string): Promise<{ address: string; family: 4 | 6 }> {
+  const addresses = await lookup(hostname, { all: true, verbatim: true });
+  const publicAddresses = addresses.filter((a) => !isBlockedAddress(a.address));
+  if (!publicAddresses.length) {
+    throw new Error("Webhook host resolved to a private address.");
+  }
+  const selected = publicAddresses[0];
+  return { address: selected.address, family: selected.family as 4 | 6 };
+}
+
+function postWebhook(
+  rawUrl: string,
+  headers: HeaderMap,
+  body: string,
+): Promise<number> {
+  const url = new URL(rawUrl);
+  const transport = url.protocol === "https:" ? https : http;
+  const lookupFn: LookupFunction = (hostname, _options, callback) => {
+    safeLookup(hostname)
+      .then(({ address, family }) => callback(null, address, family))
+      .catch((err) => callback(err as NodeJS.ErrnoException, "", 4));
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = transport.request(
+      url,
+      {
+        method: "POST",
+        headers,
+        timeout: TIMEOUT_MS,
+        lookup: lookupFn,
+      },
+      (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.statusCode ?? 0));
+      },
+    );
+    req.on("timeout", () => req.destroy(new Error("Webhook delivery timed out.")));
+    req.on("error", reject);
+    req.end(body);
+  });
+}
 
 /** Build the signed body + headers for a payment webhook. Exported for tests. */
 export function buildWebhookRequest(
@@ -60,7 +190,10 @@ export async function deliverPaymentWebhook(
   const client = await getClientByClientId(intent.clientId);
   if (!client?.webhookUrl || !client.webhookSecret) return;
 
-  const url = client.webhookUrl;
+  const validated = await validateWebhookUrl(client.webhookUrl);
+  if (!validated.ok) return;
+
+  const url = validated.url;
   const { body, headers } = buildWebhookRequest(intent, client.webhookSecret);
   const db = getDb();
 
@@ -68,20 +201,8 @@ export async function deliverPaymentWebhook(
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     if (BACKOFF_MS[attempt - 1]) await sleep(BACKOFF_MS[attempt - 1]);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-      let res: Response;
-      try {
-        res = await fetch(url, {
-          method: "POST",
-          headers,
-          body,
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-      if (res.ok) {
+      const status = await postWebhook(url, headers, body);
+      if (status >= 200 && status < 300) {
         await db
           .update(paymentIntents)
           .set({
@@ -93,7 +214,7 @@ export async function deliverPaymentWebhook(
           .where(eq(paymentIntents.id, intent.id));
         return;
       }
-      lastError = `HTTP ${res.status}`;
+      lastError = `HTTP ${status}`;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }

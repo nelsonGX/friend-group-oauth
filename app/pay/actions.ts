@@ -3,11 +3,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { buildClientRedirect } from "@/lib/oauth";
-import { charge, getClientInternalId } from "@/lib/credits";
+import { settlePaymentIntent } from "@/lib/credits";
 import { deliverPaymentWebhook } from "@/lib/webhooks";
 import {
   cancelIntent,
-  completeIntent,
   getIntent,
   type PaymentIntent,
 } from "@/lib/payments";
@@ -46,20 +45,22 @@ export async function confirmPayment(formData: FormData) {
     redirect(backTo(intent, "cancelled"));
   }
 
-  const providerId = await getClientInternalId(intent.clientId);
-  const result = await charge({
+  const result = await settlePaymentIntent({
+    intentId: intent.id,
     userId: user.id,
-    providerId,
-    amount: intent.amount,
-    ref: `intent:${intent.id}`,
-    reason: intent.description ?? `Payment to ${intent.clientId}`,
   });
 
   if (!result.ok) {
-    redirect(backTo(intent, "insufficient_funds"));
+    if (result.reason === "insufficient_funds") {
+      redirect(backTo(intent, "insufficient_funds"));
+    }
+    const status =
+      result.reason === "not_pending" && result.intent?.status === "completed"
+        ? "completed"
+        : "cancelled";
+    redirect(backTo(result.intent ?? intent, status));
   }
 
-  const completed = await completeIntent(intent.id, user.id);
-  if (completed) await deliverPaymentWebhook(completed);
-  redirect(backTo(intent, "completed"));
+  await deliverPaymentWebhook(result.intent);
+  redirect(backTo(result.intent, "completed"));
 }

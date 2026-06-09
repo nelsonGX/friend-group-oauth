@@ -13,6 +13,7 @@ import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { registerClient } from "@/lib/apps";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 import { env } from "@/lib/env";
+import { validateWebhookUrl } from "@/lib/webhooks";
 
 type ActionDict = Dictionary["dashboardActions"];
 
@@ -244,17 +245,15 @@ export async function updateAppWebhook(
     return { ok: true, message: d.webhookCleared, configured: false };
   }
 
-  try {
-    const u = new URL(webhookUrl);
-    if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error();
-  } catch {
+  const validatedWebhook = await validateWebhookUrl(webhookUrl);
+  if (!validatedWebhook.ok) {
     return { ok: false, message: format(d.invalidRedirectUri, { uri: webhookUrl }) };
   }
 
   const secret = randomToken(32);
   await db
     .update(clients)
-    .set({ webhookUrl, webhookSecret: secret })
+    .set({ webhookUrl: validatedWebhook.url, webhookSecret: secret })
     .where(eq(clients.clientId, clientId));
   revalidatePath("/dashboard");
   return { ok: true, message: d.webhookSaved, secret, configured: true };

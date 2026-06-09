@@ -1,15 +1,17 @@
 import { check, createTestDb, schema, summarize } from "./harness";
+import { eq } from "drizzle-orm";
 import {
   charge,
   getBalance,
   getIncome,
   getLedger,
   getProviderEarnings,
+  settlePaymentIntent,
   topUp,
   transfer,
 } from "../lib/credits";
 import { completeIntent, createIntent } from "../lib/payments";
-import { buildWebhookRequest } from "../lib/webhooks";
+import { buildWebhookRequest, validateWebhookUrl } from "../lib/webhooks";
 import { hashSecret, hmacVerify } from "../lib/crypto";
 
 /** Verification of the credit ledger + payment intents against PGlite. */
@@ -90,12 +92,11 @@ async function main() {
   );
 
   if (intent) {
-    const r = await charge({ userId: user.id, providerId: client.id, amount: intent.amount, ref: `intent:${intent.id}` });
-    check("intent charge succeeds", r.ok);
-    const done = await completeIntent(intent.id, user.id);
-    check("intent completes once", done?.status === "completed");
-    const again = await completeIntent(intent.id, user.id);
-    check("completed intent cannot re-complete", again === null);
+    const settled = await settlePaymentIntent({ intentId: intent.id, userId: user.id });
+    check("intent settles atomically", settled.ok && settled.intent.status === "completed");
+    const done = settled.ok ? settled.intent : null;
+    const again = await settlePaymentIntent({ intentId: intent.id, userId: user.id });
+    check("completed intent cannot re-settle", !again.ok && again.reason === "not_pending");
     check("balance after intent is 50", (await getBalance(user.id)) === 50);
 
     if (done) {
@@ -107,6 +108,27 @@ async function main() {
       check("webhook id header is the intent id", headers["x-webhook-id"] === done.id);
       check("webhook event reflects status", JSON.parse(body).event === "payment.completed");
     }
+  }
+
+  const expired = await createIntent({
+    client,
+    amount: 1,
+    ref: "expired1",
+    redirectUri: "https://x.example/cb",
+  });
+  if (expired.ok) {
+    await db
+      .update(schema.paymentIntents)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(schema.paymentIntents.id, expired.intent.id));
+    const expiredSettle = await settlePaymentIntent({
+      intentId: expired.intent.id,
+      userId: user.id,
+    });
+    check("expired intent cannot settle", !expiredSettle.ok && expiredSettle.reason === "expired");
+    check("expired intent left balance unchanged", (await getBalance(user.id)) === 50);
+    const expiredComplete = await completeIntent(expired.intent.id, user.id);
+    check("completeIntent enforces expiry", expiredComplete === null);
   }
 
   // --- Developer income: paying an owned app credits the owner ---
@@ -207,6 +229,15 @@ async function main() {
   check(
     "transfer to unknown recipient is rejected",
     !tMissing.ok && tMissing.reason === "recipient_not_found",
+  );
+
+  check(
+    "webhook URL blocks localhost",
+    !(await validateWebhookUrl("http://localhost:3000/hook")).ok,
+  );
+  check(
+    "webhook URL blocks private IPv4",
+    !(await validateWebhookUrl("http://192.168.1.10/hook")).ok,
   );
 
   summarize();

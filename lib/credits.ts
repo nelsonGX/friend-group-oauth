@@ -2,7 +2,13 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db";
-import { clients, ledger, users, type LedgerEntry } from "@/db/schema";
+import {
+  clients,
+  ledger,
+  paymentIntents,
+  users,
+  type LedgerEntry,
+} from "@/db/schema";
 
 /**
  * Credit ledger. The ledger is append-only; a balance is always SUM(delta).
@@ -139,6 +145,125 @@ export async function charge(opts: {
     }
 
     return { ok: true, balance: balance - opts.amount, duplicate: false };
+  });
+}
+
+export type SettlePaymentResult =
+  | {
+      ok: true;
+      intent: typeof paymentIntents.$inferSelect;
+      balance: number;
+      duplicate: boolean;
+    }
+  | {
+      ok: false;
+      reason: "not_found" | "not_pending" | "expired" | "insufficient_funds";
+      intent?: typeof paymentIntents.$inferSelect;
+      balance?: number;
+    };
+
+/**
+ * Atomically complete a payment intent and write its matching ledger movement.
+ *
+ * The intent row and payer row are locked in one transaction, so cancellation,
+ * expiry, balance checks, ledger writes, and status changes cannot interleave
+ * into a charged-but-not-completed payment.
+ */
+export async function settlePaymentIntent(opts: {
+  intentId: string;
+  userId: string;
+}): Promise<SettlePaymentResult> {
+  const db = getDb();
+  return db.transaction(async (tx) => {
+    const [intent] = await tx
+      .select()
+      .from(paymentIntents)
+      .where(eq(paymentIntents.id, opts.intentId))
+      .limit(1)
+      .for("update");
+    if (!intent) return { ok: false, reason: "not_found" };
+    if (intent.status !== "pending") {
+      return { ok: false, reason: "not_pending", intent };
+    }
+    if (intent.expiresAt < new Date()) {
+      return { ok: false, reason: "expired", intent };
+    }
+    if (!Number.isInteger(intent.amount) || intent.amount <= 0) {
+      return { ok: false, reason: "insufficient_funds", intent, balance: 0 };
+    }
+
+    await tx.select({ id: users.id }).from(users).where(eq(users.id, opts.userId)).for("update");
+
+    const [client] = await tx
+      .select({ id: clients.id, ownerUserId: clients.ownerUserId })
+      .from(clients)
+      .where(eq(clients.clientId, intent.clientId))
+      .limit(1);
+    const providerId = client?.id ?? null;
+    const ownerUserId = client?.ownerUserId ?? null;
+    const ref = `intent:${intent.id}`;
+
+    const balanceNow = async () => {
+      const [r] = await tx
+        .select({ b: sql<number>`cast(coalesce(sum(${ledger.delta}), 0) as int)` })
+        .from(ledger)
+        .where(eq(ledger.userId, opts.userId));
+      return r?.b ?? 0;
+    };
+
+    let balance = await balanceNow();
+    let duplicate = false;
+    if (ownerUserId !== opts.userId) {
+      const [existing] = await tx
+        .select({ id: ledger.id })
+        .from(ledger)
+        .where(eq(ledger.ref, ref))
+        .limit(1);
+      duplicate = !!existing;
+
+      if (!duplicate) {
+        if (balance < intent.amount) {
+          return { ok: false, reason: "insufficient_funds", intent, balance };
+        }
+
+        await tx.insert(ledger).values({
+          userId: opts.userId,
+          providerId,
+          counterpartyUserId: ownerUserId,
+          delta: -intent.amount,
+          kind: "charge",
+          reason: intent.description ?? `Payment to ${intent.clientId}`,
+          ref,
+        });
+
+        if (ownerUserId) {
+          await tx.insert(ledger).values({
+            userId: ownerUserId,
+            providerId,
+            counterpartyUserId: opts.userId,
+            delta: intent.amount,
+            kind: "income",
+            reason: intent.description ?? `Payment to ${intent.clientId}`,
+            ref: `${ref}:in`,
+          });
+        }
+        balance -= intent.amount;
+      }
+    }
+
+    const [completed] = await tx
+      .update(paymentIntents)
+      .set({ status: "completed", userId: opts.userId })
+      .where(
+        and(
+          eq(paymentIntents.id, intent.id),
+          eq(paymentIntents.status, "pending"),
+        ),
+      )
+      .returning();
+    if (!completed) return { ok: false, reason: "not_pending", intent };
+
+    return { ok: true, intent: completed, balance, duplicate };
   });
 }
 
