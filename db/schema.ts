@@ -166,10 +166,14 @@ export const refreshTokens = pgTable(
 );
 
 /**
- * Append-only credit ledger. Balance = SUM(delta) for a user.
- *  - delta > 0 : credits added (admin top-up has providerId = null)
- *  - delta < 0 : credits charged by a provider
- * `ref` is a per-provider idempotency key (unique, nullable for top-ups).
+ * Append-only, double-entry credit ledger. Balance = SUM(delta) for a user.
+ *  - delta > 0 : credits received (admin top-up, a transfer in, or app income)
+ *  - delta < 0 : credits spent (a charge/payment, or a transfer out)
+ * Money movements are two-sided: a payment to an app writes a debit on the payer
+ * AND a matching `income` credit on the app's owner; a peer transfer writes a
+ * `transfer_out` debit and a `transfer_in` credit. `counterpartyUserId` records
+ * the other side, and `kind` lets the UI label each row.
+ * `ref` is a unique idempotency key (nullable for admin top-ups).
  */
 export const ledger = pgTable(
   "ledger",
@@ -181,7 +185,13 @@ export const ledger = pgTable(
     providerId: uuid("provider_id").references(() => clients.id, {
       onDelete: "set null",
     }),
+    /** The other party in a transfer/payment (payer, recipient, or sender). */
+    counterpartyUserId: uuid("counterparty_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     delta: integer("delta").notNull(),
+    /** topup | charge | income | transfer_in | transfer_out | adjustment */
+    kind: text("kind").notNull().default("adjustment"),
     reason: text("reason"),
     ref: text("ref").unique(),
     ...timestamps,
@@ -283,6 +293,10 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 
 export const ledgerRelations = relations(ledger, ({ one }) => ({
   user: one(users, { fields: [ledger.userId], references: [users.id] }),
+  counterparty: one(users, {
+    fields: [ledger.counterpartyUserId],
+    references: [users.id],
+  }),
   provider: one(clients, {
     fields: [ledger.providerId],
     references: [clients.id],
