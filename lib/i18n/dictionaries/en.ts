@@ -345,6 +345,16 @@ const en = {
     deny: "Deny",
     approve: "Approve",
     revokeNote: "You can revoke this access anytime from your dashboard.",
+    jokes: [
+      "This app cannot read your DMs. It wouldn't understand them anyway.",
+      "No messages were harmed in the making of this authorization.",
+      "Authorizing will not give this app your Nitro. Nice try.",
+      "We promise this app has touched grass at least once.",
+      "Your secrets are safe with us. We forgot them already.",
+      "Powered by friendship and questionable amounts of caffeine.",
+      "Approving this will not summon any bots into your DMs.",
+      "This app pinky-promises to behave. Pinky promises are legally binding.",
+    ],
     noAccessMessage:
       "You don't have access to this platform yet. Make sure you're in the Discord server with the required role.",
     scopes: {

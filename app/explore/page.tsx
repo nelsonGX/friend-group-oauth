@@ -114,7 +114,7 @@ export default async function ExplorePage() {
       {/* stats row */}
       <div
         className="reveal mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        style={{ animationDelay: "80ms" }}
+        style={{ animationDelay: "60ms" }}
       >
         <section className="card card-hover p-6 sm:col-span-2 lg:col-span-1">
           <p className="text-sm text-muted">{d.creditBalance}</p>
@@ -151,7 +151,7 @@ export default async function ExplorePage() {
 
       {/* directory | connected */}
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-3">
-        <section className="reveal lg:col-span-2" style={{ animationDelay: "140ms" }}>
+        <section className="reveal lg:col-span-2" style={{ animationDelay: "120ms" }}>
           <div className="flex items-center gap-2.5">
             <Compass size={18} className="text-brand-soft" />
             <h2 className="text-lg font-semibold">{e.heading}</h2>
@@ -228,7 +228,7 @@ export default async function ExplorePage() {
           )}
         </section>
 
-        <aside className="reveal lg:sticky lg:top-20" style={{ animationDelay: "200ms" }}>
+        <aside className="reveal lg:sticky lg:top-20" style={{ animationDelay: "180ms" }}>
           <ConnectedApps
             apps={connected.map((c) => ({ clientId: c.clientId, name: c.name }))}
             t={d}
@@ -237,7 +237,7 @@ export default async function ExplorePage() {
       </div>
 
       {/* activity */}
-      <section className="reveal mt-10" style={{ animationDelay: "260ms" }}>
+      <section className="reveal mt-10" style={{ animationDelay: "240ms" }}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
           {d.recentActivity}
         </h2>

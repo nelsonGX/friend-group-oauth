@@ -104,7 +104,7 @@ export default async function DashboardPage() {
       {/* stats row */}
       <div
         className="reveal mt-8 grid gap-4 sm:grid-cols-2"
-        style={{ animationDelay: "80ms" }}
+        style={{ animationDelay: "60ms" }}
       >
         {stats.map(({ icon: Icon, label, value }) => (
           <section key={label} className="card card-hover flex items-center gap-4 p-6">
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
 
       {/* one-click integration skill */}
       {canRegister && (
-        <div className="reveal mt-8" style={{ animationDelay: "110ms" }}>
+        <div className="reveal mt-8" style={{ animationDelay: "120ms" }}>
           <section className="card card-hover-border p-6">
             <div className="flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-white">
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
       )}
 
       {/* your apps */}
-      <div className="reveal mt-8" style={{ animationDelay: "140ms" }}>
+      <div className="reveal mt-8" style={{ animationDelay: "180ms" }}>
         <ProviderApps
           apps={appViews}
           appUrl={appUrl}

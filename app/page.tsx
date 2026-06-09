@@ -27,7 +27,7 @@ export default async function Home() {
 
         <h1
           className="reveal max-w-3xl text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl"
-          style={{ animationDelay: "70ms" }}
+          style={{ animationDelay: "40ms" }}
         >
           {t.home.titleLine1}
           <br />
@@ -36,14 +36,14 @@ export default async function Home() {
 
         <p
           className="reveal mt-6 max-w-xl text-balance text-base leading-relaxed text-muted sm:text-lg"
-          style={{ animationDelay: "140ms" }}
+          style={{ animationDelay: "80ms" }}
         >
           {t.home.subtitle}
         </p>
 
         <div
           className="reveal mt-9 flex flex-wrap items-center justify-center gap-3"
-          style={{ animationDelay: "210ms" }}
+          style={{ animationDelay: "120ms" }}
         >
           {user ? (
             <Link href="/explore" className="btn btn-primary px-6 py-3 text-[0.95rem]">
@@ -68,7 +68,7 @@ export default async function Home() {
           <div
             key={f.title}
             className="reveal card card-hover p-5"
-            style={{ animationDelay: `${300 + i * 90}ms` }}
+            style={{ animationDelay: `${170 + i * 50}ms` }}
           >
             <span className="mb-3 grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface text-brand-soft">
               <f.Icon size={22} strokeWidth={1.7} />
@@ -81,7 +81,7 @@ export default async function Home() {
 
       <p
         className="reveal text-sm text-faint"
-        style={{ animationDelay: "600ms" }}
+        style={{ animationDelay: "320ms" }}
       >
         {t.home.integrationPre}{" "}
         <code className="rounded bg-surface-strong px-1.5 py-0.5 font-mono text-[0.8rem] text-muted">

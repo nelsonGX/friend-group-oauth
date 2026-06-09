@@ -41,7 +41,7 @@ export default async function AdminPage() {
       <div className="mt-7 grid gap-5 md:grid-cols-2">
         <section
           className="reveal card card-hover-border p-6"
-          style={{ animationDelay: "80ms" }}
+          style={{ animationDelay: "60ms" }}
         >
           <h2 className="font-semibold">{t.admin.grantCredits}</h2>
           <p className="mb-4 mt-1 text-sm text-muted">{t.admin.grantCreditsDesc}</p>
@@ -50,7 +50,7 @@ export default async function AdminPage() {
 
         <section
           className="reveal card card-hover-border p-6"
-          style={{ animationDelay: "150ms" }}
+          style={{ animationDelay: "120ms" }}
         >
           <h2 className="font-semibold">{t.admin.registerProvider}</h2>
           <p className="mb-4 mt-1 text-sm text-muted">{t.admin.registerProviderDesc}</p>
@@ -58,7 +58,7 @@ export default async function AdminPage() {
         </section>
       </div>
 
-      <section className="reveal mt-9" style={{ animationDelay: "220ms" }}>
+      <section className="reveal mt-9" style={{ animationDelay: "180ms" }}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
           {t.admin.providers} <span className="text-muted">({allClients.length})</span>
         </h2>
@@ -121,7 +121,7 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <section className="reveal mt-9" style={{ animationDelay: "300ms" }}>
+      <section className="reveal mt-9" style={{ animationDelay: "240ms" }}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
           {t.admin.users} <span className="text-muted">({allUsers.length})</span>
         </h2>
