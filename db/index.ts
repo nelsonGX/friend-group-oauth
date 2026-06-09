@@ -22,5 +22,15 @@ export function getDb(): NodePgDatabase<typeof schema> {
   return globalForDb.__db;
 }
 
+/**
+ * Inject a Drizzle instance for tests/verification (e.g. an in-process PGlite
+ * database) so getDb() returns it instead of constructing a Postgres pool.
+ * Typed as unknown because the PGlite driver yields a structurally-different
+ * (but API-compatible) Drizzle instance.
+ */
+export function setDatabaseForTesting(database: unknown): void {
+  globalForDb.__db = database as NodePgDatabase<typeof schema>;
+}
+
 export { schema };
 export type Database = NodePgDatabase<typeof schema>;
