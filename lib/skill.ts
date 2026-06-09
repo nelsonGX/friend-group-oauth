@@ -167,32 +167,72 @@ Show the user this prominently and wait:
 The approval screen is at \`${o.verificationUri}\`. The user must be signed in with a
 Discord account that has access to the group.
 
-## Step 5 — Poll for the credentials
-Poll the poll endpoint every \`interval\` seconds with the \`device_code\`:
+## Step 5 — Poll for approval and write the credentials straight to .env
 
+On approval the poll endpoint returns \`client_secret\` **exactly once**. Do **not**
+print the poll response, echo the secret, repeat it in chat, or retype it into a
+file by hand — and do **not** redact it to a placeholder. All of those are wrong
+here. Instead run the command below: it polls until the user approves, then writes
+the credentials **directly from the API response into a git-ignored env file**. The
+secret flows API → file and is never displayed. That is the correct, safe handling.
+
+Fill in \`<device_code>\` and \`<interval>\` from the Step 3 response. The command
+prints only the \`client_id\` and "secret (hidden)" so you can confirm it worked
+without ever seeing the secret value.
+
+**POSIX shell (bash/sh):**
 \`\`\`bash
-curl -sS -X POST ${o.pollEndpoint} \\
-  -H 'content-type: application/json' \\
-  -d '{ "device_code": "<device_code>" }'
+DEVICE_CODE='<device_code from Step 3>'
+INTERVAL='<interval from Step 3, e.g. 5>'
+while :; do
+  RESP=$(curl -sS -X POST ${o.pollEndpoint} -H 'content-type: application/json' \\
+    -d "{\\"device_code\\":\\"$DEVICE_CODE\\"}")
+  case "$RESP" in
+    *authorization_pending*|*slow_down*) sleep "$INTERVAL"; continue ;;
+    *access_denied*) echo "User denied — stop and tell them."; break ;;
+    *expired_token*) echo "Expired — restart from Step 3."; break ;;
+    *client_secret*)
+      node -e 'const fs=require("fs"),r=JSON.parse(process.argv[1]);fs.appendFileSync(".env.local","\\nAUTH_BASE_URL=${o.base}\\nAUTH_CLIENT_ID="+r.client_id+"\\nAUTH_CLIENT_SECRET="+r.client_secret+"\\nAUTH_REDIRECT_URI=<dev redirect URI you registered>\\n");console.log("Wrote AUTH_CLIENT_ID="+r.client_id+" + secret (hidden) to .env.local")' "$RESP"
+      break ;;
+  esac
+done
 \`\`\`
 
-- \`{"error":"authorization_pending"}\` → keep waiting.
-- \`{"error":"slow_down"}\` → wait longer, then retry.
-- \`{"error":"access_denied"}\` → the user denied; stop and tell them.
-- \`{"error":"expired_token"}\` → the request expired; restart from Step 3.
-- Success → \`{ client_id, client_secret, redirect_uris, scopes, app_url, discovery_url }\`.
-  These are returned **once** — capture them immediately.
-
-## Step 6 — Store the credentials (server-side only)
-Write to the project's server-side env (e.g. \`.env\` / \`.env.local\`), and ensure
-it's git-ignored. **Never** expose \`client_secret\` to the browser/client bundle.
-
+**PowerShell (Windows):**
+\`\`\`powershell
+$DeviceCode = '<device_code from Step 3>'
+$Interval   = <interval from Step 3, e.g. 5>
+while ($true) {
+  $resp = curl.exe -sS -X POST ${o.pollEndpoint} -H 'content-type: application/json' \`
+    -d (@{ device_code = $DeviceCode } | ConvertTo-Json -Compress)
+  if ($resp -match 'authorization_pending|slow_down') { Start-Sleep $Interval; continue }
+  if ($resp -match 'access_denied') { Write-Host 'User denied — stop and tell them.'; break }
+  if ($resp -match 'expired_token') { Write-Host 'Expired — restart from Step 3.'; break }
+  $c = $resp | ConvertFrom-Json
+  @(
+    "AUTH_BASE_URL=${o.base}"
+    "AUTH_CLIENT_ID=$($c.client_id)"
+    "AUTH_CLIENT_SECRET=$($c.client_secret)"
+    "AUTH_REDIRECT_URI=<dev redirect URI you registered>"
+  ) | Add-Content -Path .env.local -Encoding utf8
+  Write-Host "Wrote AUTH_CLIENT_ID=$($c.client_id) + secret (hidden) to .env.local"
+  break
+}
 \`\`\`
-AUTH_BASE_URL=${o.base}
-AUTH_CLIENT_ID=<client_id>
-AUTH_CLIENT_SECRET=<client_secret>
-AUTH_REDIRECT_URI=<the dev redirect URI you registered>
-\`\`\`
+
+## Step 6 — Confirm storage (server-side only)
+You did **not** need to see the secret — the command in Step 5 wrote it for you.
+Now just confirm:
+- \`.env.local\` (or whichever env file you wrote) is listed in \`.gitignore\`.
+- \`client_secret\` is used only in server-side code — **never** ship it to the
+  browser/client bundle.
+- The four keys written are \`AUTH_BASE_URL\`, \`AUTH_CLIENT_ID\`,
+  \`AUTH_CLIENT_SECRET\`, \`AUTH_REDIRECT_URI\`. If the project uses a different env
+  file name, move them there (keep the key names).
+
+If the project isn't a Node project, replace the \`node -e\` parser in Step 5 with
+\`jq\` or your stack's JSON parser — the rule is identical: pipe the response into
+the file, never print the secret.
 
 ## Step 7 — Implement the integration
 Follow \`reference.md\` exactly:

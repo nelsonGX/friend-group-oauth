@@ -37,6 +37,10 @@ function activityLabel(entry: ActivityEntry, d: Dictionary["dashboard"]): string
       return entry.reason ?? d.topUp;
     case "redeem":
       return entry.reason ?? d.redeem;
+    case "withdrawal":
+      return entry.reason ?? d.withdrawal;
+    case "withdrawal_refund":
+      return entry.reason ?? d.withdrawalRefund;
     default:
       return entry.reason ?? (entry.delta > 0 ? d.topUp : d.charge);
   }

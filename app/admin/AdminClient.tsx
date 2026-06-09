@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Search, Coins } from "lucide-react";
+import { Search, Coins, Banknote } from "lucide-react";
 import { GrantCreditsForm, NewClientForm, NewRedeemCodeForm } from "./AdminForms";
 import {
   toggleClientActive,
   toggleClientTrusted,
   toggleRedeemCodeActive,
+  markWithdrawalPaid,
+  rejectWithdrawal,
 } from "./actions";
+import { format } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
 export interface AdminUserRow {
@@ -43,6 +46,21 @@ export interface AdminRedeemRow {
   active: boolean;
 }
 
+export interface AdminWithdrawalView {
+  id: string;
+  userName: string;
+  userDiscordId: string;
+  avatar: string | null;
+  amount: number;
+  payoutDetails: string;
+  note: string | null;
+  status: string;
+  adminNote: string | null;
+  /** Pre-formatted on the server — Dates can't cross to client components. */
+  requested: string;
+  processed: string | null;
+}
+
 type AdminDict = Dictionary["admin"];
 
 /**
@@ -54,17 +72,20 @@ export function AdminClient({
   users,
   providers,
   redeemCodes,
+  withdrawals,
   t,
 }: {
   users: AdminUserRow[];
   providers: AdminProviderRow[];
   redeemCodes: AdminRedeemRow[];
+  withdrawals: AdminWithdrawalView[];
   t: AdminDict;
 }) {
   const [grantId, setGrantId] = useState("");
   const [providerQuery, setProviderQuery] = useState("");
   const [userQuery, setUserQuery] = useState("");
   const [codeQuery, setCodeQuery] = useState("");
+  const [withdrawalQuery, setWithdrawalQuery] = useState("");
   const grantRef = useRef<HTMLDivElement>(null);
 
   const filteredCodes = useMemo(() => {
@@ -72,6 +93,23 @@ export function AdminClient({
     if (!q) return redeemCodes;
     return redeemCodes.filter((c) => c.code.toLowerCase().includes(q));
   }, [redeemCodes, codeQuery]);
+
+  const filteredWithdrawals = useMemo(() => {
+    const q = withdrawalQuery.trim().toLowerCase();
+    if (!q) return withdrawals;
+    return withdrawals.filter(
+      (w) =>
+        w.userName.toLowerCase().includes(q) ||
+        w.userDiscordId.toLowerCase().includes(q) ||
+        w.payoutDetails.toLowerCase().includes(q),
+    );
+  }, [withdrawals, withdrawalQuery]);
+
+  const pendingWithdrawals = useMemo(
+    () => withdrawals.filter((w) => w.status === "pending"),
+    [withdrawals],
+  );
+  const pendingTotal = pendingWithdrawals.reduce((sum, w) => sum + w.amount, 0);
 
   const filteredProviders = useMemo(() => {
     const q = providerQuery.trim().toLowerCase();
@@ -272,8 +310,50 @@ export function AdminClient({
         </div>
       </section>
 
+      {/* withdrawal requests */}
+      <section className="reveal mt-9" style={{ animationDelay: "300ms" }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
+              {t.withdrawals}{" "}
+              <span className="text-muted">({withdrawals.length})</span>
+            </h2>
+            {pendingWithdrawals.length > 0 && (
+              <span className="badge badge-success">
+                {format(t.pendingPayouts, {
+                  n: pendingWithdrawals.length,
+                  amount: pendingTotal,
+                })}
+              </span>
+            )}
+          </div>
+          <SearchBox
+            value={withdrawalQuery}
+            onChange={setWithdrawalQuery}
+            placeholder={t.searchWithdrawals}
+          />
+        </div>
+
+        {filteredWithdrawals.length === 0 ? (
+          <div className="card mt-3 flex flex-col items-center gap-3 px-6 py-10 text-center">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-surface-strong text-faint">
+              <Banknote size={20} />
+            </span>
+            <p className="text-sm text-muted">
+              {withdrawals.length === 0 ? t.noWithdrawals : t.noResults}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            {filteredWithdrawals.map((w) => (
+              <WithdrawalCard key={w.id} w={w} t={t} />
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* users */}
-      <section className="reveal mt-9" style={{ animationDelay: "330ms" }}>
+      <section className="reveal mt-9" style={{ animationDelay: "360ms" }}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
             {t.users} <span className="text-muted">({users.length})</span>
@@ -380,6 +460,118 @@ function SearchBox({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
       />
+    </div>
+  );
+}
+
+const W_STATUS_BADGE: Record<string, string> = {
+  pending: "badge",
+  paid: "badge badge-success",
+  rejected: "badge badge-danger",
+  cancelled: "badge badge-danger",
+};
+
+function withdrawalStatusLabel(status: string, t: AdminDict): string {
+  switch (status) {
+    case "paid":
+      return t.wStatusPaid;
+    case "rejected":
+      return t.wStatusRejected;
+    case "cancelled":
+      return t.wStatusCancelled;
+    default:
+      return t.wStatusPending;
+  }
+}
+
+/**
+ * One withdrawal request. Pending requests show the payout details plus a single
+ * note field shared by the Mark-paid / Reject buttons (via `formAction`), so the
+ * admin can record a payment reference or rejection reason in one place.
+ */
+function WithdrawalCard({ w, t }: { w: AdminWithdrawalView; t: AdminDict }) {
+  return (
+    <div className="card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {w.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`https://cdn.discordapp.com/avatars/${w.userDiscordId}/${w.avatar}.png`}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-full ring-1 ring-border"
+            />
+          ) : (
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand text-xs font-semibold text-white">
+              {w.userName.slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium">{w.userName}</p>
+            <p className="truncate font-mono text-xs text-faint">
+              {w.userDiscordId}
+            </p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xl font-semibold tabular-nums leading-none">
+            {w.amount}
+          </p>
+          <span className={`${W_STATUS_BADGE[w.status] ?? "badge"} mt-1.5`}>
+            {withdrawalStatusLabel(w.status, t)}
+          </span>
+        </div>
+      </div>
+
+      <div className="sunken mt-3 whitespace-pre-wrap break-words p-3 text-xs text-muted">
+        {w.payoutDetails}
+      </div>
+      {w.note && (
+        <p className="mt-2 text-xs text-muted">
+          <span className="text-faint">{t.devNoteLabel}: </span>
+          {w.note}
+        </p>
+      )}
+
+      <p className="mt-2 text-xs text-faint">
+        {format(t.requestedOn, { date: w.requested })}
+        {w.processed && ` · ${format(t.processedOn, { date: w.processed })}`}
+      </p>
+
+      {w.status === "pending" ? (
+        <form className="mt-3 space-y-2">
+          <input type="hidden" name="id" value={w.id} />
+          <input
+            className="input !py-2 text-sm"
+            name="adminNote"
+            placeholder={t.adminNotePlaceholder}
+          />
+          <div className="flex gap-2">
+            <button
+              formAction={markWithdrawalPaid}
+              className="btn btn-primary !py-1.5 text-xs"
+            >
+              {t.markPaid}
+            </button>
+            <button
+              formAction={rejectWithdrawal}
+              onClick={(e) => {
+                if (!confirm(t.rejectConfirm)) e.preventDefault();
+              }}
+              className="btn btn-ghost !py-1.5 text-xs"
+            >
+              {t.reject}
+            </button>
+          </div>
+        </form>
+      ) : (
+        w.adminNote && (
+          <p className="mt-3 text-xs text-muted">
+            <span className="text-faint">{t.adminNotePlaceholder}: </span>
+            {w.adminNote}
+          </p>
+        )
+      )}
     </div>
   );
 }

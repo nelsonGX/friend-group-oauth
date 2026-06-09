@@ -12,6 +12,7 @@ import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { registerClient } from "@/lib/apps";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
+import { createWithdrawal, cancelWithdrawal as cancelWithdrawalRequest } from "@/lib/withdrawals";
 import { env } from "@/lib/env";
 import { validateWebhookUrl } from "@/lib/webhooks";
 
@@ -379,4 +380,62 @@ export async function deleteOwnApp(
   revalidatePath("/dashboard");
   revalidatePath("/explore");
   return { ok: true, message: d.appDeleted };
+}
+
+export interface WithdrawState {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Request a payout of earned credits. The amount is escrowed immediately (see
+ * {@link createWithdrawal}); an admin settles it off-platform. Only income the
+ * developer earned is withdrawable — never transfers, top-ups, or redeems.
+ */
+export async function requestWithdrawal(
+  _prev: WithdrawState,
+  formData: FormData,
+): Promise<WithdrawState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: d.notSignedIn };
+
+  const amount = Number(formData.get("amount"));
+  const payoutDetails = formData.get("payoutDetails")?.toString() ?? "";
+  const note = formData.get("note")?.toString() ?? "";
+
+  const result = await createWithdrawal({
+    userId: user.id,
+    amount,
+    payoutDetails,
+    note,
+  });
+
+  if (!result.ok) {
+    switch (result.reason) {
+      case "invalid_amount":
+        return { ok: false, message: d.withdrawInvalidAmount };
+      case "missing_details":
+        return { ok: false, message: d.withdrawMissingDetails };
+      case "exceeds_available":
+        return {
+          ok: false,
+          message: format(d.withdrawExceeds, { available: result.available }),
+        };
+    }
+  }
+
+  revalidatePath("/dashboard");
+  return { ok: true, message: format(d.withdrawRequested, { amount }) };
+}
+
+/** Cancel one of the current user's own pending withdrawal requests. */
+export async function cancelWithdrawal(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+  await cancelWithdrawalRequest({ id, userId: user.id });
+  revalidatePath("/dashboard");
 }

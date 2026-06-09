@@ -8,6 +8,10 @@ import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { topUp } from "@/lib/credits";
+import {
+  markWithdrawalPaid as markWithdrawalPaidLib,
+  rejectWithdrawal as rejectWithdrawalLib,
+} from "@/lib/withdrawals";
 import { createRedeemCode as mintRedeemCode } from "@/lib/redeem";
 import { redeemCodes } from "@/db/schema";
 import { hashSecret, randomToken } from "@/lib/crypto";
@@ -218,5 +222,27 @@ export async function toggleRedeemCodeActive(formData: FormData) {
     .update(redeemCodes)
     .set({ active: sql`not ${redeemCodes.active}` })
     .where(eq(redeemCodes.id, id));
+  revalidatePath("/admin");
+}
+
+/** Mark a pending withdrawal as paid (admin has sent the money off-platform). */
+export async function markWithdrawalPaid(formData: FormData) {
+  const adminId = await assertAdmin();
+  if (!adminId) return;
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+  const adminNote = formData.get("adminNote")?.toString() ?? null;
+  await markWithdrawalPaidLib({ id, adminId, adminNote });
+  revalidatePath("/admin");
+}
+
+/** Reject a pending withdrawal, returning the escrowed credits to the developer. */
+export async function rejectWithdrawal(formData: FormData) {
+  const adminId = await assertAdmin();
+  if (!adminId) return;
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+  const adminNote = formData.get("adminNote")?.toString() ?? null;
+  await rejectWithdrawalLib({ id, adminId, adminNote });
   revalidatePath("/admin");
 }

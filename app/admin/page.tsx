@@ -8,11 +8,13 @@ import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { getBalance, getProviderEarnings } from "@/lib/credits";
 import { listRedeemCodes } from "@/lib/redeem";
+import { listWithdrawals } from "@/lib/withdrawals";
 import {
   AdminClient,
   type AdminProviderRow,
   type AdminRedeemRow,
   type AdminUserRow,
+  type AdminWithdrawalView,
 } from "./AdminClient";
 
 export default async function AdminPage() {
@@ -25,6 +27,7 @@ export default async function AdminPage() {
   const allClients = await db.select().from(clients).orderBy(desc(clients.createdAt));
   const earnings = await Promise.all(allClients.map((c) => getProviderEarnings(c.id)));
   const codes = await listRedeemCodes();
+  const withdrawals = await listWithdrawals();
 
   const redeemRows: AdminRedeemRow[] = codes.map((c) => ({
     id: c.id,
@@ -35,6 +38,22 @@ export default async function AdminPage() {
     expires: c.expiresAt ? c.expiresAt.toISOString().slice(0, 10) : null,
     expired: c.expiresAt ? c.expiresAt < new Date() : false,
     active: c.active,
+  }));
+
+  const withdrawalRows: AdminWithdrawalView[] = withdrawals.map((w) => ({
+    id: w.id,
+    userName: w.userName,
+    userDiscordId: w.userDiscordId,
+    avatar: w.avatar,
+    amount: w.amount,
+    payoutDetails: w.payoutDetails,
+    note: w.note,
+    status: w.status,
+    adminNote: w.adminNote,
+    requested: w.createdAt.toISOString().slice(0, 16).replace("T", " "),
+    processed: w.processedAt
+      ? w.processedAt.toISOString().slice(0, 16).replace("T", " ")
+      : null,
   }));
 
   const userRows: AdminUserRow[] = allUsers.map((u, i) => ({
@@ -132,6 +151,7 @@ export default async function AdminPage() {
         users={userRows}
         providers={providerRows}
         redeemCodes={redeemRows}
+        withdrawals={withdrawalRows}
         t={t.admin}
       />
     </main>

@@ -172,7 +172,8 @@ export const refreshTokens = pgTable(
  * `transfer_out` debit and a `transfer_in` credit. `counterpartyUserId` records
  * the other side, and `kind` lets the UI label each row.
  * `ref` is a unique idempotency key (nullable for admin top-ups).
- * `kind`: topup | charge | income | transfer_in | transfer_out | redeem | adjustment
+ * `kind`: topup | charge | income | transfer_in | transfer_out | redeem |
+ *         withdrawal | withdrawal_refund | adjustment
  */
 export const ledger = pgTable(
   "ledger",
@@ -324,9 +325,51 @@ export const redemptions = pgTable(
   ],
 );
 
+/**
+ * A developer's request to cash out earned credits for real money. Only credits
+ * a user *earned* (income from their apps) are withdrawable — transferred-in,
+ * granted, or redeemed credits are not (see {@link getWithdrawableEarnings}).
+ *
+ * Requesting one immediately escrows the amount: a matching `withdrawal` debit is
+ * written to the ledger so the credits leave the spendable balance and can't be
+ * double-withdrawn or spent. An admin pays out off-platform and marks it `paid`;
+ * rejecting (admin) or cancelling (the developer) writes a `withdrawal_refund`
+ * credit that returns the escrowed amount. `payoutDetails` is the free-text
+ * account/crypto address the admin pays to.
+ */
+export const withdrawals = pgTable(
+  "withdrawals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    /** Where/how to pay the developer — bank account, PayPal, crypto address, … */
+    payoutDetails: text("payout_details").notNull(),
+    /** Optional message from the developer to the admin. */
+    note: text("note"),
+    /** pending | paid | rejected | cancelled */
+    status: text("status").notNull().default("pending"),
+    /** Admin's note when processing (payment reference, rejection reason). */
+    adminNote: text("admin_note"),
+    /** The admin who paid or rejected it. */
+    processedByUserId: uuid("processed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("withdrawals_user_id_idx").on(t.userId),
+    index("withdrawals_status_idx").on(t.status),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ledger: many(ledger),
+  withdrawals: many(withdrawals),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -357,9 +400,18 @@ export const redemptionsRelations = relations(redemptions, ({ one }) => ({
   user: one(users, { fields: [redemptions.userId], references: [users.id] }),
 }));
 
+export const withdrawalsRelations = relations(withdrawals, ({ one }) => ({
+  user: one(users, { fields: [withdrawals.userId], references: [users.id] }),
+  processedBy: one(users, {
+    fields: [withdrawals.processedByUserId],
+    references: [users.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type LedgerEntry = typeof ledger.$inferSelect;
 export type DeviceAuthorization = typeof deviceAuthorizations.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;
 export type Redemption = typeof redemptions.$inferSelect;
+export type Withdrawal = typeof withdrawals.$inferSelect;

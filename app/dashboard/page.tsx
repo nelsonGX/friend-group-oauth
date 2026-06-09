@@ -7,11 +7,13 @@ import { clients } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { getBalance, getIncome, getProviderEarnings } from "@/lib/credits";
+import { getWithdrawableEarnings, listUserWithdrawals } from "@/lib/withdrawals";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
 import { installCommands } from "@/lib/skill";
 import { ProviderApps } from "./ProviderApps";
 import { IncomeReport, type IncomeRow } from "./IncomeReport";
+import { Withdrawals, type WithdrawalRow } from "./Withdrawals";
 import type { AppView } from "./AppDetailsModal";
 
 function fmtDate(d: Date) {
@@ -32,6 +34,8 @@ export default async function DashboardPage() {
   const totalEarned = ownedEarnings.reduce((sum, n) => sum + n, 0);
   const balance = await getBalance(user.id);
   const income = await getIncome(user.id, 50);
+  const withdrawable = await getWithdrawableEarnings(user.id);
+  const myWithdrawals = await listUserWithdrawals(user.id);
   const canRegister = user.allowed || user.isAdmin;
   const appUrl = env.APP_URL;
   const skillCmds = installCommands();
@@ -63,6 +67,17 @@ export default async function DashboardPage() {
     reason: e.reason,
     fromName: e.fromName,
     amount: e.amount,
+  }));
+
+  // Same for the developer's own withdrawal requests.
+  const withdrawalRows: WithdrawalRow[] = myWithdrawals.map((w) => ({
+    id: w.id,
+    date: fmtDate(w.createdAt),
+    amount: w.amount,
+    status: w.status,
+    payoutDetails: w.payoutDetails,
+    note: w.note,
+    adminNote: w.adminNote,
   }));
 
   const stats = [
@@ -142,6 +157,17 @@ export default async function DashboardPage() {
       {/* income — secondary, recent first, expandable */}
       <div className="reveal mt-10" style={{ animationDelay: "180ms" }}>
         <IncomeReport entries={incomeRows} t={t.dashboard.income} />
+      </div>
+
+      {/* withdraw earnings — cash out income to real money via an admin */}
+      <div className="reveal mt-10" style={{ animationDelay: "240ms" }}>
+        <Withdrawals
+          available={withdrawable.available}
+          earned={withdrawable.earned}
+          reserved={withdrawable.reserved}
+          entries={withdrawalRows}
+          t={t.dashboard.withdraw}
+        />
       </div>
     </main>
   );
