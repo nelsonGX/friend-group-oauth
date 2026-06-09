@@ -8,16 +8,21 @@
 ---------------------------------------------------------------------------- */
 
 @theme {
-  --color-bg: #07080d;
-  --color-bg-soft: #0b0d15;
-  --color-surface: rgba(255, 255, 255, 0.035);
-  --color-surface-strong: rgba(255, 255, 255, 0.06);
-  --color-border: rgba(255, 255, 255, 0.09);
-  --color-border-strong: rgba(255, 255, 255, 0.16);
+  /* Comfortable dark — lifted off pure black so the page reads as a dim room
+     rather than a void, but not so light it washes out. */
+  --color-bg: #161922;
+  --color-bg-soft: #1c2029;
+  /* Surfaces sit clearly above the base so cards read as elevated panels, not
+     faint smudges. */
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-surface-strong: rgba(255, 255, 255, 0.085);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
 
-  --color-ink: #f3f4f8;
-  --color-muted: #9aa0b4;
-  --color-faint: #6b7186;
+  /* Slightly off-white ink (not #fff) to ease contrast against the dark bg. */
+  --color-ink: #e7e9f2;
+  --color-muted: #a6acc0;
+  --color-faint: #767c92;
 
   --color-brand: #5865f2;
   --color-brand-strong: #4752c4;
