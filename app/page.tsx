@@ -46,7 +46,7 @@ export default async function Home() {
           style={{ animationDelay: "210ms" }}
         >
           {user ? (
-            <Link href="/dashboard" className="btn btn-primary px-6 py-3 text-[0.95rem]">
+            <Link href="/explore" className="btn btn-primary px-6 py-3 text-[0.95rem]">
               {t.home.openDashboard}
             </Link>
           ) : (
@@ -55,7 +55,7 @@ export default async function Home() {
                 <DiscordIcon size={18} />
                 {t.home.signInWithDiscord}
               </Link>
-              <Link href="/dashboard" className="btn btn-secondary px-6 py-3 text-[0.95rem]">
+              <Link href="/explore" className="btn btn-secondary px-6 py-3 text-[0.95rem]">
                 {t.home.openDashboard}
               </Link>
             </>

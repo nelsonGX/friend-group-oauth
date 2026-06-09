@@ -32,6 +32,11 @@ export async function GET() {
       payment_intent_endpoint: `${base}/api/pay/intent`,
       payment_confirmation_endpoint: `${base}/pay`,
       payment_verify_endpoint: `${base}/api/pay/verify`,
+
+      // Extension: browser-approved device flow for skill-driven app registration.
+      device_authorization_endpoint: `${base}/api/manage/device/start`,
+      device_poll_endpoint: `${base}/api/manage/device/poll`,
+      device_verification_uri: `${base}/device`,
     },
     {
       headers: {

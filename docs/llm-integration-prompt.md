@@ -1,5 +1,10 @@
 # LLM integration prompt
 
+> **Prefer the integration skill.** The dashboard's **Download skill** button
+> (under *One-click integration*) gives your coding agent a packaged skill that
+> registers the app for you via a browser approval — no client id/secret to paste.
+> Use the prompt below if you'd rather drive the integration manually.
+
 Copy everything in the fenced block below into your coding agent (Claude Code,
 Cursor, etc.). Fill in the four values at the top first. It tells the agent
 exactly how to integrate with the Friend Group Auth server.

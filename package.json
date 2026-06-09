@@ -11,7 +11,8 @@
     "db:migrate": "tsx db/migrate.ts",
     "verify:oauth": "tsx scripts/verify-oauth.ts",
     "verify:credits": "tsx scripts/verify-credits.ts",
-    "verify": "npm run verify:oauth && npm run verify:credits"
+    "verify:devices": "tsx scripts/verify-devices.ts",
+    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

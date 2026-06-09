@@ -7,7 +7,7 @@ import type { Dictionary } from "./en";
  */
 const zhTW: Dictionary = {
   nav: {
-    dashboard: "控制台",
+    dashboard: "開發者面板",
     explore: "探索",
     signIn: "登入",
     logout: "登出",
@@ -94,6 +94,17 @@ const zhTW: Dictionary = {
     charge: "扣款",
     statConnected: "已連結",
     statOwned: "你擁有的應用程式",
+    statEarned: "總共賺得",
+    developerPanel: "開發者面板",
+    skill: {
+      heading: "一鍵整合",
+      desc: "省去手動設定。下載我們的程式碼代理技能（skill），在你的專案中執行，並在瀏覽器中按一次「核准」——它就會替你註冊應用程式（連同回呼網址），並寫好登入與付款的程式碼。",
+      download: "下載技能",
+      installNote:
+        "解壓縮到你專案的 .claude/skills/ 資料夾（或讓任何程式碼代理讀取 SKILL.md），然後請它設定 Friend Group Auth。",
+      flowNote:
+        "執行時，代理會開啟一個瀏覽器分頁讓你核准——不需要手動複製任何密鑰。",
+    },
     apps: {
       heading: "你的應用程式",
       desc: "你註冊的應用程式，讓社群成員可以登入你的網站，而你可以扣抵點數。",
@@ -195,6 +206,31 @@ const zhTW: Dictionary = {
       listedLabel: "顯示於「探索」目錄",
       saveDisplay: "儲存顯示設定",
     },
+  },
+  device: {
+    title: "授權新的應用程式",
+    intro:
+      "你的程式碼代理想用你的帳號註冊這個 OAuth 應用程式。請檢視它將被允許的權限，然後核准以將憑證交回你的終端機。",
+    redirectUrisLabel: "重新導向網址",
+    scopesLabel: "可存取",
+    deny: "拒絕",
+    approve: "核准並建立應用程式",
+    approving: "建立中…",
+    footnote: "核准後會建立一個由你擁有的應用程式。你可以隨時從儀表板管理或刪除它。",
+    approvedTitle: "應用程式已建立",
+    approvedMessage:
+      "你的代理已取得憑證。你可以回到終端機——它會完成整合。",
+    deniedTitle: "已拒絕請求",
+    deniedMessage: "沒有建立任何應用程式。你可以關閉此分頁。",
+    notSignedIn: "尚未登入。",
+    needAccess: "你需要先擁有存取權（伺服器成員資格 + 身分組）才能註冊應用程式。",
+    notFound: "該請求已過期或已處理完畢。請從你的代理重新開始。",
+    enterCodeTitle: "輸入你的代碼",
+    enterCodeDesc:
+      "你的程式碼代理印出了一組短代碼。在此輸入它，以檢視它想建立的應用程式。",
+    codeNotFound:
+      "找不到該代碼——可能已過期。請重新執行你的代理並輸入新的代碼。",
+    continue: "繼續",
   },
   dashboardActions: {
     notAuthorized: "未經授權。",

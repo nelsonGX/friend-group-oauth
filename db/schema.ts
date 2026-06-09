@@ -229,6 +229,49 @@ export const paymentIntents = pgTable(
   (t) => [uniqueIndex("payment_intents_client_ref_idx").on(t.clientId, t.ref)],
 );
 
+/**
+ * A pending "register an app on my behalf" request from a coding-agent skill,
+ * approved in the browser (RFC 8628-style device flow). The skill polls with the
+ * secret `device_code` (stored hashed); the user approves via the short
+ * `user_code`. On approval we create the client and stash its `client_id` plus
+ * the **plaintext** `client_secret` here transiently, so the next poll can return
+ * the credentials exactly once — then we null the secret and mark it consumed.
+ * Rows are short-lived (~15 min) and the hashed device_code is the only bearer.
+ */
+export const deviceAuthorizations = pgTable(
+  "device_authorizations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Hash of the device_code the skill holds; never stored in plaintext. */
+    deviceCodeHash: text("device_code_hash").notNull().unique(),
+    /** Short, human-typable code the user enters/confirms in the browser. */
+    userCode: text("user_code").notNull().unique(),
+    /** pending | approved | denied | consumed */
+    status: text("status").notNull().default("pending"),
+    /** Proposed registration, shown on the approval screen for review. */
+    requestedName: text("requested_name").notNull(),
+    requestedRedirectUris: jsonb("requested_redirect_uris")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    requestedScopes: jsonb("requested_scopes")
+      .$type<string[]>()
+      .notNull()
+      .default(["identify"]),
+    /** The approving user (set on approval). */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    /** The created client's public id (set on approval). */
+    clientId: text("client_id"),
+    /** Plaintext secret, transient: set on approval, cleared once retrieved. */
+    clientSecret: text("client_secret"),
+    /** Last poll time, for slow-down enforcement. */
+    lastPolledAt: timestamp("last_polled_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("device_authorizations_user_code_idx").on(t.userCode)],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ledger: many(ledger),
@@ -249,3 +292,4 @@ export const ledgerRelations = relations(ledger, ({ one }) => ({
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type LedgerEntry = typeof ledger.$inferSelect;
+export type DeviceAuthorization = typeof deviceAuthorizations.$inferSelect;

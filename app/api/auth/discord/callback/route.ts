@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     redirect("/login?error=invalid_request");
   }
 
-  let returnTo = "/dashboard";
+  let returnTo = "/explore";
   try {
     const { payload } = await jwtVerify(
       loginCookie,

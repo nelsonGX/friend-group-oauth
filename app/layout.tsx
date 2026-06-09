@@ -66,16 +66,16 @@ export default async function RootLayout({
               {user ? (
                 <>
                   <Link
-                    href="/explore"
+                    href="/dashboard"
                     className="btn btn-ghost !px-3 !py-1.5"
                   >
-                    {t.nav.explore}
+                    {t.nav.dashboard}
                   </Link>
                   <Link
-                    href="/dashboard"
+                    href="/explore"
                     className="btn btn-primary !px-3.5 !py-1.5"
                   >
-                    {t.nav.dashboard}
+                    {t.nav.explore}
                   </Link>
                   <form action="/api/auth/logout" method="post">
                     <button className="btn btn-ghost !px-3 !py-1.5">

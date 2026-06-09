@@ -5,7 +5,7 @@
  */
 export function sanitizeReturnPath(
   value: string | null | undefined,
-  fallback = "/dashboard",
+  fallback = "/explore",
 ): string {
   if (!value) return fallback;
   // Must start with exactly one "/" (reject "//host" and "/\host" and absolute URLs).

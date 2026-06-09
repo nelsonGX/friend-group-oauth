@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, LogOut, Compass, Boxes, Coins } from "lucide-react";
+import { Shield, LogOut, Compass, Boxes, Coins, Sparkles, Download } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients } from "@/db/schema";
@@ -115,6 +115,34 @@ export default async function DashboardPage() {
           </section>
         ))}
       </div>
+
+      {/* one-click integration skill */}
+      {canRegister && (
+        <div className="reveal mt-8" style={{ animationDelay: "110ms" }}>
+          <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-white">
+                <Sparkles size={20} />
+              </span>
+              <div>
+                <h2 className="text-base font-semibold leading-tight">
+                  {t.dashboard.skill.heading}
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm text-muted">
+                  {t.dashboard.skill.desc}
+                </p>
+                <p className="mt-2 max-w-2xl text-xs text-faint">
+                  {t.dashboard.skill.installNote} {t.dashboard.skill.flowNote}
+                </p>
+              </div>
+            </div>
+            <a href="/api/skill" className="btn btn-primary shrink-0 text-sm" download>
+              <Download size={15} />
+              {t.dashboard.skill.download}
+            </a>
+          </section>
+        </div>
+      )}
 
       {/* your apps */}
       <div className="reveal mt-8" style={{ animationDelay: "140ms" }}>

@@ -9,8 +9,10 @@ system**, built for a Discord friend group that shares self-hosted tools.
 - **Credits**: users hold a balance (admins top up manually); provider sites
   charge against it through a hosted confirm flow.
 
-Integrating a site? See [`docs/INTEGRATION.md`](docs/INTEGRATION.md) and the
-copy-paste agent prompt in
+Integrating a site? The fastest path is the **integration skill**: sign in at
+`/dashboard`, hit **Download skill**, and let your coding agent register the app
+(via a one-click browser approval) and write the code. For the full contract see
+[`docs/INTEGRATION.md`](docs/INTEGRATION.md) and the copy-paste agent prompt in
 [`docs/llm-integration-prompt.md`](docs/llm-integration-prompt.md).
 
 ## Stack

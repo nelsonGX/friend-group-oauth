@@ -7,6 +7,15 @@ identity and gate access on server membership/role, and (b) charge them credits.
 Throughout, `AUTH` is the base URL of the auth server (e.g.
 `https://auth.example.com`).
 
+> **Fastest path — the integration skill.** Don't want to wire this up by hand?
+> Sign in at `AUTH/dashboard` and click **Download skill** under *One-click
+> integration*. Drop the unzipped folder into your project's `.claude/skills/`
+> (or point any coding agent at its `SKILL.md`) and ask it to set up Friend Group
+> Auth. It registers your OAuth app for you — redirect URIs included — via a
+> browser-approval step (you just click **Approve**; no secrets to copy), then
+> writes the login and payment code. The manual steps below remain available as
+> the reference and fallback.
+
 > **Tip:** every endpoint below is also published as a machine-readable
 > [RFC 8414](https://www.rfc-editor.org/rfc/rfc8414) discovery document at
 > `AUTH/.well-known/oauth-authorization-server`. Point your OAuth client at that
@@ -32,6 +41,52 @@ URIs and regenerate the secret there at any time.
 
 Self-registered apps always show the consent screen. An admin can mark an app
 **trusted** to skip consent for your users.
+
+### Automatic registration (device flow)
+
+The integration skill uses this instead of the dashboard form, but you can drive
+it yourself. It's an RFC 8628-style flow that creates the app after a human
+approves it in the browser — no copied tokens.
+
+1. **Start** (no auth) — POST JSON with the proposed registration:
+
+   ```
+   POST AUTH/api/manage/device/start
+   { "name": "My App", "redirect_uris": ["https://myapp.com/callback"], "scopes": ["identify","roles"] }
+   ```
+   ```json
+   {
+     "device_code": "…",            // secret you poll with
+     "user_code": "WXYZ-1234",      // short code the user confirms
+     "verification_uri": "AUTH/device",
+     "verification_uri_complete": "AUTH/device?code=WXYZ-1234",
+     "expires_in": 900,
+     "interval": 5
+   }
+   ```
+
+2. **Send the user** to `verification_uri_complete`. Signed in (with access), they
+   review the name/redirect URIs/scopes and click **Approve**.
+
+3. **Poll** every `interval` seconds until settled:
+
+   ```
+   POST AUTH/api/manage/device/poll
+   { "device_code": "…" }
+   ```
+   While pending you get `{"error":"authorization_pending"}` (or `slow_down`);
+   denial is `access_denied`, expiry is `expired_token`. On approval, **once**:
+   ```json
+   {
+     "client_id": "fgc_…",
+     "client_secret": "…",
+     "redirect_uris": ["https://myapp.com/callback"],
+     "scopes": ["identify","roles"],
+     "app_url": "AUTH",
+     "discovery_url": "AUTH/.well-known/oauth-authorization-server"
+   }
+   ```
+   The credentials are returned exactly once — store them server-side immediately.
 
 ### Scopes
 

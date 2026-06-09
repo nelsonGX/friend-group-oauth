@@ -8,7 +8,7 @@
  */
 const en = {
   nav: {
-    dashboard: "Dashboard",
+    dashboard: "Developer panel",
     explore: "Explore",
     signIn: "Sign in",
     logout: "Log out",
@@ -97,6 +97,17 @@ const en = {
     charge: "Charge",
     statConnected: "Connected",
     statOwned: "Apps you own",
+    statEarned: "Total earned",
+    developerPanel: "Developer panel",
+    skill: {
+      heading: "One-click integration",
+      desc: "Skip the manual setup. Download our coding-agent skill, run it in your project, and approve once in the browser — it registers your app (callbacks and all) and writes the login + payment code for you.",
+      download: "Download skill",
+      installNote:
+        "Unzip into your project's .claude/skills/ folder (or point any coding agent at SKILL.md), then ask it to set up Friend Group Auth.",
+      flowNote:
+        "When it runs, the agent opens a browser tab for you to approve — no secrets to copy by hand.",
+    },
     apps: {
       heading: "Your apps",
       desc: "Apps you've registered so the group can log into your site and you can charge credits.",
@@ -199,6 +210,33 @@ const en = {
       listedLabel: "Show in the Explore directory",
       saveDisplay: "Save display settings",
     },
+  },
+  device: {
+    title: "Authorize a new app",
+    intro:
+      "Your coding agent wants to register this OAuth app on your account. Review what it'll be allowed to do, then approve to hand the credentials back to your terminal.",
+    redirectUrisLabel: "Redirect URIs",
+    scopesLabel: "Can access",
+    deny: "Deny",
+    approve: "Approve & create app",
+    approving: "Creating…",
+    footnote:
+      "Approving creates an app you own. You can manage or delete it anytime from your dashboard.",
+    approvedTitle: "App created",
+    approvedMessage:
+      "Your agent now has the credentials. You can return to your terminal — it'll finish the integration.",
+    deniedTitle: "Request denied",
+    deniedMessage: "No app was created. You can close this tab.",
+    notSignedIn: "Not signed in.",
+    needAccess:
+      "You need access (server membership + role) before you can register an app.",
+    notFound: "That request has expired or was already handled. Start again from your agent.",
+    enterCodeTitle: "Enter your code",
+    enterCodeDesc:
+      "Your coding agent printed a short code. Enter it here to review the app it wants to create.",
+    codeNotFound:
+      "We couldn't find that code — it may have expired. Re-run your agent and enter the new code.",
+    continue: "Continue",
   },
   dashboardActions: {
     notAuthorized: "Not authorized.",
