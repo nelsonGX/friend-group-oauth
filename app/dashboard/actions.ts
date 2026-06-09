@@ -202,3 +202,65 @@ export async function updateAppRedirects(
   revalidatePath("/dashboard");
   return { ok: true, message: d.redirectUrisUpdated };
 }
+
+export interface WebhookState {
+  ok: boolean;
+  message: string;
+  /** The webhook signing secret, returned once when a URL is (re)configured. */
+  secret?: string;
+  /** Whether a webhook is currently configured (drives the cleared message). */
+  configured?: boolean;
+}
+
+/**
+ * Set or clear the payment webhook URL for an app the user owns (or admin).
+ * Setting a URL (re)generates a signing secret, returned once. Clearing it
+ * (blank input) removes both the URL and the secret.
+ */
+export async function updateAppWebhook(
+  _prev: WebhookState,
+  formData: FormData,
+): Promise<WebhookState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: d.notAuthorized };
+  const clientId = formData.get("clientId")?.toString();
+  if (!clientId) return { ok: false, message: d.missingApp };
+
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
+    return { ok: false, message: d.notYourApp };
+  }
+
+  const webhookUrl = formData.get("webhookUrl")?.toString().trim() ?? "";
+
+  if (!webhookUrl) {
+    await db
+      .update(clients)
+      .set({ webhookUrl: null, webhookSecret: null })
+      .where(eq(clients.clientId, clientId));
+    revalidatePath("/dashboard");
+    return { ok: true, message: d.webhookCleared, configured: false };
+  }
+
+  try {
+    const u = new URL(webhookUrl);
+    if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error();
+  } catch {
+    return { ok: false, message: format(d.invalidRedirectUri, { uri: webhookUrl }) };
+  }
+
+  const secret = randomToken(32);
+  await db
+    .update(clients)
+    .set({ webhookUrl, webhookSecret: secret })
+    .where(eq(clients.clientId, clientId));
+  revalidatePath("/dashboard");
+  return { ok: true, message: d.webhookSaved, secret, configured: true };
+}

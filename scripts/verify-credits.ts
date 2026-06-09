@@ -7,7 +7,8 @@ import {
   topUp,
 } from "../lib/credits";
 import { completeIntent, createIntent } from "../lib/payments";
-import { hashSecret } from "../lib/crypto";
+import { buildWebhookRequest } from "../lib/webhooks";
+import { hashSecret, hmacVerify } from "../lib/crypto";
 
 /** Verification of the credit ledger + payment intents against PGlite. */
 async function main() {
@@ -47,20 +48,44 @@ async function main() {
   check("provider earnings reflect charges", (await getProviderEarnings(client.id)) === 30);
   check("ledger history has 2 entries", (await getLedger(user.id)).length === 2);
 
-  const intent = await createIntent({
+  const created = await createIntent({
     client,
     amount: 20,
     ref: "pay1",
     redirectUri: "https://x.example/cb",
     description: "thing",
   });
-  check("intent created pending", intent?.status === "pending");
+  check("intent created pending", created.ok && created.intent.status === "pending");
+  const intent = created.ok ? created.intent : null;
 
-  const sameRef = await createIntent({ client, amount: 999, ref: "pay1", redirectUri: "https://x.example/cb" });
-  check("intent idempotent on (client, ref)", sameRef?.id === intent?.id && sameRef?.amount === 20);
+  const sameRef = await createIntent({
+    client,
+    amount: 20,
+    ref: "pay1",
+    redirectUri: "https://x.example/cb",
+    description: "thing",
+  });
+  check(
+    "same ref + same terms is idempotent",
+    sameRef.ok && sameRef.intent.id === intent?.id && sameRef.intent.amount === 20,
+  );
+
+  const conflict = await createIntent({
+    client,
+    amount: 999,
+    ref: "pay1",
+    redirectUri: "https://x.example/cb",
+  });
+  check(
+    "same ref + different amount is a conflict",
+    !conflict.ok && conflict.error === "conflict",
+  );
 
   const badRedirect = await createIntent({ client, amount: 5, ref: "pay2", redirectUri: "https://evil.example/cb" });
-  check("intent rejects unregistered redirect_uri", badRedirect === null);
+  check(
+    "intent rejects unregistered redirect_uri",
+    !badRedirect.ok && badRedirect.error === "invalid_redirect_uri",
+  );
 
   if (intent) {
     const r = await charge({ userId: user.id, providerId: client.id, amount: intent.amount, ref: `intent:${intent.id}` });
@@ -70,6 +95,16 @@ async function main() {
     const again = await completeIntent(intent.id, user.id);
     check("completed intent cannot re-complete", again === null);
     check("balance after intent is 50", (await getBalance(user.id)) === 50);
+
+    if (done) {
+      const { body, headers } = buildWebhookRequest(done, "whsec_test");
+      const [t, v1] = headers["x-webhook-signature"]
+        .split(",")
+        .map((kv) => kv.split("=")[1]);
+      check("webhook signature verifies over `t.body`", hmacVerify(`${t}.${body}`, "whsec_test", v1));
+      check("webhook id header is the intent id", headers["x-webhook-id"] === done.id);
+      check("webhook event reflects status", JSON.parse(body).event === "payment.completed");
+    }
   }
 
   summarize();

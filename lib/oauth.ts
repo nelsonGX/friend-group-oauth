@@ -1,4 +1,5 @@
 import { and, eq, gt } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { getDb } from "@/db";
 import {
   accessTokens,
@@ -217,16 +218,21 @@ export async function issueTokens(opts: {
   clientId: string;
   userId: string;
   scope: string;
+  /** Token-family id. Omit to start a fresh family (authorization_code grant);
+   *  pass the existing id to keep a rotated refresh token in its lineage. */
+  familyId?: string;
 }): Promise<TokenResponse> {
   const db = getDb();
   const accessToken = randomToken(32);
   const refreshToken = randomToken(32);
+  const familyId = opts.familyId ?? randomUUID();
   const now = Date.now();
   await db.insert(accessTokens).values({
     tokenHash: hashToken(accessToken),
     clientId: opts.clientId,
     userId: opts.userId,
     scope: opts.scope,
+    familyId,
     expiresAt: new Date(now + ACCESS_TTL_SECONDS * 1000),
   });
   await db.insert(refreshTokens).values({
@@ -234,6 +240,7 @@ export async function issueTokens(opts: {
     clientId: opts.clientId,
     userId: opts.userId,
     scope: opts.scope,
+    familyId,
     expiresAt: new Date(now + REFRESH_TTL_SECONDS * 1000),
   });
   return {
@@ -291,7 +298,12 @@ export async function redeemAuthorizationCode(opts: {
   return { ok: true, tokens };
 }
 
-/** Rotate a refresh token: revoke the presented one and mint a fresh pair. */
+/**
+ * Rotate a refresh token: revoke the presented one and mint a fresh pair in the
+ * same family. If an already-rotated (revoked) token from a family is presented,
+ * we treat it as theft and revoke the entire family — the main reason rotation
+ * exists (RFC 6819 §5.2.2.3 / OAuth 2.1 refresh-token reuse detection).
+ */
 export async function rotateRefreshToken(opts: {
   client: Client;
   refreshToken: string;
@@ -299,27 +311,70 @@ export async function rotateRefreshToken(opts: {
   { ok: true; tokens: TokenResponse } | { ok: false; description: string }
 > {
   const db = getDb();
+  const hash = hashToken(opts.refreshToken);
+
   const [row] = await db
-    .update(refreshTokens)
-    .set({ revoked: true })
-    .where(
-      and(
-        eq(refreshTokens.tokenHash, hashToken(opts.refreshToken)),
-        eq(refreshTokens.revoked, false),
-        gt(refreshTokens.expiresAt, new Date()),
-      ),
-    )
-    .returning();
+    .select()
+    .from(refreshTokens)
+    .where(eq(refreshTokens.tokenHash, hash))
+    .limit(1);
 
   if (!row || row.clientId !== opts.client.clientId) {
     return { ok: false, description: "Refresh token is invalid or expired." };
   }
+
+  // Reuse of a token we already rotated away → assume the family is compromised.
+  if (row.revoked) {
+    await revokeFamily(row.familyId);
+    return {
+      ok: false,
+      description:
+        "Refresh token reuse detected; all tokens for this session were revoked. Re-authorize the user.",
+    };
+  }
+
+  if (row.expiresAt < new Date()) {
+    return { ok: false, description: "Refresh token is invalid or expired." };
+  }
+
+  // Claim the token atomically; losing the race means a concurrent use of the
+  // same token — also reuse, so revoke the family.
+  const [claimed] = await db
+    .update(refreshTokens)
+    .set({ revoked: true })
+    .where(
+      and(eq(refreshTokens.tokenHash, hash), eq(refreshTokens.revoked, false)),
+    )
+    .returning();
+  if (!claimed) {
+    await revokeFamily(row.familyId);
+    return {
+      ok: false,
+      description:
+        "Refresh token reuse detected; all tokens for this session were revoked. Re-authorize the user.",
+    };
+  }
+
   const tokens = await issueTokens({
     clientId: row.clientId,
     userId: row.userId,
     scope: row.scope,
+    familyId: row.familyId,
   });
   return { ok: true, tokens };
+}
+
+/** Revoke every access + refresh token in a token family. */
+async function revokeFamily(familyId: string): Promise<void> {
+  const db = getDb();
+  await db
+    .update(accessTokens)
+    .set({ revoked: true })
+    .where(eq(accessTokens.familyId, familyId));
+  await db
+    .update(refreshTokens)
+    .set({ revoked: true })
+    .where(eq(refreshTokens.familyId, familyId));
 }
 
 /** Resolve a bearer access token to its user + scopes, or null. */

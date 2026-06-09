@@ -17,7 +17,11 @@ export async function POST(request: Request) {
 
   const creds = getClientCredentials(request, form);
   const client = await authenticateClient(creds.clientId, creds.clientSecret);
-  if (!client) return json({ error: "invalid_client" }, 401);
+  if (!client)
+    return Response.json(
+      { error: "invalid_client" },
+      { status: 401, headers: { "cache-control": "no-store", "www-authenticate": "Basic" } },
+    );
 
   const amount = Number(form.get("amount"));
   const ref = form.get("ref")?.toString();
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const intent = await createIntent({
+  const result = await createIntent({
     client,
     amount,
     description,
@@ -44,16 +48,36 @@ export async function POST(request: Request) {
     redirectUri,
     state,
   });
-  if (!intent) {
+  if (!result.ok) {
+    if (result.error === "conflict") {
+      return json(
+        {
+          error: "conflict",
+          error_description:
+            "This ref was already used with a different amount or description.",
+        },
+        409,
+      );
+    }
+    if (result.error === "invalid_redirect_uri") {
+      return json(
+        {
+          error: "invalid_request",
+          error_description: "redirect_uri is not registered for this client.",
+        },
+        400,
+      );
+    }
     return json(
       {
         error: "invalid_request",
-        error_description: "redirect_uri is not registered for this client.",
+        error_description: "amount must be a positive integer.",
       },
       400,
     );
   }
 
+  const intent = result.intent;
   return json(
     {
       intent_id: intent.id,

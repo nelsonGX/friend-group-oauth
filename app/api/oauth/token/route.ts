@@ -19,7 +19,6 @@ export async function POST(request: Request) {
   if (!client) {
     return error("invalid_client", "Client authentication failed.", 401);
   }
-
   const grantType = form.get("grant_type")?.toString();
 
   if (grantType === "authorization_code") {
@@ -63,8 +62,8 @@ function success(body: unknown) {
 }
 
 function error(error: string, description: string, status: number) {
-  return Response.json(
-    { error, error_description: description },
-    { status, headers: { "cache-control": "no-store" } },
-  );
+  const headers: Record<string, string> = { "cache-control": "no-store" };
+  // RFC 6749 §5.2: a 401 from the token endpoint must include WWW-Authenticate.
+  if (status === 401) headers["www-authenticate"] = "Basic";
+  return Response.json({ error, error_description: description }, { status, headers });
 }

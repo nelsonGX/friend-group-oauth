@@ -5,13 +5,16 @@ import { Copy, Check } from "lucide-react";
 import {
   regenerateSecret,
   updateAppRedirects,
+  updateAppWebhook,
   type SecretState,
+  type WebhookState,
 } from "./actions";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
 type FormsDict = Dictionary["dashboard"]["forms"];
 
 const secretInitial: SecretState = { ok: false, message: "" };
+const webhookInitial: WebhookState = { ok: false, message: "" };
 
 const inputClass = "input";
 
@@ -76,6 +79,42 @@ export function EditRedirects({
         {pending ? t.saving : t.saveRedirectUris}
       </button>
       <Notice ok={state.ok} message={state.message} />
+    </form>
+  );
+}
+
+export function WebhookSettings({
+  clientId,
+  webhookUrl,
+  t,
+}: {
+  clientId: string;
+  webhookUrl: string | null;
+  t: FormsDict;
+}) {
+  const [state, action, pending] = useActionState(updateAppWebhook, webhookInitial);
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="clientId" value={clientId} />
+      <input
+        className={inputClass}
+        type="url"
+        name="webhookUrl"
+        placeholder={t.webhookUrlPlaceholder}
+        defaultValue={webhookUrl ?? ""}
+      />
+      <button className="btn btn-secondary text-sm" disabled={pending}>
+        {pending ? t.saving : t.saveWebhook}
+      </button>
+      <Notice ok={state.ok} message={state.message} />
+      {state.ok && state.secret && (
+        <div>
+          <p className="text-xs text-muted">{t.webhookSecretLabel}</p>
+          <div className="sunken mt-1 p-2 font-mono text-xs break-all">
+            {state.secret}
+          </div>
+        </div>
+      )}
     </form>
   );
 }

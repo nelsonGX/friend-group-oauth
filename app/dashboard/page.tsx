@@ -53,6 +53,7 @@ export default async function DashboardPage() {
     isActive: c.isActive,
     trusted: c.trusted,
     earned: ownedEarnings[i],
+    webhookUrl: c.webhookUrl,
     createdAt: c.createdAt.toISOString(),
   }));
 

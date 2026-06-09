@@ -12,10 +12,22 @@ const INTENT_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 export type PaymentIntent = typeof paymentIntents.$inferSelect;
 
+export type CreateIntentResult =
+  | { ok: true; intent: PaymentIntent }
+  // amount must be a positive integer.
+  | { ok: false; error: "invalid_amount" }
+  // redirect_uri is not registered for the client.
+  | { ok: false; error: "invalid_redirect_uri" }
+  // (client, ref) already exists with a different amount/description.
+  | { ok: false; error: "conflict" };
+
 /**
- * Create (or return the existing) intent for a provider + ref. Returns null if
- * the redirect URI is not registered for the client. Idempotent on (clientId,
- * ref): re-creating with the same ref returns the original intent.
+ * Create (or return the existing) intent for a provider + ref.
+ *
+ * Idempotent on (clientId, ref): re-creating with the same ref AND the same
+ * amount/description returns the original intent. Re-using a ref with a
+ * different amount/description is a `conflict` (the client has a bug) rather
+ * than silently honoring either value.
  */
 export async function createIntent(opts: {
   client: Client;
@@ -24,9 +36,13 @@ export async function createIntent(opts: {
   ref: string;
   redirectUri: string;
   state?: string;
-}): Promise<PaymentIntent | null> {
-  if (!Number.isInteger(opts.amount) || opts.amount <= 0) return null;
-  if (!opts.client.redirectUris.includes(opts.redirectUri)) return null;
+}): Promise<CreateIntentResult> {
+  if (!Number.isInteger(opts.amount) || opts.amount <= 0) {
+    return { ok: false, error: "invalid_amount" };
+  }
+  if (!opts.client.redirectUris.includes(opts.redirectUri)) {
+    return { ok: false, error: "invalid_redirect_uri" };
+  }
 
   const db = getDb();
   const [existing] = await db
@@ -39,7 +55,14 @@ export async function createIntent(opts: {
       ),
     )
     .limit(1);
-  if (existing) return existing;
+  if (existing) {
+    const sameTerms =
+      existing.amount === opts.amount &&
+      (existing.description ?? null) === (opts.description ?? null);
+    return sameTerms
+      ? { ok: true, intent: existing }
+      : { ok: false, error: "conflict" };
+  }
 
   const [intent] = await db
     .insert(paymentIntents)
@@ -53,7 +76,7 @@ export async function createIntent(opts: {
       expiresAt: new Date(Date.now() + INTENT_TTL_MS),
     })
     .returning();
-  return intent;
+  return { ok: true, intent };
 }
 
 export async function getIntent(id: string): Promise<PaymentIntent | null> {
@@ -80,10 +103,12 @@ export async function completeIntent(
   return intent ?? null;
 }
 
-export async function cancelIntent(id: string): Promise<void> {
+export async function cancelIntent(id: string): Promise<PaymentIntent | null> {
   const db = getDb();
-  await db
+  const [intent] = await db
     .update(paymentIntents)
     .set({ status: "cancelled" })
-    .where(and(eq(paymentIntents.id, id), eq(paymentIntents.status, "pending")));
+    .where(and(eq(paymentIntents.id, id), eq(paymentIntents.status, "pending")))
+    .returning();
+  return intent ?? null;
 }

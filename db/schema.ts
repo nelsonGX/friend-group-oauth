@@ -80,6 +80,11 @@ export const clients = pgTable("clients", {
     onDelete: "set null",
   }),
   isActive: boolean("is_active").notNull().default(true),
+  /** Optional server-to-server webhook for payment state changes. */
+  webhookUrl: text("webhook_url"),
+  /** Plaintext HMAC signing key for webhook payloads (a low-sensitivity key,
+   *  separate from client_secret; shown once when the webhook is configured). */
+  webhookSecret: text("webhook_secret"),
   ...timestamps,
 });
 
@@ -113,6 +118,9 @@ export const accessTokens = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     scope: text("scope").notNull(),
+    /** Token-family id shared with the refresh-token lineage, for reuse-based
+     *  family revocation. */
+    familyId: uuid("family_id").notNull().defaultRandom(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revoked: boolean("revoked").notNull().default(false),
     ...timestamps,
@@ -120,6 +128,7 @@ export const accessTokens = pgTable(
   (t) => [
     index("access_tokens_user_id_idx").on(t.userId),
     index("access_tokens_client_id_idx").on(t.clientId),
+    index("access_tokens_family_id_idx").on(t.familyId),
   ],
 );
 
@@ -133,11 +142,17 @@ export const refreshTokens = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     scope: text("scope").notNull(),
+    /** Lineage id: rotation carries it forward; presenting a revoked token from
+     *  a family triggers revocation of the whole family (theft detection). */
+    familyId: uuid("family_id").notNull().defaultRandom(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revoked: boolean("revoked").notNull().default(false),
     ...timestamps,
   },
-  (t) => [index("refresh_tokens_user_id_idx").on(t.userId)],
+  (t) => [
+    index("refresh_tokens_user_id_idx").on(t.userId),
+    index("refresh_tokens_family_id_idx").on(t.familyId),
+  ],
 );
 
 /**
@@ -191,6 +206,14 @@ export const paymentIntents = pgTable(
       onDelete: "set null",
     }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    /** Webhook delivery bookkeeping (null = no webhook configured for the
+     *  client at the time the intent settled). pending | delivered | failed */
+    webhookStatus: text("webhook_status"),
+    webhookAttempts: integer("webhook_attempts").notNull().default(0),
+    webhookLastError: text("webhook_last_error"),
+    webhookDeliveredAt: timestamp("webhook_delivered_at", {
+      withTimezone: true,
+    }),
     ...timestamps,
   },
   (t) => [uniqueIndex("payment_intents_client_ref_idx").on(t.clientId, t.ref)],

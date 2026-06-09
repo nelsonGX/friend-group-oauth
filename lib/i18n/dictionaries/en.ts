@@ -136,11 +136,15 @@ const en = {
     details: {
       tabIntegration: "Integration",
       tabRedirects: "Redirect URIs",
+      tabWebhook: "Webhook",
       tabSecret: "Secret",
       endpoints: "API endpoints",
       secretTitle: "Client secret",
       secretDesc:
         "Regenerating immediately invalidates the old secret. Any site still using it will stop working until you update it.",
+      webhookTitle: "Payment webhook",
+      webhookDesc:
+        "We'll POST a signed notification here whenever a payment settles, so you aren't reliant on the browser redirect. Saving a URL reveals a signing secret once. Leave blank to disable.",
       close: "Close",
       created: "Created {date}",
     },
@@ -166,6 +170,9 @@ const en = {
       copied: "Copied!",
       copyPrompt: "Copy prompt",
       redirectUrisMustMatch: "Redirect URIs (must match exactly)",
+      webhookUrlPlaceholder: "https://yourapp.com/webhooks/payments",
+      saveWebhook: "Save webhook",
+      webhookSecretLabel: "Signing secret (shown once — store it now):",
     },
   },
   dashboardActions: {
@@ -183,6 +190,8 @@ const en = {
     missingApp: "Missing app.",
     notYourApp: "Not your app.",
     redirectUrisUpdated: "Redirect URIs updated.",
+    webhookSaved: "Webhook saved — copy the signing secret now.",
+    webhookCleared: "Webhook disabled.",
   },
   admin: {
     title: "Admin",

@@ -7,6 +7,12 @@ identity and gate access on server membership/role, and (b) charge them credits.
 Throughout, `AUTH` is the base URL of the auth server (e.g.
 `https://auth.example.com`).
 
+> **Tip:** every endpoint below is also published as a machine-readable
+> [RFC 8414](https://www.rfc-editor.org/rfc/rfc8414) discovery document at
+> `AUTH/.well-known/oauth-authorization-server`. Point your OAuth client at that
+> URL to auto-configure instead of transcribing endpoints by hand. It also lists
+> the (non-standard) `payment_*` endpoints for the credit flow.
+
 ---
 
 ## 1. Get registered
@@ -37,6 +43,12 @@ Self-registered apps always show the consent screen. An admin can mark an app
 
 `allowed` is the key authorization signal: `true` means the user is in the
 Discord server with a required role.
+
+**Requesting a scope your app isn't allowed is rejected** with
+`error=invalid_scope` (we never silently down-scope). The `scope` you actually
+got is echoed in the token response. Userinfo fields are gated by the granted
+scope — e.g. `credits` is omitted unless the `credits` scope was granted. Scope
+values are space-separated; `+` and `%20` are both accepted as the separator.
 
 ---
 
@@ -101,6 +113,14 @@ grant_type=authorization_code
 &client_secret=YOUR_CLIENT_SECRET               (or HTTP Basic auth)
 ```
 
+> **Client authentication** accepts either `client_secret_post` (the
+> `client_id`/`client_secret` form fields above) **or** `client_secret_basic`
+> (HTTP Basic: `Authorization: Basic base64(client_id:client_secret)`). The
+> authorization `code` is single-use, ~256-bit, and expires 10 minutes after
+> issue; a 400 `invalid_grant` means it was already used, expired, or mismatched.
+> On a `401`, the response is `invalid_client` with a `WWW-Authenticate: Basic`
+> header — your credentials are wrong, not the code.
+
 Response:
 
 ```json
@@ -138,6 +158,11 @@ Authorization: Bearer ACCESS_TOKEN
 > Gate access on `allowed === true`. If it's `false`, the user isn't in the
 > server with a required role — refuse access.
 
+> **Which identifier do I store?** Key your user rows on **`sub`** — it's the
+> stable primary key and never changes. `id` is the same value (an alias). Don't
+> key on `username`/`global_name` (a user can change those). `discord_id` is
+> also stable, but `sub` is the canonical choice for this provider.
+
 ### Token lifetimes & refresh
 
 - Access tokens last **1 hour**. Refresh tokens last **30 days**.
@@ -147,6 +172,13 @@ Authorization: Bearer ACCESS_TOKEN
 POST AUTH/api/oauth/token
 grant_type=refresh_token&refresh_token=…&client_id=…&client_secret=…
 ```
+
+> **Reuse detection:** always use the newest refresh token and discard the old
+> one immediately. If a previously-rotated (already-used) refresh token is ever
+> presented again, the server treats it as a leak and revokes the **entire token
+> family** — every access and refresh token from that login. You'll get
+> `invalid_grant` and must send the user through authorize again. Don't retry a
+> failed refresh with the same token.
 
 - Revoke a token: `POST AUTH/api/oauth/revoke` with `token=…` + client auth.
 
@@ -249,8 +281,11 @@ Response:
 }
 ```
 
-`ref` is idempotent per client: creating again with the same `ref` returns the
-same intent.
+`ref` is idempotent per client: creating again with the same `ref` **and the
+same `amount`/`description`** returns the same intent. Reusing a `ref` with a
+**different** `amount` or `description` is rejected with `409 conflict` (pick a
+fresh `ref` per distinct charge). `expires_at` is an ISO 8601 UTC timestamp
+(e.g. `2026-06-09T12:30:00.000Z`); intents expire 30 minutes after creation.
 
 **2. Redirect the user to `url`.** They confirm or cancel, then return to your
 `redirect_uri` with:
@@ -315,6 +350,58 @@ const result = await fetch(`${AUTH}/api/pay/verify`, {
 
 if (result.paid) grantValue(result.user_id, result.ref);
 ```
+
+### Webhooks (optional — recommended)
+
+The redirect-then-verify flow above is the happy path, but a user can pay and
+then lose the redirect (closed tab, dropped connection). A **webhook** lets your
+server learn about a settled intent regardless.
+
+Configure a webhook URL on your app in the dashboard (**Manage → Webhook**).
+Saving it reveals a **signing secret once** — store it server-side. When an
+intent settles (`completed` or `cancelled`), we `POST` JSON to your URL:
+
+```http
+POST https://yourapp.com/webhooks/payments
+Content-Type: application/json
+X-Webhook-Id: <intent_id>                      # idempotency key — de-dupe on this
+X-Webhook-Signature: t=1749472200,v1=<base64url-hmac>
+
+{
+  "event": "payment.completed",                 // or payment.cancelled
+  "intent_id": "uuid",
+  "ref": "order_8421",
+  "status": "completed",
+  "amount": 20,
+  "description": "Pro plan – 1 month",
+  "user_id": "uuid",
+  "created_at": "2026-06-09T12:00:00.000Z"
+}
+```
+
+**Verify the signature** before trusting the body. `v1` is
+`base64url(HMAC_SHA256(secret, \`${t}.${rawBody}\`))` — compute it over the raw
+request body and compare in constant time:
+
+```js
+import crypto from "node:crypto";
+
+function verify(rawBody, header, secret) {
+  const { t, v1 } = Object.fromEntries(
+    header.split(",").map((kv) => kv.split("=")),
+  );
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${t}.${rawBody}`)
+    .digest("base64url");
+  return crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+}
+```
+
+Delivery is **best-effort** (a few quick retries, no long queue). Treat
+`/api/pay/verify` as the source of truth: on receipt, look up the intent and/or
+call verify before granting value, and de-dupe on `X-Webhook-Id`. A missed
+webhook is always recoverable via verify. Respond `2xx` to acknowledge.
 
 ---
 

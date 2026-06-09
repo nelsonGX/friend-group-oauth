@@ -17,14 +17,18 @@ exactly. Do not invent endpoints or parameters beyond what's written here.
 - CLIENT_ID     = "CHANGE_ME"                # from the auth dashboard (Register a new app)
 - CLIENT_SECRET = "CHANGE_ME"                # server-side secret, never exposed to the browser
 - REDIRECT_URI  = "https://CHANGE_ME/callback"  # must be registered on the app in the auth dashboard
+- Discovery (RFC 8414): {AUTH_BASE_URL}/.well-known/oauth-authorization-server
 
 ## Hard rules
 - PKCE (S256) is REQUIRED on the authorization request.
 - CLIENT_SECRET is used only in server-to-server calls. It must never reach the browser.
 - All token/pay POSTs are `application/x-www-form-urlencoded`.
+- Client auth at token/pay endpoints: client_secret in the body (client_secret_post)
+  OR HTTP Basic (client_secret_basic) — either is accepted.
 - `redirect_uri` must match a registered URI EXACTLY.
 - Gate access on `allowed === true` from userinfo. If false, deny — the user
   is not in the Discord server with a required role.
+- Store the user keyed on `sub` (the stable primary key; `id` is the same value).
 - Verify state on the login callback, and re-verify payments server-side.
 
 ## Scopes (request only what you need, space-separated)
@@ -69,7 +73,9 @@ exactly. Do not invent endpoints or parameters beyond what's written here.
    Require allowed === true to grant access.
 
 Token lifetimes: access = 1h, refresh = 30d. Refreshing rotates the refresh
-token (old one becomes invalid):
+token (old one becomes invalid). Always use the newest one; presenting an
+already-rotated refresh token triggers reuse detection and revokes the whole
+token family — re-authorize the user if that happens:
    POST {AUTH_BASE_URL}/api/oauth/token
    body: grant_type=refresh_token&refresh_token={rt}&client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}
 Revoke: POST {AUTH_BASE_URL}/api/oauth/revoke  body: token={t}&client_id=...&client_secret=...
@@ -85,7 +91,8 @@ Revoke: POST {AUTH_BASE_URL}/api/oauth/revoke  body: token={t}&client_id=...&cli
          &description={optional}
          &state={optional opaque}
    -> { intent_id, url, amount, status:"pending", expires_at }
-   (Idempotent on (client, ref): same ref returns the same intent.)
+   (Idempotent on (client, ref): same ref + same amount returns the same intent;
+    same ref + a DIFFERENT amount/description is rejected 409 — use a fresh ref.)
 
 2) Redirect the user to `url`. After they confirm/cancel they return to your
    return URL with: ?intent_id=...&ref=...&status=...&state=...
@@ -96,6 +103,12 @@ Revoke: POST {AUTH_BASE_URL}/api/oauth/revoke  body: token={t}&client_id=...&cli
    body: client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}&intent_id={intent_id}
    -> { intent_id, status, amount, ref, description, user_id, paid }
    Grant value only when paid === true.
+
+4) OPTIONAL (recommended) webhook: if a webhook URL is configured in the dashboard,
+   you'll receive POST JSON on settle with headers X-Webhook-Id (idempotency key)
+   and X-Webhook-Signature: t=<unix>,v1=<base64url HMAC-SHA256 of `<t>.<rawBody>`
+   keyed by the webhook signing secret>. Verify the signature, de-dupe on the id,
+   and still treat /api/pay/verify as authoritative. Delivery is best-effort.
 
 ## Deliverables
 - A login route that redirects to /oauth/authorize with a fresh PKCE pair + state.

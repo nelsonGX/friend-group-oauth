@@ -16,7 +16,11 @@ export async function POST(request: Request) {
 
   const creds = getClientCredentials(request, form);
   const client = await authenticateClient(creds.clientId, creds.clientSecret);
-  if (!client) return Response.json({ error: "invalid_client" }, { status: 401 });
+  if (!client)
+    return Response.json(
+      { error: "invalid_client" },
+      { status: 401, headers: { "www-authenticate": "Basic" } },
+    );
 
   const intentId = form.get("intent_id")?.toString();
   if (!intentId) {

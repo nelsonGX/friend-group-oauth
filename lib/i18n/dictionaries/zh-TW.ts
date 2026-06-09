@@ -133,11 +133,15 @@ const zhTW: Dictionary = {
     details: {
       tabIntegration: "整合",
       tabRedirects: "重新導向 URI",
+      tabWebhook: "Webhook",
       tabSecret: "密鑰",
       endpoints: "API 端點",
       secretTitle: "Client secret",
       secretDesc:
         "重新產生會立即讓舊密鑰失效。任何仍在使用舊密鑰的網站，在你更新前都會停止運作。",
+      webhookTitle: "付款 Webhook",
+      webhookDesc:
+        "每當付款完成時，我們會在這裡 POST 一則已簽章的通知，讓你不必依賴瀏覽器重新導向。儲存網址時會顯示一次簽章密鑰。留空即可停用。",
       close: "關閉",
       created: "建立於 {date}",
     },
@@ -163,6 +167,9 @@ const zhTW: Dictionary = {
       copied: "已複製！",
       copyPrompt: "複製提示詞",
       redirectUrisMustMatch: "重新導向 URI（必須完全相符）",
+      webhookUrlPlaceholder: "https://yourapp.com/webhooks/payments",
+      saveWebhook: "儲存 Webhook",
+      webhookSecretLabel: "簽章密鑰（僅顯示一次——請立即保存）：",
     },
   },
   dashboardActions: {
@@ -180,6 +187,8 @@ const zhTW: Dictionary = {
     missingApp: "缺少應用程式。",
     notYourApp: "這不是你的應用程式。",
     redirectUrisUpdated: "重新導向 URI 已更新。",
+    webhookSaved: "Webhook 已儲存——請立即複製簽章密鑰。",
+    webhookCleared: "Webhook 已停用。",
   },
   admin: {
     title: "管理",

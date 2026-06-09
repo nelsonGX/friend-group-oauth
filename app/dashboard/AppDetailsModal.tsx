@@ -8,6 +8,7 @@ import {
   EditRedirects,
   Field,
   RegenerateSecret,
+  WebhookSettings,
 } from "./DashboardForms";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
@@ -21,6 +22,7 @@ export interface AppView {
   isActive: boolean;
   trusted: boolean;
   earned: number;
+  webhookUrl: string | null;
   createdAt: string;
 }
 
@@ -28,7 +30,7 @@ type DetailsDict = Dictionary["dashboard"]["details"];
 type AppsDict = Dictionary["dashboard"]["apps"];
 type FormsDict = Dictionary["dashboard"]["forms"];
 
-type Tab = "integration" | "redirects" | "secret";
+type Tab = "integration" | "redirects" | "webhook" | "secret";
 
 /** Tabbed management surface for one provider app, opened from its card. */
 export function AppDetailsModal({
@@ -58,6 +60,7 @@ export function AppDetailsModal({
   const tabs: { key: Tab; label: string }[] = [
     { key: "integration", label: t.tabIntegration },
     { key: "redirects", label: t.tabRedirects },
+    { key: "webhook", label: t.tabWebhook },
     { key: "secret", label: t.tabSecret },
   ];
 
@@ -107,6 +110,7 @@ export function AppDetailsModal({
             <div>
               <h4 className="text-sm font-semibold">{t.endpoints}</h4>
               <div className="mt-2 space-y-1 font-mono text-xs">
+                <Field label="Discovery" value={`${appUrl}/.well-known/oauth-authorization-server`} />
                 <Field label="Authorize" value={`${appUrl}/oauth/authorize`} />
                 <Field label="Token" value={`${appUrl}/api/oauth/token`} />
                 <Field label="Userinfo" value={`${appUrl}/api/oauth/userinfo`} />
@@ -125,6 +129,18 @@ export function AppDetailsModal({
             <EditRedirects
               clientId={app.clientId}
               redirectUris={app.redirectUris}
+              t={forms}
+            />
+          </div>
+        )}
+
+        {tab === "webhook" && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">{t.webhookTitle}</h4>
+            <p className="text-sm text-muted">{t.webhookDesc}</p>
+            <WebhookSettings
+              clientId={app.clientId}
+              webhookUrl={app.webhookUrl}
               t={forms}
             />
           </div>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { buildClientRedirect } from "@/lib/oauth";
 import { charge, getClientInternalId } from "@/lib/credits";
+import { deliverPaymentWebhook } from "@/lib/webhooks";
 import {
   cancelIntent,
   completeIntent,
@@ -40,7 +41,8 @@ export async function confirmPayment(formData: FormData) {
   }
 
   if (!approved) {
-    await cancelIntent(intent.id);
+    const cancelled = await cancelIntent(intent.id);
+    if (cancelled) await deliverPaymentWebhook(cancelled);
     redirect(backTo(intent, "cancelled"));
   }
 
@@ -57,6 +59,7 @@ export async function confirmPayment(formData: FormData) {
     redirect(backTo(intent, "insufficient_funds"));
   }
 
-  await completeIntent(intent.id, user.id);
+  const completed = await completeIntent(intent.id, user.id);
+  if (completed) await deliverPaymentWebhook(completed);
   redirect(backTo(intent, "completed"));
 }
