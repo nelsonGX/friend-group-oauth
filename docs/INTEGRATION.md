@@ -8,13 +8,19 @@ Throughout, `AUTH` is the base URL of the auth server (e.g.
 `https://auth.example.com`).
 
 > **Fastest path — the integration skill.** Don't want to wire this up by hand?
-> Sign in at `AUTH/dashboard` and click **Download skill** under *One-click
-> integration*. Drop the unzipped folder into your project's `.claude/skills/`
-> (or point any coding agent at its `SKILL.md`) and ask it to set up Friend Group
-> Auth. It registers your OAuth app for you — redirect URIs included — via a
-> browser-approval step (you just click **Approve**; no secrets to copy), then
-> writes the login and payment code. The manual steps below remain available as
-> the reference and fallback.
+> Sign in at `AUTH/dashboard`, open *One-click integration*, and run the install
+> command in your project root:
+>
+> ```sh
+> curl -fsSL AUTH/api/skill/install.sh | sh          # macOS / Linux
+> irm AUTH/api/skill/install.ps1 | iex               # Windows PowerShell
+> ```
+>
+> That drops the skill into `.claude/skills/`. Then ask your coding agent to set
+> up Friend Group Auth — it registers your OAuth app for you (redirect URIs
+> included) via a browser-approval step (you just click **Approve**; no secrets to
+> copy), then writes the login and payment code. The manual steps below remain
+> available as the reference and fallback.
 
 > **Tip:** every endpoint below is also published as a machine-readable
 > [RFC 8414](https://www.rfc-editor.org/rfc/rfc8414) discovery document at

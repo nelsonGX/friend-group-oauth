@@ -10,8 +10,9 @@ system**, built for a Discord friend group that shares self-hosted tools.
   charge against it through a hosted confirm flow.
 
 Integrating a site? The fastest path is the **integration skill**: sign in at
-`/dashboard`, hit **Download skill**, and let your coding agent register the app
-(via a one-click browser approval) and write the code. For the full contract see
+`/dashboard`, open *One-click integration*, and run the one-line install command
+in your project root. Your coding agent then registers the app (via a one-click
+browser approval) and writes the code. For the full contract see
 [`docs/INTEGRATION.md`](docs/INTEGRATION.md) and the copy-paste agent prompt in
 [`docs/llm-integration-prompt.md`](docs/llm-integration-prompt.md).
 

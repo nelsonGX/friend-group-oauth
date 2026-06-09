@@ -101,10 +101,15 @@ const en = {
     developerPanel: "Developer panel",
     skill: {
       heading: "One-click integration",
-      desc: "Skip the manual setup. Download our coding-agent skill, run it in your project, and approve once in the browser — it registers your app (callbacks and all) and writes the login + payment code for you.",
-      download: "Download skill",
+      desc: "Skip the manual setup. Install our coding-agent skill, run it in your project, and approve once in the browser — it registers your app (callbacks and all) and writes the login + payment code for you.",
+      installCommand: "Install it in your project root with one command:",
+      macLinux: "macOS / Linux",
+      windows: "Windows",
+      copy: "Copy",
+      copied: "Copied!",
+      orDownload: "or download the zip",
       installNote:
-        "Unzip into your project's .claude/skills/ folder (or point any coding agent at SKILL.md), then ask it to set up Friend Group Auth.",
+        "Run the command in your project root, then ask your coding agent to set up Friend Group Auth.",
       flowNote:
         "When it runs, the agent opens a browser tab for you to approve — no secrets to copy by hand.",
     },

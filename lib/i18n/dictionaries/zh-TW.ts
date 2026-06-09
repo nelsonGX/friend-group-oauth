@@ -98,10 +98,15 @@ const zhTW: Dictionary = {
     developerPanel: "開發者面板",
     skill: {
       heading: "一鍵整合",
-      desc: "省去手動設定。下載我們的程式碼代理技能（skill），在你的專案中執行，並在瀏覽器中按一次「核准」——它就會替你註冊應用程式（連同回呼網址），並寫好登入與付款的程式碼。",
-      download: "下載技能",
+      desc: "省去手動設定。安裝我們的程式碼代理技能（skill），在你的專案中執行，並在瀏覽器中按一次「核准」——它就會替你註冊應用程式（連同回呼網址），並寫好登入與付款的程式碼。",
+      installCommand: "在你的專案根目錄用一行指令安裝：",
+      macLinux: "macOS / Linux",
+      windows: "Windows",
+      copy: "複製",
+      copied: "已複製！",
+      orDownload: "或下載 zip",
       installNote:
-        "解壓縮到你專案的 .claude/skills/ 資料夾（或讓任何程式碼代理讀取 SKILL.md），然後請它設定 Friend Group Auth。",
+        "在你的專案根目錄執行此指令，然後請你的程式碼代理設定 Friend Group Auth。",
       flowNote:
         "執行時，代理會開啟一個瀏覽器分頁讓你核准——不需要手動複製任何密鑰。",
     },

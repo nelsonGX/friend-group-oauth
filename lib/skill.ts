@@ -27,6 +27,61 @@ export function buildSkillBundle(): ZipEntry[] {
   ];
 }
 
+function bundleContent(suffix: string): string {
+  return buildSkillBundle().find((e) => e.name.endsWith(suffix))?.content ?? "";
+}
+
+/** The two one-line install commands shown on the dashboard. */
+export function installCommands(): { sh: string; ps1: string } {
+  const base = env.APP_URL;
+  return {
+    sh: `curl -fsSL ${base}/api/skill/install.sh | sh`,
+    ps1: `irm ${base}/api/skill/install.ps1 | iex`,
+  };
+}
+
+/**
+ * POSIX shell installer: writes the skill into ./.claude/skills/ in the current
+ * directory. The file bodies go in quoted heredocs so nothing is expanded (the
+ * skill text is full of `$` and backticks).
+ */
+export function buildInstallSh(): string {
+  return `#!/bin/sh
+set -e
+DIR=".claude/skills/${SKILL_DIR}"
+mkdir -p "$DIR"
+cat > "$DIR/SKILL.md" <<'FGA_SKILL_EOF'
+${bundleContent("SKILL.md")}
+FGA_SKILL_EOF
+cat > "$DIR/reference.md" <<'FGA_REFERENCE_EOF'
+${bundleContent("reference.md")}
+FGA_REFERENCE_EOF
+echo "Installed the Friend Group Auth skill to $DIR/"
+echo "Now ask your coding agent to set up Friend Group Auth."
+`;
+}
+
+/**
+ * PowerShell installer (Windows). Uses single-quoted here-strings so the skill
+ * text is written literally.
+ */
+export function buildInstallPs1(): string {
+  return `$ErrorActionPreference = 'Stop'
+$dir = ".claude/skills/${SKILL_DIR}"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+$skill = @'
+${bundleContent("SKILL.md")}
+'@
+$reference = @'
+${bundleContent("reference.md")}
+'@
+Set-Content -Path (Join-Path $dir 'SKILL.md') -Value $skill -Encoding utf8
+Set-Content -Path (Join-Path $dir 'reference.md') -Value $reference -Encoding utf8
+Write-Host "Installed the Friend Group Auth skill to $dir/"
+Write-Host "Now ask your coding agent to set up Friend Group Auth."
+`;
+}
+
 function skillMd(o: {
   base: string;
   startEndpoint: string;

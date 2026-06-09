@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Shield, LogOut, Compass, Boxes, Coins, Sparkles, Download } from "lucide-react";
+import { Shield, LogOut, Compass, Boxes, Coins, Sparkles } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients } from "@/db/schema";
@@ -9,7 +9,9 @@ import { getDictionary } from "@/lib/i18n";
 import { getProviderEarnings } from "@/lib/credits";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
+import { installCommands } from "@/lib/skill";
 import { ProviderApps } from "./ProviderApps";
+import { SkillInstall } from "./SkillInstall";
 import type { AppView } from "./AppDetailsModal";
 
 export default async function DashboardPage() {
@@ -24,6 +26,7 @@ export default async function DashboardPage() {
   const totalEarned = ownedEarnings.reduce((sum, n) => sum + n, 0);
   const canRegister = user.allowed || user.isAdmin;
   const appUrl = env.APP_URL;
+  const skillCmds = installCommands();
 
   // Serialize owned apps for the client components (Dates aren't passable as-is).
   const appViews: AppView[] = owned.map((c, i) => ({
@@ -119,7 +122,7 @@ export default async function DashboardPage() {
       {/* one-click integration skill */}
       {canRegister && (
         <div className="reveal mt-8" style={{ animationDelay: "110ms" }}>
-          <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <section className="card p-6">
             <div className="flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-white">
                 <Sparkles size={20} />
@@ -131,15 +134,19 @@ export default async function DashboardPage() {
                 <p className="mt-1 max-w-2xl text-sm text-muted">
                   {t.dashboard.skill.desc}
                 </p>
-                <p className="mt-2 max-w-2xl text-xs text-faint">
-                  {t.dashboard.skill.installNote} {t.dashboard.skill.flowNote}
+                <p className="mt-1 max-w-2xl text-xs text-faint">
+                  {t.dashboard.skill.flowNote}
                 </p>
               </div>
             </div>
-            <a href="/api/skill" className="btn btn-primary shrink-0 text-sm" download>
-              <Download size={15} />
-              {t.dashboard.skill.download}
-            </a>
+            <div className="mt-5">
+              <SkillInstall
+                sh={skillCmds.sh}
+                ps1={skillCmds.ps1}
+                zipUrl="/api/skill"
+                t={t.dashboard.skill}
+              />
+            </div>
           </section>
         </div>
       )}
