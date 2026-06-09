@@ -10,6 +10,7 @@ import { format } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
+import { registerClient } from "@/lib/apps";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 import { env } from "@/lib/env";
 
@@ -31,7 +32,7 @@ export async function revokeAppAccess(formData: FormData) {
     .update(refreshTokens)
     .set({ revoked: true })
     .where(and(eq(refreshTokens.userId, user.id), eq(refreshTokens.clientId, clientId)));
-  revalidatePath("/dashboard");
+  revalidatePath("/explore");
 }
 
 export interface SecretState {
@@ -139,17 +140,11 @@ export async function createOwnApp(
     return { ok: false, message: format(d.unknownScopes, { scopes: invalid.join(", ") }) };
   }
 
-  const db = getDb();
-  const clientId = `fgc_${randomToken(8)}`;
-  const secret = randomToken(32);
-  await db.insert(clients).values({
-    name,
-    clientId,
-    clientSecretHash: hashSecret(secret),
-    redirectUris,
-    allowedScopes: requested,
-    trusted: false,
+  const { clientId, secret } = await registerClient({
     ownerUserId: user.id,
+    name,
+    redirectUris,
+    scopes: requested,
   });
 
   revalidatePath("/dashboard");
