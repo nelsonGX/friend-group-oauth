@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createOwnApp,
   regenerateSecret,
@@ -8,6 +8,7 @@ import {
   type AppState,
   type SecretState,
 } from "./actions";
+import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 
 const secretInitial: SecretState = { ok: false, message: "" };
 const appInitial: AppState = { ok: false, message: "" };
@@ -126,10 +127,31 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          setCopied(false);
+        }
+      }}
+      className={buttonClass}
+    >
+      {copied ? "Copied!" : "Copy prompt"}
+    </button>
+  );
+}
+
 /**
- * Per-app setup instructions: the endpoints, identifiers, and a copy-paste env
- * block a friend needs to wire their site up. The secret is only ever shown at
- * creation or regeneration — never re-displayed here.
+ * Per-app setup: a ready-to-paste coding-agent prompt with this app's real
+ * values filled in, plus the endpoint reference, redirect-URI editing, and
+ * secret regeneration. The secret itself is only shown at creation/regeneration.
  */
 export function AppSetup({
   appUrl,
@@ -142,12 +164,12 @@ export function AppSetup({
   scopes: string[];
   redirectUris: string[];
 }) {
-  const envBlock = [
-    `AUTH_BASE=${appUrl}`,
-    `CLIENT_ID=${clientId}`,
-    `CLIENT_SECRET=   # the secret shown when you registered / regenerated`,
-    `REDIRECT_URI=${redirectUris[0] ?? "https://your-site.example/callback"}`,
-  ].join("\n");
+  const prompt = buildIntegrationPrompt({
+    appUrl,
+    clientId,
+    redirectUri: redirectUris[0] ?? "https://your-site.example/callback",
+    scopes,
+  });
 
   return (
     <details className="mt-3 text-xs">
@@ -156,6 +178,19 @@ export function AppSetup({
       </summary>
 
       <div className="mt-3 space-y-4">
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="opacity-60">
+              Paste this into your coding agent (Claude Code, Cursor, …). It has
+              your values filled in — just add the client secret.
+            </p>
+            <CopyButton text={prompt} />
+          </div>
+          <pre className="mt-2 max-h-72 overflow-auto rounded-md bg-black/5 dark:bg-white/10 p-3 font-mono whitespace-pre-wrap break-words">
+{prompt}
+          </pre>
+        </div>
+
         <div className="space-y-1 font-mono">
           <Field label="Authorize" value={`${appUrl}/oauth/authorize`} />
           <Field label="Token" value={`${appUrl}/api/oauth/token`} />
@@ -167,30 +202,11 @@ export function AppSetup({
         </div>
 
         <div>
-          <p className="mb-1 opacity-60">Granted scopes</p>
-          <p className="font-mono">{scopes.join(" ")}</p>
-        </div>
-
-        <div>
-          <p className="mb-1 opacity-60">Server-side env</p>
-          <pre className="overflow-x-auto rounded-md bg-black/5 dark:bg-white/10 p-3 font-mono whitespace-pre">
-{envBlock}
-          </pre>
-        </div>
-
-        <div>
           <p className="mb-1 opacity-60">Redirect URIs (must match exactly)</p>
           <EditRedirects clientId={clientId} redirectUris={redirectUris} />
         </div>
 
         <RegenerateSecret clientId={clientId} />
-
-        <p className="opacity-60">
-          PKCE (S256) is required. Full walkthrough and a copy-paste prompt for
-          your coding agent are in{" "}
-          <span className="font-mono">docs/INTEGRATION.md</span> and{" "}
-          <span className="font-mono">docs/llm-integration-prompt.md</span>.
-        </p>
       </div>
     </details>
   );
