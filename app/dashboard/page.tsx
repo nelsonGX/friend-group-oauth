@@ -107,7 +107,7 @@ export default async function DashboardPage() {
         style={{ animationDelay: "80ms" }}
       >
         {stats.map(({ icon: Icon, label, value }) => (
-          <section key={label} className="card flex items-center gap-4 p-6">
+          <section key={label} className="card card-hover flex items-center gap-4 p-6">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-strong text-brand-soft">
               <Icon size={20} />
             </span>
@@ -122,7 +122,7 @@ export default async function DashboardPage() {
       {/* one-click integration skill */}
       {canRegister && (
         <div className="reveal mt-8" style={{ animationDelay: "110ms" }}>
-          <section className="card p-6">
+          <section className="card card-hover-border p-6">
             <div className="flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-white">
                 <Sparkles size={20} />

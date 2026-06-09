@@ -25,7 +25,7 @@ export default async function LoginPage({
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="reveal card w-full max-w-sm p-8 text-center">
+      <div className="reveal card card-hover-border w-full max-w-sm p-8 text-center">
         <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand text-white">
           <DiscordIcon size={26} />
         </span>

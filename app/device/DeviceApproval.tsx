@@ -34,7 +34,7 @@ export function DeviceApproval({
   if (state.status === "approved" || state.status === "denied") {
     const ok = state.status === "approved";
     return (
-      <div className="reveal card w-full max-w-md p-8 text-center">
+      <div className="reveal card card-hover w-full max-w-md p-8 text-center">
         <span
           className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl ${
             ok
@@ -53,7 +53,7 @@ export function DeviceApproval({
   }
 
   return (
-    <div className="reveal card w-full max-w-md p-8">
+    <div className="reveal card card-hover-border w-full max-w-md p-8">
       <div className="flex items-center gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-white">
           <ShieldCheck size={22} strokeWidth={1.7} />

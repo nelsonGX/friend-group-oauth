@@ -60,6 +60,15 @@ body {
   border-radius: 6px;
 }
 
+/* Form fields supply their own focus treatment (brand border + soft ring), so
+   suppress the global outline on them — otherwise they show a doubled outline.
+   Type selectors keep this ahead of the unlayered *:focus-visible above. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
 /* slim, theme-matched scrollbar ------------------------------------------- */
 * {
   scrollbar-width: thin;
@@ -90,13 +99,33 @@ body {
     border-radius: 1rem;
   }
 
-  /* interactive lift for clickable / hoverable cards — a restrained hover:
-     the border brightens and the surface lifts a shade, no float or glow. */
+  /* interactive lift for clickable / hoverable cards — same tactile language as
+     the buttons: float up onto a hard ledge on hover, snap down on press. */
   .card-hover {
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease,
+      background 0.2s ease, box-shadow 0.2s ease;
   }
   .card-hover:hover {
+    transform: translateY(-6px);
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-strong);
+    box-shadow: 0 6px var(--color-border-strong);
+  }
+  /* Press — declared after :hover so it wins when hovered + clicked together. */
+  .card-hover:active {
+    transform: translateY(2px) scale(0.99);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) inset;
+    transition-duration: 0.06s;
+  }
+
+  /* lighter hover for cards that hold their own controls (buttons, inputs,
+     forms): just brighten the border so the panel acknowledges the cursor
+     without lifting and competing with the actions inside it. */
+  .card-hover-border {
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .card-hover-border:hover {
     border-color: var(--color-border-strong);
     background: var(--color-surface-strong);
   }
@@ -188,11 +217,18 @@ body {
     padding: 0.6rem 0.8rem;
     font-size: 0.875rem;
     color: var(--color-ink);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease,
-      background 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease,
+      box-shadow 0.2s ease, background 0.2s ease;
   }
   .input::placeholder {
     color: var(--color-faint);
+  }
+  /* button-like hover lift — only while not focused, so focusing settles the
+     field back down onto its focus ring rather than fighting the transform. */
+  .input:hover:not(:focus):not(:disabled) {
+    border-color: var(--color-border-strong);
+    box-shadow: 0 6px var(--color-border-strong);
+    transform: translateY(-6px);
   }
   .input:focus {
     outline: none;

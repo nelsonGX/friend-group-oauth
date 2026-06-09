@@ -116,7 +116,7 @@ export default async function ExplorePage() {
         className="reveal mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         style={{ animationDelay: "80ms" }}
       >
-        <section className="card p-6 sm:col-span-2 lg:col-span-1">
+        <section className="card card-hover p-6 sm:col-span-2 lg:col-span-1">
           <p className="text-sm text-muted">{d.creditBalance}</p>
           <p className="mt-1 text-5xl font-semibold tracking-tight">
             <span className="shimmer-text">{balance}</span>
@@ -125,7 +125,7 @@ export default async function ExplorePage() {
             </span>
           </p>
         </section>
-        <section className="card flex items-center gap-4 p-6">
+        <section className="card card-hover flex items-center gap-4 p-6">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-strong text-brand-soft">
             <Link2 size={20} />
           </span>
@@ -136,7 +136,7 @@ export default async function ExplorePage() {
             <p className="mt-1 text-sm text-muted">{d.statConnected}</p>
           </div>
         </section>
-        <section className="card flex items-center gap-4 p-6">
+        <section className="card card-hover flex items-center gap-4 p-6">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-strong text-brand-soft">
             <Wallet size={20} />
           </span>
@@ -159,7 +159,7 @@ export default async function ExplorePage() {
           <p className="mt-1 max-w-xl text-sm text-muted">{e.subtitle}</p>
 
           {listed.length === 0 ? (
-            <div className="card mt-4 flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <div className="card card-hover mt-4 flex flex-col items-center gap-3 px-6 py-12 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-strong text-faint">
                 <Boxes size={22} />
               </span>
@@ -173,7 +173,7 @@ export default async function ExplorePage() {
               {listed.map((app) => {
                 const title = app.displayTitle ?? app.name;
                 return (
-                  <li key={app.id} className="card card-hover flex flex-col p-5">
+                  <li key={app.id} className="card card-hover-border flex flex-col p-5">
                     <div className="flex items-start gap-3">
                       {app.iconUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -244,7 +244,7 @@ export default async function ExplorePage() {
         {entries.length === 0 ? (
           <p className="mt-3 text-sm text-muted">{d.noTransactions}</p>
         ) : (
-          <div className="card mt-3 overflow-hidden">
+          <div className="card card-hover mt-3 overflow-hidden">
             <table className="w-full text-left text-sm">
               <tbody className="glass-divide">
                 {entries.map((entry) => (

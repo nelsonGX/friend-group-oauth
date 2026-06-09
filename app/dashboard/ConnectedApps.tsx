@@ -34,7 +34,7 @@ export function ConnectedApps({
       {apps.length === 0 ? (
         <p className="mt-3 text-sm text-muted">{t.noAppsConnected}</p>
       ) : (
-        <ul className="card mt-3 glass-divide overflow-hidden">
+        <ul className="card card-hover-border mt-3 glass-divide overflow-hidden">
           {apps.map((c) => (
             <li
               key={c.clientId}

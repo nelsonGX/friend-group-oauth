@@ -37,7 +37,7 @@ export default async function DevicePage({
   if (!user.allowed && !user.isAdmin) {
     return (
       <Centered>
-        <div className="reveal card w-full max-w-md border-danger/30 p-8 text-center">
+        <div className="reveal card card-hover w-full max-w-md border-danger/30 p-8 text-center">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-danger/30 bg-danger/10 text-danger">
             <TriangleAlert size={24} strokeWidth={1.7} />
           </span>
@@ -54,7 +54,7 @@ export default async function DevicePage({
   if (!pending) {
     return (
       <Centered>
-        <div className="reveal card w-full max-w-md p-8">
+        <div className="reveal card card-hover-border w-full max-w-md p-8">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-strong text-brand-soft">
               <KeyRound size={20} strokeWidth={1.7} />

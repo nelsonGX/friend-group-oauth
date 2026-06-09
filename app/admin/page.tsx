@@ -40,7 +40,7 @@ export default async function AdminPage() {
 
       <div className="mt-7 grid gap-5 md:grid-cols-2">
         <section
-          className="reveal card p-6"
+          className="reveal card card-hover-border p-6"
           style={{ animationDelay: "80ms" }}
         >
           <h2 className="font-semibold">{t.admin.grantCredits}</h2>
@@ -49,7 +49,7 @@ export default async function AdminPage() {
         </section>
 
         <section
-          className="reveal card p-6"
+          className="reveal card card-hover-border p-6"
           style={{ animationDelay: "150ms" }}
         >
           <h2 className="font-semibold">{t.admin.registerProvider}</h2>
@@ -62,7 +62,7 @@ export default async function AdminPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
           {t.admin.providers} <span className="text-muted">({allClients.length})</span>
         </h2>
-        <div className="card mt-3 overflow-x-auto">
+        <div className="card card-hover-border mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border text-xs uppercase tracking-wide text-faint">
               <tr>
@@ -125,7 +125,7 @@ export default async function AdminPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-faint">
           {t.admin.users} <span className="text-muted">({allUsers.length})</span>
         </h2>
-        <div className="card mt-3 overflow-x-auto">
+        <div className="card card-hover mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border text-xs uppercase tracking-wide text-faint">
               <tr>

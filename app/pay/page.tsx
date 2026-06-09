@@ -10,7 +10,7 @@ import { confirmPayment } from "./actions";
 function Notice({ title, message }: { title: string; message: string }) {
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="reveal card w-full max-w-md p-8 text-center">
+      <div className="reveal card card-hover w-full max-w-md p-8 text-center">
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-muted">{message}</p>
       </div>
@@ -60,7 +60,7 @@ export default async function PayPage({
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="reveal card w-full max-w-md p-8">
+      <div className="reveal card card-hover-border w-full max-w-md p-8">
         <p className="text-xs uppercase tracking-wide text-faint">
           {t.pay.confirmPayment}
         </p>

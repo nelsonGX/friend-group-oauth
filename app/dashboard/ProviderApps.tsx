@@ -53,7 +53,7 @@ export function ProviderApps({
       </div>
 
       {apps.length === 0 ? (
-        <div className="card mt-4 flex flex-col items-center gap-3 px-6 py-12 text-center">
+        <div className="card card-hover-border mt-4 flex flex-col items-center gap-3 px-6 py-12 text-center">
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-strong text-faint">
             <Boxes size={22} />
           </span>
@@ -77,7 +77,7 @@ export function ProviderApps({
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {apps.map((app) => (
-            <li key={app.id} className="card flex flex-col p-5">
+            <li key={app.id} className="card card-hover-border flex flex-col p-5">
               <div className="flex items-start justify-between gap-2">
                 <span className="min-w-0 break-words font-medium">{app.name}</span>
                 <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
