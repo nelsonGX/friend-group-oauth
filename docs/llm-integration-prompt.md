@@ -14,9 +14,9 @@ exactly. Do not invent endpoints or parameters beyond what's written here.
 
 ## Config (these are mine — use them)
 - AUTH_BASE_URL = "https://CHANGE_ME"        # base URL of the auth server
-- CLIENT_ID     = "CHANGE_ME"                # from the auth admin
+- CLIENT_ID     = "CHANGE_ME"                # from the auth dashboard (Register a new app)
 - CLIENT_SECRET = "CHANGE_ME"                # server-side secret, never exposed to the browser
-- REDIRECT_URI  = "https://CHANGE_ME/callback"  # must be pre-registered with the auth admin
+- REDIRECT_URI  = "https://CHANGE_ME/callback"  # must be registered on the app in the auth dashboard
 
 ## Hard rules
 - PKCE (S256) is REQUIRED on the authorization request.

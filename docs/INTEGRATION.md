@@ -11,14 +11,21 @@ Throughout, `AUTH` is the base URL of the auth server (e.g.
 
 ## 1. Get registered
 
-Ask the auth server admin to register your app. You'll receive:
+Register your app yourself: sign in at `AUTH/dashboard` and use **Register a new
+app** under *Provider apps*. (An admin can also register one for you.) You'll
+receive:
 
 - `client_id` — public identifier
 - `client_secret` — **shown once**; store it as a server-side secret
 - one or more **redirect URIs** — every `redirect_uri` you use must match exactly
 - allowed **scopes** (see below)
 
-You can also be marked **trusted**, which skips the consent screen for your users.
+After registering, open **Setup instructions** on your app in the dashboard for
+the exact endpoint URLs and a copy-paste env block. You can edit your redirect
+URIs and regenerate the secret there at any time.
+
+Self-registered apps always show the consent screen. An admin can mark an app
+**trusted** to skip consent for your users.
 
 ### Scopes
 

@@ -5,8 +5,9 @@ import { getDb } from "@/db";
 import { accessTokens, clients } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { getBalance, getLedger, getProviderEarnings } from "@/lib/credits";
+import { env } from "@/lib/env";
 import { revokeAppAccess } from "./actions";
-import { RegenerateSecret } from "./DashboardForms";
+import { AppSetup, NewAppForm } from "./DashboardForms";
 
 function fmt(d: Date) {
   return d.toISOString().slice(0, 16).replace("T", " ");
@@ -34,6 +35,8 @@ export default async function DashboardPage() {
 
   const owned = await db.select().from(clients).where(eq(clients.ownerUserId, user.id));
   const ownedEarnings = await Promise.all(owned.map((c) => getProviderEarnings(c.id)));
+  const canRegister = user.allowed || user.isAdmin;
+  const appUrl = env.APP_URL;
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 p-6">
@@ -92,9 +95,14 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {owned.length > 0 && (
-        <section className="mt-6">
-          <h2 className="font-semibold">Your provider apps</h2>
+      <section className="mt-6">
+        <h2 className="font-semibold">Provider apps</h2>
+        <p className="mt-1 text-sm opacity-70">
+          Building a site for the group? Register it as an OAuth app to log
+          members in and charge credits.
+        </p>
+
+        {owned.length > 0 && (
           <ul className="mt-3 space-y-3">
             {owned.map((c, i) => (
               <li
@@ -103,18 +111,38 @@ export default async function DashboardPage() {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{c.name}</span>
-                  <span className="text-sm opacity-70">{ownedEarnings[i]} credits earned</span>
+                  <span className="text-sm opacity-70">
+                    {ownedEarnings[i]} credits earned
+                    {c.isActive ? "" : " · disabled"}
+                    {c.trusted ? " · trusted" : ""}
+                  </span>
                 </div>
                 <p className="mt-1 font-mono text-xs opacity-70">{c.clientId}</p>
-                <p className="mt-2 text-xs opacity-60">
-                  Redirect URIs: {c.redirectUris.join(", ")}
-                </p>
-                <RegenerateSecret clientId={c.clientId} />
+                <AppSetup
+                  appUrl={appUrl}
+                  clientId={c.clientId}
+                  scopes={c.allowedScopes}
+                  redirectUris={c.redirectUris}
+                />
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+
+        <div className="mt-4 rounded-xl border border-black/10 dark:border-white/15 p-4">
+          <h3 className="text-sm font-semibold">Register a new app</h3>
+          {canRegister ? (
+            <div className="mt-3">
+              <NewAppForm />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm opacity-60">
+              You need access (server membership + role) before you can register
+              an app.
+            </p>
+          )}
+        </div>
+      </section>
 
       <section className="mt-6">
         <h2 className="font-semibold">Recent activity</h2>
