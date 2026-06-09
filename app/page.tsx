@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/session";
 
 const features = [
   {
@@ -41,7 +42,9 @@ const features = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-12 px-5 py-20 text-center">
       <section className="flex flex-col items-center">
@@ -75,15 +78,23 @@ export default function Home() {
           className="reveal mt-9 flex flex-wrap items-center justify-center gap-3"
           style={{ animationDelay: "210ms" }}
         >
-          <Link href="/login" className="btn btn-primary px-6 py-3 text-[0.95rem]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M19.7 5.3A16 16 0 0015.6 4l-.3.5a14.9 14.9 0 014.4 2.2 13.5 13.5 0 00-11.5 0A14.9 14.9 0 0112.7 4.5L12.4 4A16 16 0 008.3 5.3 16.7 16.7 0 005.5 17a16 16 0 004.9 2.5l.6-1a10.5 10.5 0 01-1.6-.8l.4-.3a11.4 11.4 0 009.4 0l.4.3a10.5 10.5 0 01-1.6.8l.6 1A16 16 0 0022.5 17a16.7 16.7 0 00-2.8-11.7zM9.7 14.3c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7zm4.6 0c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7z" />
-            </svg>
-            Sign in with Discord
-          </Link>
-          <Link href="/dashboard" className="btn btn-secondary px-6 py-3 text-[0.95rem]">
-            Open dashboard
-          </Link>
+          {user ? (
+            <Link href="/dashboard" className="btn btn-primary px-6 py-3 text-[0.95rem]">
+              Open dashboard
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="btn btn-primary px-6 py-3 text-[0.95rem]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M19.7 5.3A16 16 0 0015.6 4l-.3.5a14.9 14.9 0 014.4 2.2 13.5 13.5 0 00-11.5 0A14.9 14.9 0 0112.7 4.5L12.4 4A16 16 0 008.3 5.3 16.7 16.7 0 005.5 17a16 16 0 004.9 2.5l.6-1a10.5 10.5 0 01-1.6-.8l.4-.3a11.4 11.4 0 009.4 0l.4.3a10.5 10.5 0 01-1.6.8l.6 1A16 16 0 0022.5 17a16.7 16.7 0 00-2.8-11.7zM9.7 14.3c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7zm4.6 0c-.8 0-1.5-.8-1.5-1.7s.6-1.7 1.5-1.7 1.5.8 1.5 1.7-.6 1.7-1.5 1.7z" />
+                </svg>
+                Sign in with Discord
+              </Link>
+              <Link href="/dashboard" className="btn btn-secondary px-6 py-3 text-[0.95rem]">
+                Open dashboard
+              </Link>
+            </>
+          )}
         </div>
       </section>
 

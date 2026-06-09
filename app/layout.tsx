@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/session";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,46 +42,45 @@ function Brand() {
   );
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="relative min-h-full flex flex-col">
-        {/* ambient background */}
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-        >
-          <div className="blob blob-1 -left-32 -top-32 h-[34rem] w-[34rem] bg-brand/25" />
-          <div className="blob blob-2 right-[-10rem] top-1/3 h-[30rem] w-[30rem] bg-violet/20" />
-          <div
-            className="absolute inset-0 opacity-[0.025]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-              maskImage:
-                "radial-gradient(60rem 60rem at 50% 0%, black, transparent 75%)",
-            }}
-          />
-        </div>
-
         <header className="sticky top-0 z-30 border-b border-border/60 backdrop-blur-xl">
           <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
             <Brand />
             <nav className="flex items-center gap-1.5 text-sm">
-              <Link href="/dashboard" className="btn btn-ghost !px-3 !py-1.5">
-                Dashboard
-              </Link>
-              <Link href="/login" className="btn btn-primary !px-3.5 !py-1.5">
-                Sign in
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="btn btn-primary !px-3.5 !py-1.5"
+                  >
+                    Dashboard
+                  </Link>
+                  <form action="/api/auth/logout" method="post">
+                    <button className="btn btn-ghost !px-3 !py-1.5">
+                      Log out
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="btn btn-primary !px-3.5 !py-1.5"
+                >
+                  Sign in
+                </Link>
+              )}
             </nav>
           </div>
         </header>

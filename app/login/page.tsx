@@ -1,9 +1,18 @@
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
+import { sanitizeReturnPath } from "@/lib/url";
+
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ return?: string; error?: string }>;
 }) {
   const sp = await searchParams;
+
+  // Already signed in — no reason to show the login form again.
+  const user = await getCurrentUser();
+  if (user) redirect(sanitizeReturnPath(sp.return));
+
   const query = sp.return ? `?return=${encodeURIComponent(sp.return)}` : "";
 
   const errors: Record<string, string> = {
