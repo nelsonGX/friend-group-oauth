@@ -165,6 +165,37 @@ export async function createOwnApp(
   };
 }
 
+/** Rename an app the user owns (or any, if admin). */
+export async function updateAppName(
+  _prev: SecretState,
+  formData: FormData,
+): Promise<SecretState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: d.notAuthorized };
+  const clientId = formData.get("clientId")?.toString();
+  if (!clientId) return { ok: false, message: d.missingApp };
+
+  const name = formData.get("name")?.toString().trim();
+  if (!name) return { ok: false, message: d.appNameRequired };
+
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
+    return { ok: false, message: d.notYourApp };
+  }
+
+  await db.update(clients).set({ name }).where(eq(clients.clientId, clientId));
+  revalidatePath("/dashboard");
+  revalidatePath("/explore");
+  return { ok: true, message: d.appNameUpdated };
+}
+
 /** Update the redirect URIs of an app the user owns (or any, if admin). */
 export async function updateAppRedirects(
   _prev: SecretState,

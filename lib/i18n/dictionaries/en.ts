@@ -246,6 +246,8 @@ const en = {
       regenerating: "Regenerating…",
       regenerateSecret: "Regenerate secret",
       saving: "Saving…",
+      nameLabel: "App name",
+      saveName: "Save name",
       saveRedirectUris: "Save redirect URIs",
       setupInstructions: "Setup instructions",
       pastePrompt:
@@ -317,6 +319,7 @@ const en = {
     appRegistered: "App registered. Copy the secret now — it won't be shown again.",
     missingApp: "Missing app.",
     notYourApp: "Not your app.",
+    appNameUpdated: "App name updated.",
     redirectUrisUpdated: "Redirect URIs updated.",
     webhookSaved: "Webhook saved — copy the signing secret now.",
     webhookCleared: "Webhook disabled.",

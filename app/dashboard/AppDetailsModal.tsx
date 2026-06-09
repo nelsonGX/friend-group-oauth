@@ -7,6 +7,7 @@ import {
   CopyButton,
   DeleteApp,
   EditListing,
+  EditName,
   EditRedirects,
   Field,
   RegenerateSecret,
@@ -106,6 +107,8 @@ export function AppDetailsModal({
       <div className="mt-4">
         {tab === "display" && (
           <div className="space-y-3">
+            <EditName clientId={app.clientId} name={app.name} t={forms} />
+            <hr className="border-border" />
             <p className="text-sm text-muted">{forms.displayDesc}</p>
             <EditListing
               clientId={app.clientId}

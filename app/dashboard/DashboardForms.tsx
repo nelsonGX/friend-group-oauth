@@ -6,6 +6,7 @@ import {
   deleteOwnApp,
   regenerateSecret,
   updateAppListing,
+  updateAppName,
   updateAppRedirects,
   updateAppWebhook,
   type SecretState,
@@ -55,6 +56,37 @@ export function RegenerateSecret({
       )}
       {state.ok && state.prompt && <OneShotPrompt prompt={state.prompt} t={t} />}
     </div>
+  );
+}
+
+export function EditName({
+  clientId,
+  name,
+  t,
+}: {
+  clientId: string;
+  name: string;
+  t: FormsDict;
+}) {
+  const [state, action, pending] = useActionState(updateAppName, secretInitial);
+  return (
+    <form action={action} className="space-y-1.5">
+      <input type="hidden" name="clientId" value={clientId} />
+      <label className="text-sm font-medium" htmlFor="name">
+        {t.nameLabel}
+      </label>
+      <input
+        id="name"
+        className={inputClass}
+        name="name"
+        placeholder={t.appNamePlaceholder}
+        defaultValue={name}
+      />
+      <button className="btn btn-secondary text-sm" disabled={pending}>
+        {pending ? t.saving : t.saveName}
+      </button>
+      <Notice ok={state.ok} message={state.message} />
+    </form>
   );
 }
 

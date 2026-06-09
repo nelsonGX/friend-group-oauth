@@ -240,6 +240,8 @@ const zhTW: Dictionary = {
       regenerating: "重新產生中…",
       regenerateSecret: "重新產生密鑰",
       saving: "儲存中…",
+      nameLabel: "應用程式名稱",
+      saveName: "儲存名稱",
       saveRedirectUris: "儲存重新導向 URI",
       setupInstructions: "設定說明",
       pastePrompt:
@@ -308,6 +310,7 @@ const zhTW: Dictionary = {
     appRegistered: "應用程式已註冊。請立即複製密鑰——它不會再次顯示。",
     missingApp: "缺少應用程式。",
     notYourApp: "這不是你的應用程式。",
+    appNameUpdated: "應用程式名稱已更新。",
     redirectUrisUpdated: "重新導向 URI 已更新。",
     webhookSaved: "Webhook 已儲存——請立即複製簽章密鑰。",
     webhookCleared: "Webhook 已停用。",
