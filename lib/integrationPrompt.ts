@@ -42,7 +42,7 @@ exactly. Do not invent endpoints or parameters beyond what's written here.
 
 ## Scopes (this app is allowed: ${scope})
 - identify : username, global_name, avatar, discord_id
-- roles    : roles[], allowed, in_guild
+- roles    : allowed, in_guild (access status only — role IDs are never exposed)
 - credits  : credits (integer balance)
 
 ## LOGIN — OAuth 2.0 Authorization Code + PKCE
@@ -78,7 +78,7 @@ exactly. Do not invent endpoints or parameters beyond what's written here.
 4) Get the user:
    GET {AUTH_BASE_URL}/api/oauth/userinfo
    header: Authorization: Bearer {access_token}
-   -> { sub, id, username, global_name, avatar, discord_id, roles, allowed, in_guild, credits }
+   -> { sub, id, username, global_name, avatar, discord_id, allowed, in_guild, credits }
    Require allowed === true to grant access.
 
 Token lifetimes: access = 1h, refresh = 30d. Refreshing rotates the refresh

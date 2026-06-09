@@ -64,7 +64,6 @@ export async function GET(request: Request) {
       avatar: discordUser.avatar,
       inGuild: access.inGuild,
       allowed: access.allowed,
-      roles: access.roles,
       lastRoleCheck: new Date(),
       lastLogin: new Date(),
     };

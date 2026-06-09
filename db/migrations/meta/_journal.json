@@ -43,6 +43,13 @@
       "when": 1781018323952,
       "tag": "0005_young_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781021696006,
+      "tag": "0006_public_boomerang",
+      "breakpoints": true
     }
   ]
 }

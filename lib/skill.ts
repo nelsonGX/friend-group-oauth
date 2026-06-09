@@ -243,7 +243,7 @@ it to auto-configure.
 
 ## Scopes (request only what you need, space-separated)
 - \`identify\` : \`username\`, \`global_name\`, \`avatar\`, \`discord_id\`
-- \`roles\`    : \`roles[]\`, \`allowed\`, \`in_guild\`
+- \`roles\`    : \`allowed\`, \`in_guild\` (access status only — role IDs are never exposed)
 - \`credits\`  : \`credits\` (integer balance)
 
 Requesting a scope the app isn't allowed is rejected with \`invalid_scope\` (no
@@ -277,7 +277,7 @@ silent down-scoping). The granted \`scope\` is echoed in the token response.
    GET ${o.base}/api/oauth/userinfo
    Authorization: Bearer {access_token}
    \`\`\`
-   → \`{ sub, id, username, global_name, avatar, discord_id, roles, allowed, in_guild, credits }\`
+   → \`{ sub, id, username, global_name, avatar, discord_id, allowed, in_guild, credits }\`
    Require \`allowed === true\`.
 
 ### Tokens & refresh

@@ -4,7 +4,7 @@ import { resolveAccessToken } from "@/lib/oauth";
 /**
  * OAuth2 userinfo endpoint. Returns claims scoped to the access token:
  *  - identify : username, global_name, avatar, discord_id
- *  - roles    : roles[], allowed, in_guild
+ *  - roles    : allowed, in_guild (access status only — never the role IDs)
  *  - credits  : credits (current balance)
  */
 async function handle(request: Request) {
@@ -34,7 +34,6 @@ async function handle(request: Request) {
     body.discord_id = user.discordId;
   }
   if (scopes.includes("roles")) {
-    body.roles = user.roles;
     body.allowed = user.allowed;
     body.in_guild = user.inGuild;
   }

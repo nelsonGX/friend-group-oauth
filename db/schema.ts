@@ -40,8 +40,6 @@ export const users = pgTable("users", {
   inGuild: boolean("in_guild").notNull().default(false),
   /** Whether the user holds a required role (or membership-only gating passes). */
   allowed: boolean("allowed").notNull().default(false),
-  /** Snapshot of the user's role IDs at last check. */
-  roles: jsonb("roles").$type<string[]>().notNull().default([]),
   lastRoleCheck: timestamp("last_role_check", { withTimezone: true }),
   lastLogin: timestamp("last_login", { withTimezone: true }),
   ...timestamps,

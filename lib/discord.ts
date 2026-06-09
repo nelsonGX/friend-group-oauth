@@ -19,7 +19,6 @@ export interface DiscordUser {
 export interface AccessEvaluation {
   inGuild: boolean;
   allowed: boolean;
-  roles: string[];
 }
 
 /**
@@ -100,14 +99,15 @@ export async function getGuildMember(
 /**
  * Decide whether a member may use the platform. With no required roles
  * configured, guild membership alone is sufficient; otherwise the member must
- * hold at least one required role.
+ * hold at least one required role. The member's role IDs are consumed here to
+ * compute `allowed` but are never returned — we don't store or expose them.
  */
 export function evaluateAccess(
   member: { roles: string[] } | null,
 ): AccessEvaluation {
-  if (!member) return { inGuild: false, allowed: false, roles: [] };
+  if (!member) return { inGuild: false, allowed: false };
   const required = env.DISCORD_REQUIRED_ROLE_IDS;
   const allowed =
     required.length === 0 || member.roles.some((r) => required.includes(r));
-  return { inGuild: true, allowed, roles: member.roles };
+  return { inGuild: true, allowed };
 }
