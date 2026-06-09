@@ -310,6 +310,11 @@ Credits are integers held per user. You charge them through a **payment intent**
 you create server-side (so the amount can't be tampered with), then send the
 user to confirm.
 
+> **Credit value is fixed: 1 credit = 1 TWD**, the same across every app on this
+> server. Set `amount` (integer credits) equal to the price in TWD — don't apply
+> your own conversion or markup, so a given item costs the same number of credits
+> on every platform.
+
 ### Endpoints
 
 | Purpose          | Method & path                |
@@ -473,7 +478,7 @@ webhook is always recoverable via verify. Respond `2xx` to acknowledge.
 - `redirect_uri` must **exactly** match a registered URI (scheme, host, path).
 - Keep `client_secret` server-side only. The browser never sees it.
 - Always verify `state` (login) and re-verify payments server-side.
-- Credits are whole numbers. There's no currency conversion here — "credits" are
-  whatever your group decides they're worth.
+- Credits are whole numbers, fixed at **1 credit = 1 TWD** across every app on
+  this server — price in credits at that rate; don't apply your own conversion.
 - A user can have `allowed: false` even while logged in (left the server / lost
   the role). Re-check `allowed` on each login.

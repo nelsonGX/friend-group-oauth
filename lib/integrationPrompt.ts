@@ -91,6 +91,11 @@ Revoke: POST {AUTH_BASE_URL}/api/oauth/revoke  body: token={t}&client_id=...&cli
 
 ## PAY — charge a user credits (only if my app needs it)
 
+Credit value is FIXED across every app on this server: **1 credit = 1 TWD**. Price
+in credits at this anchor — \`amount\` (integer credits) must equal the price in TWD.
+Never apply your own conversion, markup, or rounding, so the same item costs the
+same number of credits on every platform.
+
 1) Create a payment intent (server-side; the user must not be able to change the amount):
    POST {AUTH_BASE_URL}/api/pay/intent
    body: client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}

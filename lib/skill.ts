@@ -202,6 +202,8 @@ Follow \`reference.md\` exactly:
 - Key the local user on \`sub\` (stable). Store tokens server-side; refresh rotates.
 - If charging: a route that creates a payment intent and redirects to its \`url\`, and
   a return route that calls the verify endpoint and grants value only when \`paid === true\`.
+  Credit value is fixed at **1 credit = 1 TWD** across every app — set \`amount\` (integer
+  credits) equal to the price in TWD; never apply your own conversion or markup.
 
 ## Step 8 — Report back
 Tell the user which routes/files you created, that the app is registered (it shows
@@ -292,6 +294,10 @@ grant_type=refresh_token&refresh_token={rt}&client_id={CLIENT_ID}&client_secret=
 Revoke: \`POST ${o.base}/api/oauth/revoke\` with \`token={t}\` + client auth.
 
 ## Pay — charge a user credits (only if the app needs it)
+Credit value is FIXED across every app on this server: **1 credit = 1 TWD**. Set
+\`amount\` (integer credits) equal to the price in TWD — never apply your own
+conversion, markup, or rounding, so an item costs the same on every platform.
+
 1. **Create an intent (server-side):**
    \`\`\`
    POST ${o.base}/api/pay/intent
@@ -323,6 +329,6 @@ Delivery is best-effort.
 - \`redirect_uri\` mismatch (scheme/host/path) is the most common failure.
 - A user can be \`allowed: false\` even while logged in (left the server / lost the
   role) — re-check on each login.
-- Credits are whole numbers; there's no currency conversion.
+- Credits are whole numbers, fixed at 1 credit = 1 TWD — price in credits at that rate.
 `;
 }
