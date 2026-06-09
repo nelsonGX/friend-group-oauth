@@ -13,7 +13,8 @@
     "verify:credits": "tsx scripts/verify-credits.ts",
     "verify:devices": "tsx scripts/verify-devices.ts",
     "verify:redeem": "tsx scripts/verify-redeem.ts",
-    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem"
+    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@tanem/react-nprogress": "^6.0.3",
@@ -37,6 +38,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "react-doctor": "^0.5.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5"
