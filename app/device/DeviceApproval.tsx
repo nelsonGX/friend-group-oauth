@@ -55,7 +55,7 @@ export function DeviceApproval({
   return (
     <div className="reveal card w-full max-w-md p-8">
       <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-white shadow-[0_12px_30px_-12px_rgba(88,101,242,0.9)]">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-white">
           <ShieldCheck size={22} strokeWidth={1.7} />
         </span>
         <div>

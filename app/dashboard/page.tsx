@@ -68,7 +68,7 @@ export default async function DashboardPage() {
               className="h-12 w-12 rounded-full ring-2 ring-border"
             />
           ) : (
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-brand-soft to-violet text-lg font-semibold text-white">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-brand text-lg font-semibold text-white">
               {(user.globalName ?? user.username).slice(0, 1).toUpperCase()}
             </span>
           )}
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
         <div className="reveal mt-8" style={{ animationDelay: "110ms" }}>
           <section className="card p-6">
             <div className="flex items-start gap-4">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-white">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-white">
                 <Sparkles size={20} />
               </span>
               <div>

@@ -2,9 +2,9 @@
 
 /* ----------------------------------------------------------------------------
    Friend Group Auth — design system
-   A single, intentional dark theme built around the Discord blurple, with a
-   violet secondary for gradients and glows. Glassmorphic surfaces, crisp type,
-   and restrained motion.
+   A single, intentional dark theme built around the Discord blurple. Flat,
+   solid surfaces, crisp type, and restrained motion — no glass, glows, or
+   decorative gradients.
 ---------------------------------------------------------------------------- */
 
 @theme {
@@ -12,10 +12,9 @@
      rather than a void, but not so light it washes out. */
   --color-bg: #161922;
   --color-bg-soft: #1c2029;
-  /* Surfaces sit clearly above the base so cards read as elevated panels, not
-     faint smudges. */
-  --color-surface: rgba(255, 255, 255, 0.05);
-  --color-surface-strong: rgba(255, 255, 255, 0.085);
+  /* Solid surfaces a step above the base so cards read as panels, not glass. */
+  --color-surface: #1e212b;
+  --color-surface-strong: #262a35;
   --color-border: rgba(255, 255, 255, 0.11);
   --color-border-strong: rgba(255, 255, 255, 0.2);
 
@@ -27,7 +26,6 @@
   --color-brand: #5865f2;
   --color-brand-strong: #4752c4;
   --color-brand-soft: #7c84f7;
-  --color-violet: #a855f7;
   --color-success: #4ade80;
   --color-danger: #f87171;
 
@@ -90,31 +88,17 @@ body {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 1rem;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-      0 20px 40px -24px rgba(0, 0, 0, 0.7);
   }
 
-  /* interactive lift for clickable / hoverable cards — same tactile language as
-     the buttons: float up onto a hard ledge on hover, snap down on press. */
+  /* interactive lift for clickable / hoverable cards — a restrained hover:
+     the border brightens and the surface lifts a shade, no float or glow. */
   .card-hover {
     cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease,
-      background 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.15s ease, background 0.15s ease;
   }
   .card-hover:hover {
-    transform: translateY(-6px);
     border-color: var(--color-border-strong);
     background: var(--color-surface-strong);
-    box-shadow: 0 6px var(--color-border-strong),
-      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-      0 30px 60px -30px rgba(0, 0, 0, 0.8);
-  }
-  /* Press — declared after :hover so it wins when hovered + clicked together. */
-  .card-hover:active {
-    transform: translateY(2px) scale(0.99);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) inset;
-    transition-duration: 0.06s;
   }
 
   /* sunken surface for code / mono blocks */
@@ -125,8 +109,8 @@ body {
   }
 
   /* buttons --------------------------------------------------------------- */
-  /* A pressable, 3D "ledge" button: it floats up on hover with a hard bottom
-     shadow, then drops down on click. Semibold, softly glowing label. */
+  /* A pressable, 3D "ledge" button: it floats up on hover onto a hard bottom
+     shadow, then drops down on click. Solid fills, no glow or gradient. */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -137,9 +121,9 @@ body {
     line-height: 1;
     padding: 0.7rem 1.1rem;
     border: 1px solid transparent;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
     transition: transform 0.2s ease, box-shadow 0.2s ease,
-      background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+      background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+      opacity 0.2s ease;
     cursor: pointer;
     white-space: nowrap;
   }
@@ -152,37 +136,23 @@ body {
   }
 
   .btn-primary {
-    background: linear-gradient(180deg, var(--color-brand-soft), var(--color-brand));
+    background: var(--color-brand);
     color: #fff;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.25) inset;
   }
   .btn-primary:hover:not(:disabled) {
-    border-color: var(--color-brand-soft);
-    background: linear-gradient(
-      to bottom,
-      var(--color-brand-soft),
-      var(--color-brand),
-      var(--color-brand-strong)
-    );
-    box-shadow: 0 6px var(--color-brand-strong),
-      0 1px 0 0 rgba(255, 255, 255, 0.3) inset;
+    background: var(--color-brand);
+    box-shadow: 0 6px var(--color-brand-strong);
     transform: translateY(-6px);
   }
 
   .btn-secondary {
-    background: rgba(255, 255, 255, 0.068);
-    color: rgba(255, 255, 255, 0.85);
+    background: var(--color-surface-strong);
+    color: var(--color-ink);
+    border-color: var(--color-border);
   }
   .btn-secondary:hover:not(:disabled) {
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.62);
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.144),
-      rgba(255, 255, 255, 0.247),
-      rgba(255, 255, 255, 0.39)
-    );
-    box-shadow: 0 6px rgba(255, 255, 255, 0.62);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 6px var(--color-border-strong);
     transform: translateY(-6px);
   }
 
@@ -192,15 +162,9 @@ body {
     border: 1px solid var(--color-border);
   }
   .btn-ghost:hover:not(:disabled) {
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.62);
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.1),
-      rgba(255, 255, 255, 0.2),
-      rgba(255, 255, 255, 0.32)
-    );
-    box-shadow: 0 6px rgba(255, 255, 255, 0.5);
+    color: var(--color-ink);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 6px var(--color-border-strong);
     transform: translateY(-6px);
   }
 
@@ -212,7 +176,6 @@ body {
   .btn-ghost:active:not(:disabled) {
     transform: translateY(3px) scale(0.98);
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45) inset;
-    text-shadow: none;
     transition-duration: 0.06s;
   }
 
@@ -277,7 +240,6 @@ body {
     height: 0.45rem;
     border-radius: 9999px;
     background: currentColor;
-    box-shadow: 0 0 8px currentColor;
   }
 
   /* dialog / modal --------------------------------------------------------- */
@@ -302,8 +264,6 @@ body {
     background: var(--color-bg-soft);
     border: 1px solid var(--color-border-strong);
     border-radius: 1rem;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
-      0 40px 80px -32px rgba(0, 0, 0, 0.85);
     animation: modal-pop 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
@@ -324,7 +284,6 @@ body {
   .tab-active {
     color: var(--color-ink);
     background: var(--color-surface-strong);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
   }
   .tablist {
     display: flex;
@@ -354,10 +313,7 @@ body {
 --------------------------------------------------------------------------- */
 @layer utilities {
   .text-gradient {
-    background: linear-gradient(120deg, #fff 10%, var(--color-brand-soft) 55%, var(--color-violet));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--color-brand-soft);
   }
 
   .glass-divide > * + * {
@@ -399,26 +355,6 @@ body {
   }
 }
 
-@keyframes float-slow {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, -28px, 0) scale(1.05);
-  }
-}
-
-@keyframes float-slower {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(20px, 24px, 0) scale(1.08);
-  }
-}
-
 @keyframes shimmer {
   0% {
     background-position: 200% center;
@@ -428,38 +364,12 @@ body {
   }
 }
 
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(88, 101, 242, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(88, 101, 242, 0);
-  }
-}
-
 /* mount reveal — stagger with inline animation-delay */
 .reveal {
   animation: reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .fade-in {
   animation: fade-in 0.8s ease both;
-}
-
-.blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(80px);
-  pointer-events: none;
-  will-change: transform;
-}
-.blob-1 {
-  animation: float-slow 14s ease-in-out infinite;
-}
-.blob-2 {
-  animation: float-slower 18s ease-in-out infinite;
 }
 
 .shimmer-text {
@@ -474,10 +384,6 @@ body {
   background-clip: text;
   color: transparent;
   animation: shimmer 6s linear infinite;
-}
-
-.pulse-ring {
-  animation: pulse-ring 2.4s ease-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

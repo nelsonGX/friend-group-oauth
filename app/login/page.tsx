@@ -26,7 +26,7 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="reveal card w-full max-w-sm p-8 text-center">
-        <span className="pulse-ring mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-brand-soft to-violet text-white shadow-[0_16px_40px_-12px_rgba(88,101,242,0.9)]">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand text-white">
           <DiscordIcon size={26} />
         </span>
 

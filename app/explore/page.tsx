@@ -75,7 +75,7 @@ export default async function ExplorePage() {
               className="h-12 w-12 rounded-full ring-2 ring-border"
             />
           ) : (
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-brand-soft to-violet text-lg font-semibold text-white">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-brand text-lg font-semibold text-white">
               {(user.globalName ?? user.username).slice(0, 1).toUpperCase()}
             </span>
           )}
@@ -116,11 +116,7 @@ export default async function ExplorePage() {
         className="reveal mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         style={{ animationDelay: "80ms" }}
       >
-        <section className="card relative overflow-hidden p-6 sm:col-span-2 lg:col-span-1">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-brand/25 blur-3xl"
-          />
+        <section className="card p-6 sm:col-span-2 lg:col-span-1">
           <p className="text-sm text-muted">{d.creditBalance}</p>
           <p className="mt-1 text-5xl font-semibold tracking-tight">
             <span className="shimmer-text">{balance}</span>
@@ -187,7 +183,7 @@ export default async function ExplorePage() {
                           className="h-11 w-11 shrink-0 rounded-xl object-cover ring-1 ring-border"
                         />
                       ) : (
-                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-lg font-semibold text-white">
+                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand text-lg font-semibold text-white">
                           {title.slice(0, 1).toUpperCase()}
                         </span>
                       )}

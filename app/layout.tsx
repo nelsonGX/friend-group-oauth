@@ -29,7 +29,7 @@ function Brand() {
       href="/"
       className="group inline-flex items-center gap-2.5 text-sm font-semibold tracking-tight"
     >
-      <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-white p-1 shadow-[0_8px_24px_-10px_rgba(0,0,0,0.6)] ring-1 ring-white/15 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
+      <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-white p-1 ring-1 ring-border transition-transform duration-300 group-hover:scale-105">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/assets/icon.webp"
@@ -58,7 +58,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="relative min-h-full flex flex-col">
-        <header className="sticky top-0 z-30 border-b border-border/60 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-border bg-bg">
           <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
             <Brand />
             <nav className="flex items-center gap-1.5 text-sm">
