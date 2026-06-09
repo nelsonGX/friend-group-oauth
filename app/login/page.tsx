@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { sanitizeReturnPath } from "@/lib/url";
+import { env } from "@/lib/env";
+import { qrSvg } from "@/lib/qr";
 import { DiscordIcon } from "@/components/DiscordIcon";
 
 export default async function LoginPage({
@@ -17,6 +19,14 @@ export default async function LoginPage({
 
   const { t } = await getDictionary();
   const query = sp.return ? `?return=${encodeURIComponent(sp.return)}` : "";
+
+  // When the user landed here mid-flow (e.g. an app asked them to authorize),
+  // offer a hand-off to their phone: a QR of the same destination, which they
+  // can finish on a device where they're already signed in. Skip it for a bare
+  // visit to /login, where there's nothing in particular to continue.
+  const phoneQr = sp.return
+    ? await qrSvg(`${env.APP_URL}${sanitizeReturnPath(sp.return)}`)
+    : null;
 
   const errors = t.login.errors;
   const errorMessage = sp.error
@@ -46,6 +56,26 @@ export default async function LoginPage({
           <DiscordIcon size={20} />
           {t.login.continueWithDiscord}
         </a>
+
+        {phoneQr && (
+          <div className="mt-7">
+            <div className="flex items-center gap-3 text-faint">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wide">
+                {t.login.continueOnPhone}
+              </span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <div
+                className="rounded-xl bg-white p-3 ring-1 ring-border [&>svg]:block [&>svg]:h-40 [&>svg]:w-40"
+                // QR SVG is generated server-side from our own URL — trusted markup.
+                dangerouslySetInnerHTML={{ __html: phoneQr }}
+              />
+              <p className="text-xs text-faint">{t.login.phoneHint}</p>
+            </div>
+          </div>
+        )}
 
         <p className="mt-5 text-xs text-faint">{t.login.accessNote}</p>
       </div>

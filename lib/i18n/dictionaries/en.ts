@@ -46,6 +46,8 @@ const en = {
     welcomeBack: "Welcome back",
     useDiscord: "Use your Discord account to continue.",
     continueWithDiscord: "Continue with Discord",
+    continueOnPhone: "Or continue on phone",
+    phoneHint: "Scan with your phone's camera to finish signing in there.",
     accessNote: "Access requires membership in the group's Discord server.",
     errors: {
       no_access:
@@ -500,14 +502,16 @@ const en = {
     approve: "Approve",
     revokeNote: "You can revoke this access anytime from your dashboard.",
     jokes: [
-      "This app cannot read your DMs. It wouldn't understand them anyway.",
-      "No messages were harmed in the making of this authorization.",
-      "Authorizing will not give this app your Nitro. Nice try.",
-      "We promise this app has touched grass at least once.",
-      "Your secrets are safe with us. We forgot them already.",
-      "Powered by friendship and questionable amounts of caffeine.",
-      "Approving this will not summon any bots into your DMs.",
-      "This app pinky-promises to behave. Pinky promises are legally binding.",
+      "Chat with your mom (you don't have a mom)",
+      "Chat with your mom (she's too fat and got stuck)",
+      "Call your mom (she can't fit through the door)",
+      "Hug your mom (she flattened you)",
+      "Eat with your mom (she ate the whole family's food alone)",
+      "Take a walk with your mom (two steps and it's an earthquake)",
+      "Take a photo with your mom (needs a satellite to fit her in frame)",
+      "Swim with your mom (she filled up the entire ocean)",
+      "Measure your mom's waist (the surveyor retired before finishing)",
+      "Tell your mom to lose weight (she laughed so hard she collapsed the house)"
     ],
     noAccessMessage:
       "You don't have access to this platform yet. Make sure you're in the Discord server with the required role.",
