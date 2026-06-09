@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { approveLoginHandoff, denyLoginHandoff } from "@/lib/handoff";
 
@@ -21,7 +21,7 @@ export async function decideHandoff(
 ): Promise<HandoffDecisionState> {
   const { t } = await getDictionary();
   const h = t.handoff;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { status: "error", message: h.needLogin };
 
   const publicId = formData.get("public_id")?.toString() ?? "";

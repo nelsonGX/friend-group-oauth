@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
+import type { Metadata } from "next";
 import { UserX } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { DiscordIcon } from "@/components/DiscordIcon";
+
+export const metadata: Metadata = {
+  title: "No access | Friend Group Auth",
+  description: "Account access gate for Friend Group Auth.",
+};
 
 /**
  * Full-screen gate for a signed-in user who isn't a member of the group's
@@ -36,10 +43,11 @@ export default async function NoAccessPage() {
         {/* Which account they're currently signed in as. */}
         <div className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-border bg-surface px-3.5 py-1.5">
           {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`}
               alt=""
+              width={24}
+              height={24}
               className="h-6 w-6 rounded-full ring-1 ring-border"
             />
           ) : (
@@ -53,15 +61,16 @@ export default async function NoAccessPage() {
         </div>
 
         <div className="mx-auto mt-8 flex w-full max-w-xs flex-col items-stretch gap-3">
-          <a
-            href="/api/auth/discord/start?prompt=consent"
-            className="btn btn-primary w-full py-3"
-          >
-            <DiscordIcon size={18} />
-            {g.switchAccount}
-          </a>
+          <form action="/api/auth/discord/start?prompt=consent" method="post">
+            <button type="submit" className="btn btn-primary w-full py-3">
+              <DiscordIcon size={18} />
+              {g.switchAccount}
+            </button>
+          </form>
           <form action="/api/auth/logout" method="post" className="w-full">
-            <button className="btn btn-ghost w-full py-2.5">{g.logOut}</button>
+            <button type="submit" className="btn btn-ghost w-full py-2.5">
+              {g.logOut}
+            </button>
           </form>
         </div>
 

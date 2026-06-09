@@ -79,6 +79,11 @@ export async function getCurrentUser(): Promise<User | null> {
   return user ?? null;
 }
 
+/** Auth helper name used by server actions and route handlers. */
+export async function auth(): Promise<User | null> {
+  return getCurrentUser();
+}
+
 /** Delete the current session row and clear the cookie. */
 export async function destroySession(): Promise<void> {
   const store = await cookies();

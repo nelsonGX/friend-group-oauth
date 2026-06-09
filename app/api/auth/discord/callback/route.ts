@@ -14,6 +14,14 @@ import { createSession } from "@/lib/session";
 import { sanitizeReturnPath } from "@/lib/url";
 import { env } from "@/lib/env";
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 /**
  * Discord OAuth callback: validate CSRF state, exchange the code, look up guild
  * membership/roles, upsert the user, open a session, then return to the path
@@ -26,25 +34,79 @@ export async function GET(request: Request) {
 
   const store = await cookies();
   const loginCookie = store.get("fg_login")?.value;
-  store.delete("fg_login");
+
+  if (!code || !state || !loginCookie) {
+    redirect("/login?error=invalid_request");
+  }
+
+  let expectedState: unknown;
+  try {
+    const { payload } = await jwtVerify(
+      loginCookie,
+      new TextEncoder().encode(env.SESSION_SECRET),
+    );
+    expectedState = payload.state;
+  } catch {
+    redirect("/login?error=invalid_state");
+  }
+  if (expectedState !== state) {
+    redirect("/login?error=state_mismatch");
+  }
+
+  return new Response(
+    `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Completing login</title>
+  </head>
+  <body>
+    <form id="complete-login" action="/api/auth/discord/callback" method="post">
+      <input type="hidden" name="code" value="${escapeHtml(code)}">
+      <input type="hidden" name="state" value="${escapeHtml(state)}">
+      <button type="submit">Continue</button>
+    </form>
+    <script>document.getElementById("complete-login").requestSubmit();</script>
+  </body>
+</html>`,
+    {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    },
+  );
+}
+
+export async function POST(request: Request) {
+  const form = await request.formData();
+  const code = form.get("code")?.toString();
+  const state = form.get("state")?.toString();
+
+  const store = await cookies();
+  const loginCookie = store.get("fg_login")?.value;
 
   if (!code || !state || !loginCookie) {
     redirect("/login?error=invalid_request");
   }
 
   let returnTo = "/explore";
+  let expectedState: unknown;
   try {
     const { payload } = await jwtVerify(
       loginCookie,
       new TextEncoder().encode(env.SESSION_SECRET),
     );
-    if (payload.state !== state) {
-      redirect("/login?error=state_mismatch");
-    }
+    expectedState = payload.state;
     returnTo = sanitizeReturnPath(payload.returnTo as string | undefined);
   } catch {
     redirect("/login?error=invalid_state");
   }
+  if (expectedState !== state) {
+    redirect("/login?error=state_mismatch");
+  }
+  store.delete("fg_login");
 
   let allowed = false;
   let inGuild = false;

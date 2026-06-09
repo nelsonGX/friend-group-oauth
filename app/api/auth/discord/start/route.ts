@@ -10,7 +10,7 @@ import { env } from "@/lib/env";
  * Begin Discord login: mint a CSRF state bound to the post-login return path,
  * stash it in a short-lived signed cookie, and redirect to Discord.
  */
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const url = new URL(request.url);
   const returnTo = sanitizeReturnPath(url.searchParams.get("return"));
   // Only "consent" is honored — used by the "switch account" action to force

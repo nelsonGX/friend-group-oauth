@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients, users } from "@/db/schema";
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { topUp } from "@/lib/credits";
@@ -16,11 +16,6 @@ import { createRedeemCode as mintRedeemCode } from "@/lib/redeem";
 import { redeemCodes } from "@/db/schema";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
-
-async function assertAdmin(): Promise<string | null> {
-  const user = await getCurrentUser();
-  return user?.isAdmin ? user.id : null;
-}
 
 export interface ActionState {
   ok: boolean;
@@ -37,7 +32,8 @@ export async function grantCredits(
 ): Promise<ActionState> {
   const { t } = await getDictionary();
   const d = t.adminActions;
-  if (!(await assertAdmin())) return { ok: false, message: d.notAuthorized };
+  const user = await auth();
+  if (!user?.isAdmin) return { ok: false, message: d.notAuthorized };
 
   const discordId = formData.get("discordId")?.toString().trim();
   const amount = Number(formData.get("amount"));
@@ -72,7 +68,8 @@ export async function createClient(
 ): Promise<ActionState> {
   const { t } = await getDictionary();
   const d = t.adminActions;
-  if (!(await assertAdmin())) return { ok: false, message: d.notAuthorized };
+  const user = await auth();
+  if (!user?.isAdmin) return { ok: false, message: d.notAuthorized };
 
   const name = formData.get("name")?.toString().trim();
   const redirectUris = (formData.get("redirectUris")?.toString() ?? "")
@@ -135,7 +132,8 @@ export async function createClient(
 
 /** Toggle a client's active state. */
 export async function toggleClientActive(formData: FormData) {
-  if (!(await assertAdmin())) return;
+  const user = await auth();
+  if (!user?.isAdmin) return;
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return;
   await getDb()
@@ -147,7 +145,8 @@ export async function toggleClientActive(formData: FormData) {
 
 /** Toggle a client's trusted (consent-skip) state. */
 export async function toggleClientTrusted(formData: FormData) {
-  if (!(await assertAdmin())) return;
+  const user = await auth();
+  if (!user?.isAdmin) return;
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return;
   await getDb()
@@ -164,8 +163,8 @@ export async function createRedeemCode(
 ): Promise<ActionState> {
   const { t } = await getDictionary();
   const d = t.adminActions;
-  const adminId = await assertAdmin();
-  if (!adminId) return { ok: false, message: d.notAuthorized };
+  const user = await auth();
+  if (!user?.isAdmin) return { ok: false, message: d.notAuthorized };
 
   const amount = Number(formData.get("amount"));
   if (!Number.isInteger(amount) || amount <= 0) {
@@ -201,7 +200,7 @@ export async function createRedeemCode(
       amount,
       maxRedemptions,
       expiresAt,
-      createdByUserId: adminId,
+      createdByUserId: user.id,
       code: custom,
     });
   } catch {
@@ -215,7 +214,8 @@ export async function createRedeemCode(
 
 /** Toggle a redeem code's active state. */
 export async function toggleRedeemCodeActive(formData: FormData) {
-  if (!(await assertAdmin())) return;
+  const user = await auth();
+  if (!user?.isAdmin) return;
   const id = formData.get("id")?.toString();
   if (!id) return;
   await getDb()
@@ -227,22 +227,22 @@ export async function toggleRedeemCodeActive(formData: FormData) {
 
 /** Mark a pending withdrawal as paid (admin has sent the money off-platform). */
 export async function markWithdrawalPaid(formData: FormData) {
-  const adminId = await assertAdmin();
-  if (!adminId) return;
+  const user = await auth();
+  if (!user?.isAdmin) return;
   const id = formData.get("id")?.toString();
   if (!id) return;
   const adminNote = formData.get("adminNote")?.toString() ?? null;
-  await markWithdrawalPaidLib({ id, adminId, adminNote });
+  await markWithdrawalPaidLib({ id, adminId: user.id, adminNote });
   revalidatePath("/admin");
 }
 
 /** Reject a pending withdrawal, returning the escrowed credits to the developer. */
 export async function rejectWithdrawal(formData: FormData) {
-  const adminId = await assertAdmin();
-  if (!adminId) return;
+  const user = await auth();
+  if (!user?.isAdmin) return;
   const id = formData.get("id")?.toString();
   if (!id) return;
   const adminNote = formData.get("adminNote")?.toString() ?? null;
-  await rejectWithdrawalLib({ id, adminId, adminNote });
+  await rejectWithdrawalLib({ id, adminId: user.id, adminNote });
   revalidatePath("/admin");
 }

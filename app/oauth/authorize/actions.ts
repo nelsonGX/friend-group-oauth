@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import {
   buildClientRedirect,
   issueAuthorizationCode,
@@ -41,7 +41,7 @@ export async function decideAuthorization(formData: FormData) {
     );
   }
 
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user || !user.allowed || !approved) {
     redirect(
       buildClientRedirect(result.redirectUri, { error: "access_denied", state }),

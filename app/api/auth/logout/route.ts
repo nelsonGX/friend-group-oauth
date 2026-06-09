@@ -5,8 +5,3 @@ export async function POST() {
   await destroySession();
   redirect("/");
 }
-
-export async function GET() {
-  await destroySession();
-  redirect("/");
-}

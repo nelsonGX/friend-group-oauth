@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq, or } from "drizzle-orm";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import { transfer } from "@/lib/credits";
@@ -31,7 +31,7 @@ export async function transferCredits(
 ): Promise<TransferState> {
   const { t } = await getDictionary();
   const w = t.explore.wallet;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: w.notAllowed };
   if (!user.allowed && !user.isAdmin) {
     return { ok: false, message: w.notAllowed };
@@ -98,7 +98,7 @@ export async function redeemCreditCode(
 ): Promise<RedeemState> {
   const { t } = await getDictionary();
   const r = t.explore.redeem;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: r.notAllowed };
   if (!user.allowed && !user.isAdmin) {
     return { ok: false, message: r.notAllowed };

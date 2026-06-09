@@ -1,22 +1,28 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { sanitizeReturnPath } from "@/lib/url";
 import { DiscordIcon } from "@/components/DiscordIcon";
 import { PhoneHandoff } from "./PhoneHandoff";
 
+export const metadata: Metadata = {
+  title: "Log in | Friend Group Auth",
+  description: "Sign in with Discord to use Friend Group Auth.",
+};
+
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ return?: string; error?: string }>;
 }) {
-  const sp = await searchParams;
-
-  // Already signed in — no reason to show the login form again.
-  const user = await getCurrentUser();
+  const [sp, user, { t }] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+    getDictionary(),
+  ]);
   if (user) redirect(sanitizeReturnPath(sp.return));
 
-  const { t } = await getDictionary();
   const query = sp.return ? `?return=${encodeURIComponent(sp.return)}` : "";
 
   // When the user landed here mid-flow (e.g. an app asked them to authorize),
@@ -48,13 +54,12 @@ export default async function LoginPage({
           </p>
         )}
 
-        <a
-          href={`/api/auth/discord/start${query}`}
-          className="btn btn-primary mt-6 w-full py-3"
-        >
-          <DiscordIcon size={20} />
-          {t.login.continueWithDiscord}
-        </a>
+        <form action={`/api/auth/discord/start${query}`} method="post">
+          <button type="submit" className="btn btn-primary mt-6 w-full py-3">
+            <DiscordIcon size={20} />
+            {t.login.continueWithDiscord}
+          </button>
+        </form>
 
         {offerPhone && <PhoneHandoff returnPath={returnPath} t={t.login} />}
 

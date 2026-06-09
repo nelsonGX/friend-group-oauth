@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accessTokens, authorizationCodes, clients, refreshTokens } from "@/db/schema";
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
@@ -20,7 +20,7 @@ type ActionDict = Dictionary["dashboardActions"];
 
 /** Revoke all of the current user's tokens for one connected app. */
 export async function revokeAppAccess(formData: FormData) {
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return;
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return;
@@ -52,7 +52,7 @@ export async function regenerateSecret(
 ): Promise<SecretState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return { ok: false, message: d.missingClient };
@@ -121,7 +121,7 @@ export async function createOwnApp(
 ): Promise<AppState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notSignedIn };
   if (!user.allowed && !user.isAdmin) {
     return { ok: false, message: d.needAccessToRegister };
@@ -173,7 +173,7 @@ export async function updateAppName(
 ): Promise<SecretState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return { ok: false, message: d.missingApp };
@@ -204,7 +204,7 @@ export async function updateAppRedirects(
 ): Promise<SecretState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return { ok: false, message: d.missingApp };
@@ -251,7 +251,7 @@ export async function updateAppWebhook(
 ): Promise<WebhookState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return { ok: false, message: d.missingApp };
@@ -302,7 +302,7 @@ export async function updateAppListing(
 ): Promise<SecretState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return { ok: false, message: d.missingApp };
@@ -355,7 +355,7 @@ export async function deleteOwnApp(
 ): Promise<SecretState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notAuthorized };
   const clientId = formData.get("clientId")?.toString();
   if (!clientId) return { ok: false, message: d.missingApp };
@@ -398,7 +398,7 @@ export async function requestWithdrawal(
 ): Promise<WithdrawState> {
   const { t } = await getDictionary();
   const d = t.dashboardActions;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { ok: false, message: d.notSignedIn };
 
   const amount = Number(formData.get("amount"));
@@ -432,7 +432,7 @@ export async function requestWithdrawal(
 
 /** Cancel one of the current user's own pending withdrawal requests. */
 export async function cancelWithdrawal(formData: FormData) {
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return;
   const id = formData.get("id")?.toString();
   if (!id) return;

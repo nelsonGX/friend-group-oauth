@@ -68,7 +68,10 @@ function BarLinks({
       })}
       <div className="mx-1 h-5 w-px bg-border" />
       <form action="/api/auth/logout" method="post">
-        <button className={`${base} ${idle} hover:!bg-danger/10 hover:!text-danger`}>
+        <button
+          type="submit"
+          className={`${base} ${idle} hover:!bg-danger/10 hover:!text-danger`}
+        >
           <LogOut size={16} />
           {t.logout}
         </button>
@@ -135,7 +138,10 @@ function MenuLinks({
       })}
       <div className="my-1 h-px bg-border" />
       <form action="/api/auth/logout" method="post">
-        <button className={`${row} text-muted hover:bg-danger/10 hover:text-danger`}>
+        <button
+          type="submit"
+          className={`${row} text-muted hover:bg-danger/10 hover:text-danger`}
+        >
           <LogOut size={17} />
           {t.logout}
         </button>
@@ -171,11 +177,6 @@ export function HeaderNav({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
-
-  // Close the menu whenever the route changes (e.g. after tapping a link).
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   return (
     <nav className="flex items-center gap-2 text-sm">

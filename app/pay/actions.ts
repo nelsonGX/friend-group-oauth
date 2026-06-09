@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import { buildClientRedirect } from "@/lib/oauth";
 import { settlePaymentIntent } from "@/lib/credits";
 import { deliverPaymentWebhook } from "@/lib/webhooks";
@@ -29,7 +29,7 @@ export async function confirmPayment(formData: FormData) {
   const intent = await getIntent(intentId);
   if (!intent) redirect("/dashboard");
 
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) {
     redirect(`/login?return=${encodeURIComponent(`/pay?intent=${intentId}`)}`);
   }

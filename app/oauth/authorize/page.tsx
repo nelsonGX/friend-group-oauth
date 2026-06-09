@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
+import type { Metadata } from "next";
 import { TriangleAlert, ShieldCheck, Check, X } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
@@ -9,6 +11,23 @@ import {
   type AuthorizeParams,
 } from "@/lib/oauth";
 import { decideAuthorization } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Authorize app | Friend Group Auth",
+  description: "Review and approve OAuth access for a Friend Group Auth app.",
+};
+
+function str(v: string | string[] | undefined) {
+  return Array.isArray(v) ? v[0] : v;
+}
+
+function stableIndex(input: string, length: number) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return hash % length;
+}
 
 function ErrorView({ title, message }: { title: string; message: string }) {
   return (
@@ -29,11 +48,8 @@ export default async function AuthorizePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
-  const { t } = await getDictionary();
+  const [sp, { t }] = await Promise.all([searchParams, getDictionary()]);
   const scopeLabels: Record<string, string> = t.authorize.scopes;
-  const str = (v: string | string[] | undefined) =>
-    Array.isArray(v) ? v[0] : v;
 
   const params: AuthorizeParams = {
     responseType: str(sp.response_type),
@@ -45,7 +61,10 @@ export default async function AuthorizePage({
   };
   const state = str(sp.state);
 
-  const result = await validateAuthorizeRequest(params);
+  const [result, user] = await Promise.all([
+    validateAuthorizeRequest(params),
+    getCurrentUser(),
+  ]);
   if (!result.ok) {
     if (result.error.kind === "render") {
       const errs = t.authorize.renderErrors;
@@ -64,8 +83,6 @@ export default async function AuthorizePage({
 
   const { client, scopes, redirectUri } = result;
 
-  // Require a logged-in session; return here after Discord login.
-  const user = await getCurrentUser();
   if (!user) {
     const self = new URLSearchParams();
     self.set("response_type", params.responseType!);
@@ -104,7 +121,7 @@ export default async function AuthorizePage({
     ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`
     : null;
   const { jokes } = t.authorize;
-  const joke = jokes[Math.floor(Math.random() * jokes.length)];
+  const joke = jokes[stableIndex(`${client.clientId}:${user.id}:${state ?? ""}`, jokes.length)];
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -112,10 +129,12 @@ export default async function AuthorizePage({
         {/* Connected identities — the app icon and the signed-in user, linked. */}
         <div className="flex items-center justify-center gap-4">
           {client.iconUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={client.iconUrl}
               alt=""
+              width={68}
+              height={68}
+              unoptimized
               className="h-[68px] w-[68px] rounded-2xl object-cover ring-2 ring-border"
             />
           ) : (
@@ -129,10 +148,11 @@ export default async function AuthorizePage({
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
           </div>
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={avatarUrl}
               alt=""
+              width={68}
+              height={68}
               className="h-[68px] w-[68px] rounded-full object-cover ring-2 ring-border"
             />
           ) : (

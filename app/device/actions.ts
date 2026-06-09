@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentUser } from "@/lib/session";
+import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { approveDevice, denyDevice } from "@/lib/devices";
 
@@ -20,7 +20,7 @@ export async function decideDevice(
 ): Promise<DeviceDecisionState> {
   const { t } = await getDictionary();
   const d = t.device;
-  const user = await getCurrentUser();
+  const user = await auth();
   if (!user) return { status: "error", message: d.notSignedIn };
   if (!user.allowed && !user.isAdmin) {
     return { status: "error", message: d.needAccess };
