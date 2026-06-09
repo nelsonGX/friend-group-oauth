@@ -1,4 +1,5 @@
-import { getCreditBalance, resolveAccessToken } from "@/lib/oauth";
+import { getBalance } from "@/lib/credits";
+import { resolveAccessToken } from "@/lib/oauth";
 
 /**
  * OAuth2 userinfo endpoint. Returns claims scoped to the access token:
@@ -38,7 +39,7 @@ async function handle(request: Request) {
     body.in_guild = user.inGuild;
   }
   if (scopes.includes("credits")) {
-    body.credits = await getCreditBalance(user.id);
+    body.credits = await getBalance(user.id);
   }
 
   return Response.json(body, { headers: { "cache-control": "no-store" } });

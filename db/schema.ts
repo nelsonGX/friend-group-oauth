@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -164,6 +165,35 @@ export const ledger = pgTable(
     index("ledger_user_id_idx").on(t.userId),
     index("ledger_provider_id_idx").on(t.providerId),
   ],
+);
+
+/**
+ * A payment a provider asks a user to confirm. The provider creates the intent
+ * server-side (authenticated), so the amount can't be tampered with in the
+ * browser; the user then confirms it. On confirmation we write a single ledger
+ * charge keyed on the intent id (idempotent).
+ */
+export const paymentIntents = pgTable(
+  "payment_intents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: text("client_id").notNull(),
+    amount: integer("amount").notNull(),
+    description: text("description"),
+    /** Provider's own idempotency key for this charge. */
+    ref: text("ref").notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    /** Opaque value echoed back to the provider on return. */
+    state: text("state"),
+    /** pending | completed | cancelled */
+    status: text("status").notNull().default("pending"),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("payment_intents_client_ref_idx").on(t.clientId, t.ref)],
 );
 
 export const usersRelations = relations(users, ({ many }) => ({

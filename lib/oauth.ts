@@ -1,10 +1,9 @@
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accessTokens,
   authorizationCodes,
   clients,
-  ledger,
   refreshTokens,
   users,
   type Client,
@@ -351,16 +350,4 @@ export async function revokeToken(
     .update(refreshTokens)
     .set({ revoked: true })
     .where(and(eq(refreshTokens.tokenHash, hash), eq(refreshTokens.clientId, clientId)));
-}
-
-/** Current credit balance (SUM of ledger deltas) for a user. */
-export async function getCreditBalance(userId: string): Promise<number> {
-  const db = getDb();
-  const [row] = await db
-    .select({
-      balance: sql<number>`cast(coalesce(sum(${ledger.delta}), 0) as int)`,
-    })
-    .from(ledger)
-    .where(eq(ledger.userId, userId));
-  return row?.balance ?? 0;
 }

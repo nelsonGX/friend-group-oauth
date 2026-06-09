@@ -8,6 +8,13 @@
       "when": 1780999019554,
       "tag": "0000_fair_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780999879515,
+      "tag": "0001_modern_nightcrawler",
+      "breakpoints": true
     }
   ]
 }
