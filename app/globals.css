@@ -39,11 +39,7 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(70rem 40rem at 15% -10%, rgba(88, 101, 242, 0.18), transparent 60%),
-    radial-gradient(60rem 40rem at 100% 0%, rgba(168, 85, 247, 0.13), transparent 55%),
-    var(--color-bg);
-  background-attachment: fixed;
+  background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -94,17 +90,26 @@ body {
       0 20px 40px -24px rgba(0, 0, 0, 0.7);
   }
 
-  /* interactive lift for clickable / hoverable cards */
+  /* interactive lift for clickable / hoverable cards — same tactile language as
+     the buttons: float up onto a hard ledge on hover, snap down on press. */
   .card-hover {
-    transition: transform 0.25s ease, border-color 0.25s ease,
-      background 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease,
+      background 0.2s ease, box-shadow 0.2s ease;
   }
   .card-hover:hover {
-    transform: translateY(-3px);
+    transform: translateY(-6px);
     border-color: var(--color-border-strong);
     background: var(--color-surface-strong);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    box-shadow: 0 6px var(--color-border-strong),
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
       0 30px 60px -30px rgba(0, 0, 0, 0.8);
+  }
+  /* Press — declared after :hover so it wins when hovered + clicked together. */
+  .card-hover:active {
+    transform: translateY(2px) scale(0.99);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) inset;
+    transition-duration: 0.06s;
   }
 
   /* sunken surface for code / mono blocks */
@@ -115,22 +120,23 @@ body {
   }
 
   /* buttons --------------------------------------------------------------- */
+  /* A pressable, 3D "ledge" button: it floats up on hover with a hard bottom
+     shadow, then drops down on click. Semibold, softly glowing label. */
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     border-radius: 0.625rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1;
     padding: 0.7rem 1.1rem;
-    transition: transform 0.15s ease, box-shadow 0.25s ease,
+    border: 1px solid transparent;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease,
       background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
     cursor: pointer;
     white-space: nowrap;
-  }
-  .btn:active {
-    transform: translateY(1px) scale(0.99);
   }
   .btn:disabled {
     opacity: 0.5;
@@ -143,23 +149,36 @@ body {
   .btn-primary {
     background: linear-gradient(180deg, var(--color-brand-soft), var(--color-brand));
     color: #fff;
-    box-shadow: 0 10px 30px -12px rgba(88, 101, 242, 0.8),
-      0 1px 0 0 rgba(255, 255, 255, 0.25) inset;
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.25) inset;
   }
   .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 16px 40px -12px rgba(88, 101, 242, 0.95),
+    border-color: var(--color-brand-soft);
+    background: linear-gradient(
+      to bottom,
+      var(--color-brand-soft),
+      var(--color-brand),
+      var(--color-brand-strong)
+    );
+    box-shadow: 0 6px var(--color-brand-strong),
       0 1px 0 0 rgba(255, 255, 255, 0.3) inset;
-    transform: translateY(-1px);
+    transform: translateY(-6px);
   }
 
   .btn-secondary {
-    background: var(--color-surface-strong);
-    color: var(--color-ink);
-    border: 1px solid var(--color-border-strong);
+    background: rgba(255, 255, 255, 0.068);
+    color: rgba(255, 255, 255, 0.85);
   }
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.62);
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.144),
+      rgba(255, 255, 255, 0.247),
+      rgba(255, 255, 255, 0.39)
+    );
+    box-shadow: 0 6px rgba(255, 255, 255, 0.62);
+    transform: translateY(-6px);
   }
 
   .btn-ghost {
@@ -168,9 +187,28 @@ body {
     border: 1px solid var(--color-border);
   }
   .btn-ghost:hover:not(:disabled) {
-    color: var(--color-ink);
-    background: var(--color-surface);
-    border-color: var(--color-border-strong);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.62);
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.2),
+      rgba(255, 255, 255, 0.32)
+    );
+    box-shadow: 0 6px rgba(255, 255, 255, 0.5);
+    transform: translateY(-6px);
+  }
+
+  /* Press state — declared AFTER the hover rules so it wins the cascade when a
+     button is hovered and clicked at the same time. Snappy, pushed-in feel. */
+  .btn:active:not(:disabled),
+  .btn-primary:active:not(:disabled),
+  .btn-secondary:active:not(:disabled),
+  .btn-ghost:active:not(:disabled) {
+    transform: translateY(3px) scale(0.98);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45) inset;
+    text-shadow: none;
+    transition-duration: 0.06s;
   }
 
   /* form fields ----------------------------------------------------------- */

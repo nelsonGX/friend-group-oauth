@@ -88,7 +88,7 @@ export default async function DashboardPage() {
         <aside className="space-y-6 lg:sticky lg:top-20">
           {/* balance hero */}
           <section
-            className="reveal card relative overflow-hidden p-6"
+            className="reveal card card-hover relative overflow-hidden p-6"
             style={{ animationDelay: "80ms" }}
           >
             <div
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
             {connected.length === 0 ? (
               <p className="mt-3 text-sm text-muted">No apps connected yet.</p>
             ) : (
-              <ul className="card mt-3 glass-divide overflow-hidden">
+              <ul className="card card-hover mt-3 glass-divide overflow-hidden">
                 {connected.map((c) => (
                   <li
                     key={c.clientId}
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
             {entries.length === 0 ? (
               <p className="mt-3 text-sm text-muted">No transactions yet.</p>
             ) : (
-              <div className="card mt-3 overflow-hidden">
+              <div className="card card-hover mt-3 overflow-hidden">
                 <table className="w-full text-left text-sm">
                   <tbody className="glass-divide">
                     {entries.map((e) => (
