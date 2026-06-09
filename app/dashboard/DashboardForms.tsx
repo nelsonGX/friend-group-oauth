@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ChevronRight, Copy, Check } from "lucide-react";
 import {
   createOwnApp,
   regenerateSecret,
@@ -137,6 +138,7 @@ function CopyButton({ text }: { text: string }) {
       }}
       className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 text-sm`}
     >
+      {copied ? <Check size={15} /> : <Copy size={15} />}
       {copied ? "Copied!" : "Copy prompt"}
     </button>
   );
@@ -168,22 +170,10 @@ export function AppSetup({
   return (
     <details className="group mt-3 text-xs">
       <summary className="link inline-flex cursor-pointer select-none items-center gap-1.5 text-sm underline underline-offset-2">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden
+        <ChevronRight
+          size={14}
           className="transition-transform duration-200 group-open:rotate-90"
-        >
-          <path
-            d="M9 6l6 6-6 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
         Setup instructions
       </summary>
 

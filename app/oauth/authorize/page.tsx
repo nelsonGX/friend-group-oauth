@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { TriangleAlert, ShieldCheck, Check } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import {
   buildClientRedirect,
@@ -19,15 +20,7 @@ function ErrorView({ message }: { message: string }) {
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="reveal card w-full max-w-md border-danger/30 p-8 text-center">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-danger/30 bg-danger/10 text-danger">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-              d="M12 8v5m0 3.5h.01M10.3 3.9L2.4 18a1.9 1.9 0 001.7 2.9h15.8a1.9 1.9 0 001.7-2.9L13.7 3.9a1.9 1.9 0 00-3.4 0z"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <TriangleAlert size={24} strokeWidth={1.7} />
         </span>
         <h1 className="mt-4 text-lg font-semibold text-danger">
           Authorization error
@@ -113,14 +106,7 @@ export default async function AuthorizePage({
       <div className="reveal card w-full max-w-md p-8">
         <div className="flex items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-soft to-violet text-white shadow-[0_12px_30px_-12px_rgba(88,101,242,0.9)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M12 2.5l8 4v5c0 4.6-3.1 8.4-8 10-4.9-1.6-8-5.4-8-10v-5l8-4z"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <ShieldCheck size={22} strokeWidth={1.7} />
           </span>
           <div>
             <p className="text-xs uppercase tracking-wide text-faint">
@@ -146,15 +132,7 @@ export default async function AuthorizePage({
               className="flex items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
             >
               <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand/15 text-brand-soft">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path
-                    d="M5 12.5l4.5 4.5L19 6.5"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <Check size={12} strokeWidth={2.4} />
               </span>
               <span>{SCOPE_LABELS[s] ?? s}</span>
             </li>

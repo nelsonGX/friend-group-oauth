@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { desc } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients, users } from "@/db/schema";
@@ -30,7 +31,8 @@ export default async function AdminPage() {
           </span>
         </div>
         <Link href="/dashboard" className="btn btn-ghost !py-2 text-sm">
-          ← Dashboard
+          <ArrowLeft size={15} />
+          Dashboard
         </Link>
       </div>
 

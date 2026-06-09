@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Shield, LogOut } from "lucide-react";
 import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accessTokens, clients } from "@/db/schema";
@@ -73,11 +74,15 @@ export default async function DashboardPage() {
         <div className="flex items-center gap-2">
           {user.isAdmin && (
             <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
+              <Shield size={15} />
               Admin
             </Link>
           )}
           <form action="/api/auth/logout" method="post">
-            <button className="btn btn-ghost !py-2 text-sm">Log out</button>
+            <button className="btn btn-ghost !py-2 text-sm">
+              <LogOut size={15} />
+              Log out
+            </button>
           </form>
         </div>
       </div>
