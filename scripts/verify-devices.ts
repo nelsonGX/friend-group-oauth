@@ -4,6 +4,9 @@ import { authenticateClient } from "../lib/oauth";
 import {
   approveDevice,
   denyDevice,
+  deviceEndpoints,
+  formatUserCode,
+  getPendingByUserCode,
   normalizeUserCode,
   pollDeviceAuthorization,
   startDeviceAuthorization,
@@ -35,6 +38,12 @@ async function main() {
 
   const wrongPoll = await pollDeviceAuthorization("not-a-real-device-code");
   check("poll with unknown device_code is invalid", wrongPoll.status === "invalid");
+
+  const slowPoll = await pollDeviceAuthorization(start.deviceCode);
+  check("polling too quickly returns slow_down", slowPoll.status === "slow_down");
+
+  const pendingByMessyCode = await getPendingByUserCode(` ${start.userCode.toLowerCase()} `);
+  check("pending lookup normalizes grouped user codes", pendingByMessyCode?.requestedName === "Device App");
 
   const approve = await approveDevice(start.userCode, user);
   check("approveDevice succeeds", approve.ok);
@@ -99,6 +108,13 @@ async function main() {
   });
   check("missing redirect_uri is rejected at start", !noUri.ok);
 
+  const noName = await startDeviceAuthorization({
+    name: "   ",
+    redirectUris,
+    scopes: ["identify"],
+  });
+  check("missing app name is rejected at start", !noName.ok);
+
   // --- expiry ---
   const start3 = await startDeviceAuthorization({
     name: "Expiring App",
@@ -121,6 +137,12 @@ async function main() {
   ]);
   check("createZip emits a valid local-file-header signature", zip.readUInt32LE(0) === 0x04034b50);
   check("createZip ends with the EOCD signature", zip.readUInt32LE(zip.length - 22) === 0x06054b50);
+
+  process.env.APP_URL = "https://auth.example.com/";
+  const endpoints = deviceEndpoints();
+  check("deviceEndpoints trims APP_URL trailing slash", endpoints.verificationUri === "https://auth.example.com/device");
+  check("normalizeUserCode removes separators", normalizeUserCode("ab12-cd34") === "AB12CD34");
+  check("formatUserCode groups canonical user code", formatUserCode("ab12cd34") === "AB12-CD34");
 
   summarize();
 }

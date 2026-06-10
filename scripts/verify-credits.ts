@@ -35,9 +35,15 @@ async function main() {
 
   await topUp({ userId: user.id, amount: 100 });
   check("topUp sets balance to 100", (await getBalance(user.id)) === 100);
+  await topUp({ userId: user.id, amount: 0 })
+    .then(() => check("topUp rejects zero amount", false))
+    .catch(() => check("topUp rejects zero amount", true));
 
   const c1 = await charge({ userId: user.id, providerId: client.id, amount: 30, ref: "r1" });
   check("charge debits balance to 70", c1.ok && (await getBalance(user.id)) === 70);
+  await charge({ userId: user.id, providerId: client.id, amount: -1, ref: "bad-charge" })
+    .then(() => check("charge rejects negative amount", false))
+    .catch(() => check("charge rejects negative amount", true));
 
   const dup = await charge({ userId: user.id, providerId: client.id, amount: 30, ref: "r1" });
   check(
@@ -214,6 +220,9 @@ async function main() {
   const tSelf = await transfer({ fromUserId: dev.id, toUserId: dev.id, amount: 1 });
   check("self-transfer is rejected", !tSelf.ok && tSelf.reason === "self_transfer");
 
+  const tInvalid = await transfer({ fromUserId: dev.id, toUserId: user.id, amount: 0 });
+  check("zero-amount transfer is rejected", !tInvalid.ok && tInvalid.reason === "invalid_amount");
+
   const tOver = await transfer({ fromUserId: dev.id, toUserId: user.id, amount: 9999 });
   check("transfer beyond balance is rejected", !tOver.ok && tOver.reason === "insufficient_funds");
   check(
@@ -234,6 +243,14 @@ async function main() {
   check(
     "webhook URL blocks localhost",
     !(await validateWebhookUrl("http://localhost:3000/hook")).ok,
+  );
+  check(
+    "webhook URL blocks userinfo credentials",
+    !(await validateWebhookUrl("https://user:pass@example.com/hook")).ok,
+  );
+  check(
+    "webhook URL blocks non-http schemes",
+    !(await validateWebhookUrl("file:///tmp/hook")).ok,
   );
   check(
     "webhook URL blocks private IPv4",

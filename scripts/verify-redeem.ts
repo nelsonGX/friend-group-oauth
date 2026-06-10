@@ -19,6 +19,12 @@ async function main() {
   // --- Happy path ---
   const code = await createRedeemCode({ amount: 50, maxRedemptions: 2 });
   check("created code has a formatted value", /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(code.code));
+  await createRedeemCode({ amount: 0 })
+    .then(() => check("createRedeemCode rejects zero amount", false))
+    .catch(() => check("createRedeemCode rejects zero amount", true));
+  await createRedeemCode({ amount: 1, maxRedemptions: 0 })
+    .then(() => check("createRedeemCode rejects zero max redemptions", false))
+    .catch(() => check("createRedeemCode rejects zero max redemptions", true));
 
   const r1 = await redeemCode({ userId: alice.id, code: code.code });
   check("redeem credits the user", r1.ok && r1.balance === 50 && r1.amount === 50);
@@ -48,6 +54,8 @@ async function main() {
   // --- Unknown code ---
   const missing = await redeemCode({ userId: alice.id, code: "ZZZZ-ZZZZ" });
   check("unknown code is rejected", !missing.ok && missing.reason === "not_found");
+  const blank = await redeemCode({ userId: alice.id, code: "   " });
+  check("blank code is rejected as not_found", !blank.ok && blank.reason === "not_found");
 
   // --- Inactive code ---
   const inactiveCode = await createRedeemCode({ amount: 10 });
@@ -70,6 +78,9 @@ async function main() {
   // --- Unlimited + custom code ---
   const custom = await createRedeemCode({ amount: 5, code: "free-credits" });
   check("custom code is normalized to uppercase", custom.code === "FREE-CREDITS");
+  await createRedeemCode({ amount: 5, code: "free-credits" })
+    .then(() => check("duplicate custom code is rejected", false))
+    .catch(() => check("duplicate custom code is rejected", true));
   const c1 = await redeemCode({ userId: alice.id, code: "FREE-CREDITS" });
   const c2 = await redeemCode({ userId: bob.id, code: "free-credits" });
   check("unlimited code redeems for multiple users", c1.ok && c2.ok);
