@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { accessTokens, authorizationCodes, clients, refreshTokens } from "@/db/schema";
+import {
+  accessTokens,
+  authorizationCodes,
+  clients,
+  paymentIntents,
+  refreshTokens,
+} from "@/db/schema";
 import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
@@ -383,6 +389,7 @@ export async function deleteOwnApp(
     db.delete(accessTokens).where(eq(accessTokens.clientId, clientId)),
     db.delete(refreshTokens).where(eq(refreshTokens.clientId, clientId)),
     db.delete(authorizationCodes).where(eq(authorizationCodes.clientId, clientId)),
+    db.delete(paymentIntents).where(eq(paymentIntents.clientId, clientId)),
   ]);
   await db.delete(clients).where(eq(clients.clientId, clientId));
 

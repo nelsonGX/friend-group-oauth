@@ -1,3 +1,19 @@
+DELETE FROM "access_tokens"
+WHERE NOT EXISTS (
+	SELECT 1 FROM "clients" WHERE "clients"."client_id" = "access_tokens"."client_id"
+);--> statement-breakpoint
+DELETE FROM "authorization_codes"
+WHERE NOT EXISTS (
+	SELECT 1 FROM "clients" WHERE "clients"."client_id" = "authorization_codes"."client_id"
+);--> statement-breakpoint
+DELETE FROM "payment_intents"
+WHERE NOT EXISTS (
+	SELECT 1 FROM "clients" WHERE "clients"."client_id" = "payment_intents"."client_id"
+);--> statement-breakpoint
+DELETE FROM "refresh_tokens"
+WHERE NOT EXISTS (
+	SELECT 1 FROM "clients" WHERE "clients"."client_id" = "refresh_tokens"."client_id"
+);--> statement-breakpoint
 ALTER TABLE "access_tokens" ADD CONSTRAINT "access_tokens_client_id_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("client_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "authorization_codes" ADD CONSTRAINT "authorization_codes_client_id_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("client_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_client_id_clients_client_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("client_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
