@@ -157,10 +157,12 @@ const zhTW: Dictionary = {
     redeem: "已兌換代碼",
     withdrawal: "已申請提領",
     withdrawalRefund: "提領已退回",
+    appFund: "加值給 {name}",
     transferOut: "轉給 {name}",
     transferIn: "來自 {name}",
     paymentFrom: "{name} 的付款",
     paymentTo: "付款給 {name}",
+    payoutFrom: "{name} 的付款",
     someone: "某位成員",
     statConnected: "已連結",
     statOwned: "你擁有的應用程式",
@@ -236,6 +238,7 @@ const zhTW: Dictionary = {
       emptyDesc:
         "註冊一個 OAuth 應用程式，讓社群成員登入你的網站，再依其功能扣抵點數。",
       earned: "已賺得 {n}",
+      appBalance: "應用餘額 {n}",
       active: "啟用中",
       disabled: "已停用",
       trusted: "受信任",
@@ -281,6 +284,7 @@ const zhTW: Dictionary = {
       tabIntegration: "整合",
       tabRedirects: "重新導向 URI",
       tabWebhook: "Webhook",
+      tabFunding: "資金",
       tabSecret: "密鑰",
       tabDisplay: "顯示",
       tabData: "資料",
@@ -292,6 +296,9 @@ const zhTW: Dictionary = {
       webhookTitle: "付款 Webhook",
       webhookDesc:
         "每當付款完成時，我們會在這裡 POST 一則已簽章的通知，讓你不必依賴瀏覽器重新導向。儲存網址時會顯示一次簽章密鑰。留空即可停用。",
+      fundingTitle: "應用餘額",
+      fundingDesc:
+        "將你的點數轉入此應用程式、將未來付款收入導入其中，並透過反向付款 API 把點數付給使用者。",
       deleteTitle: "刪除此應用程式",
       deleteDesc:
         "永久刪除此應用程式。透過它登入的所有人都會失去存取權，其 client ID 與密鑰也會停止運作。此操作無法復原。",
@@ -325,6 +332,23 @@ const zhTW: Dictionary = {
       webhookUrlPlaceholder: "https://yourapp.com/webhooks/payments",
       saveWebhook: "儲存 Webhook",
       webhookSecretLabel: "簽章密鑰（僅顯示一次——請立即保存）：",
+      appBalanceLabel: "應用餘額",
+      credits: "點數",
+      fundAmountLabel: "數量",
+      fundReasonLabel: "原因",
+      fundAmountPlaceholder: "新增數量",
+      fundReasonPlaceholder: "原因（選填）",
+      funding: "加值中…",
+      fundAppBalance: "加值應用餘額",
+      incomeDestinationLabel: "新付款收入",
+      incomeDestinationOwner: "存入我的擁有者餘額",
+      incomeDestinationAppBalance: "導入此應用餘額",
+      incomeDestinationHint:
+        "擁有者餘額收入可提領；應用餘額收入可用於反向付款，除非手動移動，否則不可提領。",
+      saveIncomeDestination: "儲存導入設定",
+      reversePayEndpoint: "反向付款端點",
+      reversePayHint:
+        "由伺服器呼叫，帶上 client_id、client_secret、user_id、amount 與 ref。",
       displayDesc:
         "控制你的應用程式在社群「探索」目錄中的呈現方式。在你開啟「顯示於目錄」之前，它會保持隱藏。",
       displayTitleLabel: "顯示標題",
@@ -419,6 +443,10 @@ const zhTW: Dictionary = {
     withdrawMissingDetails: "請填寫收款資訊，讓管理員知道要付款到哪裡。",
     withdrawExceeds: "你最多只能提領 {available} 點已賺得的點數。",
     withdrawRequested: "已送出 {amount} 點的提領申請——管理員將會處理。",
+    appFundInvalidAmount: "請輸入正整數點數。",
+    appFundInsufficient: "你的餘額不足。目前餘額：{balance}。",
+    appFunded: "已新增 {amount} 點。應用餘額：{balance}。",
+    incomeDestinationSaved: "收入導入設定已儲存。",
   },
   admin: {
     title: "管理",

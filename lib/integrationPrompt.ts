@@ -118,7 +118,21 @@ same number of credits on every platform.
    -> { intent_id, status, amount, ref, description, user_id, paid }
    Grant value only when paid === true.
 
-4) OPTIONAL (recommended) webhook: if I configure a webhook URL in the dashboard,
+4) REVERSE PAY (only if my app needs to pay/reward users): first fund the app's
+   app balance in the dashboard or route new payment income into app balance.
+   Then call server-side:
+   POST {AUTH_BASE_URL}/api/pay/reverse
+   body: client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}
+         &user_id={user sub/uuid}
+         &amount={positive integer credits}
+         &ref={your unique payout idempotency key}
+         &description={optional}
+   -> { payout_id, status:"completed", amount, user_id, ref, duplicate, app_balance, paid:true }
+   Retrying the same ref is safe and won't pay twice. A low app balance returns
+   402 insufficient_funds. Reverse-paid credits are spendable user credits, not
+   withdrawable developer income.
+
+5) OPTIONAL (recommended) webhook: if I configure a webhook URL in the dashboard,
    you'll receive POST JSON on settle with headers X-Webhook-Id (idempotency key)
    and X-Webhook-Signature: t=<unix>,v1=<base64url HMAC-SHA256 of \`<t>.<rawBody>\`
    keyed by the webhook signing secret>. Verify the signature, de-dupe on the id,

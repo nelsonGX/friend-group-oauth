@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { getBalance, getIncome, getProviderEarnings } from "@/lib/credits";
 import { getWithdrawableEarnings, listUserWithdrawals } from "@/lib/withdrawals";
+import { getAppBalanceSummary } from "@/lib/app-balance";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { env } from "@/lib/env";
 import { installCommands } from "@/lib/skill";
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
   const [
     { t },
     ownedEarnings,
+    appBalances,
     balance,
     income,
     withdrawable,
@@ -40,6 +42,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     getDictionary(),
     Promise.all(owned.map((c) => getProviderEarnings(c.id))),
+    Promise.all(owned.map((c) => getAppBalanceSummary(c.id))),
     getBalance(user.id),
     getIncome(user.id, 50),
     getWithdrawableEarnings(user.id),
@@ -60,6 +63,8 @@ export default async function DashboardPage() {
     isActive: c.isActive,
     trusted: c.trusted,
     earned: ownedEarnings[i],
+    appBalance: appBalances[i]?.balance ?? 0,
+    incomeDestination: appBalances[i]?.incomeDestination ?? "owner",
     webhookUrl: c.webhookUrl,
     displayTitle: c.displayTitle,
     description: c.description,

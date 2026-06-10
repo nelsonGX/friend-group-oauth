@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db";
 import {
+  appLedger,
   clients,
   ledger,
   paymentIntents,
@@ -142,18 +143,24 @@ export async function charge(opts: {
 
     // Resolve the provider's owner, so the charge can be credited to them.
     let ownerUserId: string | null = null;
+    let incomeDestination: "owner" | "app_balance" = "owner";
     if (opts.providerId) {
       const [client] = await tx
-        .select({ ownerUserId: clients.ownerUserId })
+        .select({
+          ownerUserId: clients.ownerUserId,
+          incomeDestination: clients.incomeDestination,
+        })
         .from(clients)
         .where(eq(clients.id, opts.providerId))
         .limit(1);
       ownerUserId = client?.ownerUserId ?? null;
+      incomeDestination =
+        client?.incomeDestination === "app_balance" ? "app_balance" : "owner";
     }
 
     // Paying your own app moves credits in a circle — write nothing so balance,
     // earnings, and income all stay consistent.
-    if (ownerUserId === opts.userId) {
+    if (ownerUserId === opts.userId && incomeDestination === "owner") {
       return { ok: true, balance: await balanceNow(), duplicate: false };
     }
 
@@ -172,8 +179,16 @@ export async function charge(opts: {
       ref: opts.ref,
     });
 
-    // Credit the developer who owns the app (a self-payment was handled above).
-    if (ownerUserId) {
+    if (opts.providerId && incomeDestination === "app_balance") {
+      await tx.insert(appLedger).values({
+        clientId: opts.providerId,
+        userId: opts.userId,
+        delta: opts.amount,
+        kind: "routed_income",
+        reason: opts.reason,
+        ref: `${opts.ref}:app`,
+      });
+    } else if (ownerUserId) {
       await tx.insert(ledger).values({
         userId: ownerUserId,
         providerId: opts.providerId,
@@ -236,12 +251,18 @@ export async function settlePaymentIntent(opts: {
     await tx.select({ id: users.id }).from(users).where(eq(users.id, opts.userId)).for("update");
 
     const [client] = await tx
-      .select({ id: clients.id, ownerUserId: clients.ownerUserId })
+      .select({
+        id: clients.id,
+        ownerUserId: clients.ownerUserId,
+        incomeDestination: clients.incomeDestination,
+      })
       .from(clients)
       .where(eq(clients.clientId, intent.clientId))
       .limit(1);
     const providerId = client?.id ?? null;
     const ownerUserId = client?.ownerUserId ?? null;
+    const incomeDestination =
+      client?.incomeDestination === "app_balance" ? "app_balance" : "owner";
     const ref = `intent:${intent.id}`;
 
     const balanceNow = async () => {
@@ -254,7 +275,7 @@ export async function settlePaymentIntent(opts: {
 
     let balance = await balanceNow();
     let duplicate = false;
-    if (ownerUserId !== opts.userId) {
+    if (ownerUserId !== opts.userId || incomeDestination === "app_balance") {
       const [existing] = await tx
         .select({ id: ledger.id })
         .from(ledger)
@@ -277,7 +298,16 @@ export async function settlePaymentIntent(opts: {
           ref,
         });
 
-        if (ownerUserId) {
+        if (providerId && incomeDestination === "app_balance") {
+          await tx.insert(appLedger).values({
+            clientId: providerId,
+            userId: opts.userId,
+            delta: intent.amount,
+            kind: "routed_income",
+            reason: intent.description ?? `Payment to ${intent.clientId}`,
+            ref: `${ref}:app`,
+          });
+        } else if (ownerUserId) {
           await tx.insert(ledger).values({
             userId: ownerUserId,
             providerId,

@@ -101,9 +101,14 @@ export function ProviderApps({
                 {app.clientId}
               </p>
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3">
-                <span className="badge">
-                  {a.earned.replace("{n}", String(app.earned))}
-                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="badge">
+                    {a.earned.replace("{n}", String(app.earned))}
+                  </span>
+                  <span className="badge">
+                    {a.appBalance.replace("{n}", String(app.appBalance))}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setSelectedId(app.id)}

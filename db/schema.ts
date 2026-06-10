@@ -61,41 +61,52 @@ export const sessions = pgTable(
 );
 
 /** A friend's site: both an OAuth2 client and a credit-charging provider. */
-export const clients = pgTable("clients", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  /** Public client identifier handed to the provider. */
-  clientId: text("client_id").notNull().unique(),
-  /** Hash of the client secret (never stored in plaintext). */
-  clientSecretHash: text("client_secret_hash").notNull(),
-  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull().default([]),
-  allowedScopes: jsonb("allowed_scopes")
-    .$type<string[]>()
-    .notNull()
-    .default(["identify"]),
-  /** Trusted clients skip the consent screen. */
-  trusted: boolean("trusted").notNull().default(false),
-  ownerUserId: uuid("owner_user_id").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  isActive: boolean("is_active").notNull().default(true),
-  /** Optional server-to-server webhook for payment state changes. */
-  webhookUrl: text("webhook_url"),
-  /** Plaintext HMAC signing key for webhook payloads (a low-sensitivity key,
-   *  separate from client_secret; shown once when the webhook is configured). */
-  webhookSecret: text("webhook_secret"),
-  /** Public-facing display title for the /explore directory; falls back to `name`. */
-  displayTitle: text("display_title"),
-  /** Short blurb shown on the directory card. */
-  description: text("description"),
-  /** Link to an icon image shown on the directory card. */
-  iconUrl: text("icon_url"),
-  /** Homepage the directory's "Visit" button links to. */
-  websiteUrl: text("website_url"),
-  /** Whether the owner has opted this app into the public /explore directory. */
-  listed: boolean("listed").notNull().default(false),
-  ...timestamps,
-});
+export const clients = pgTable(
+  "clients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    /** Public client identifier handed to the provider. */
+    clientId: text("client_id").notNull().unique(),
+    /** Hash of the client secret (never stored in plaintext). */
+    clientSecretHash: text("client_secret_hash").notNull(),
+    redirectUris: jsonb("redirect_uris").$type<string[]>().notNull().default([]),
+    allowedScopes: jsonb("allowed_scopes")
+      .$type<string[]>()
+      .notNull()
+      .default(["identify"]),
+    /** Trusted clients skip the consent screen. */
+    trusted: boolean("trusted").notNull().default(false),
+    ownerUserId: uuid("owner_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    isActive: boolean("is_active").notNull().default(true),
+    /** Optional server-to-server webhook for payment state changes. */
+    webhookUrl: text("webhook_url"),
+    /** Plaintext HMAC signing key for webhook payloads (a low-sensitivity key,
+     *  separate from client_secret; shown once when the webhook is configured). */
+    webhookSecret: text("webhook_secret"),
+    /** Public-facing display title for the /explore directory; falls back to `name`. */
+    displayTitle: text("display_title"),
+    /** Short blurb shown on the directory card. */
+    description: text("description"),
+    /** Link to an icon image shown on the directory card. */
+    iconUrl: text("icon_url"),
+    /** Homepage the directory's "Visit" button links to. */
+    websiteUrl: text("website_url"),
+    /** Whether the owner has opted this app into the public /explore directory. */
+    listed: boolean("listed").notNull().default(false),
+    /** Where successful app payments are credited: owner user balance or app balance. */
+    incomeDestination: text("income_destination").notNull().default("owner"),
+    ...timestamps,
+  },
+  (t) => [
+    check(
+      "clients_income_destination_check",
+      sql`${t.incomeDestination} in ('owner', 'app_balance')`,
+    ),
+  ],
+);
 
 /** Short-lived authorization codes (PKCE) exchanged at the token endpoint. */
 export const authorizationCodes = pgTable(
@@ -180,7 +191,7 @@ export const refreshTokens = pgTable(
  * the other side, and `kind` lets the UI label each row.
  * `ref` is a unique idempotency key (nullable for admin top-ups).
  * `kind`: topup | charge | income | transfer_in | transfer_out | redeem |
- *         withdrawal | withdrawal_refund | adjustment
+ *         withdrawal | withdrawal_refund | app_fund | app_payout | adjustment
  */
 export const ledger = pgTable(
   "ledger",
@@ -197,7 +208,7 @@ export const ledger = pgTable(
       onDelete: "set null",
     }),
     delta: integer("delta").notNull(),
-    /** topup | charge | income | transfer_in | transfer_out | adjustment */
+    /** topup | charge | income | transfer_in | transfer_out | app_fund | app_payout | adjustment */
     kind: text("kind").notNull().default("adjustment"),
     reason: text("reason"),
     ref: text("ref").unique(),
@@ -208,7 +219,42 @@ export const ledger = pgTable(
     index("ledger_provider_id_idx").on(t.providerId),
     check(
       "ledger_kind_check",
-      sql`${t.kind} in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'adjustment')`,
+      sql`${t.kind} in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'app_fund', 'app_payout', 'adjustment')`,
+    ),
+  ],
+);
+
+/**
+ * Append-only app funding ledger. Balance = SUM(delta) for a provider app.
+ *  - delta > 0 : app balance funded manually or by routed payment income
+ *  - delta < 0 : app paid/rewarded credits to a user
+ *
+ * This is deliberately separate from the owner's personal user balance. It lets
+ * an app accumulate a platform balance and pay users without making routed
+ * income automatically withdrawable by the developer.
+ *
+ * `kind`: manual_fund | routed_income | reverse_payout | adjustment
+ */
+export const appLedger = pgTable(
+  "app_ledger",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    delta: integer("delta").notNull(),
+    kind: text("kind").notNull().default("adjustment"),
+    reason: text("reason"),
+    ref: text("ref").unique(),
+    ...timestamps,
+  },
+  (t) => [
+    index("app_ledger_client_id_idx").on(t.clientId),
+    index("app_ledger_user_id_idx").on(t.userId),
+    check(
+      "app_ledger_kind_check",
+      sql`${t.kind} in ('manual_fund', 'routed_income', 'reverse_payout', 'adjustment')`,
     ),
   ],
 );
@@ -491,6 +537,7 @@ export const appData = pgTable(
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ledger: many(ledger),
+  appLedger: many(appLedger),
   withdrawals: many(withdrawals),
 }));
 
@@ -508,6 +555,11 @@ export const ledgerRelations = relations(ledger, ({ one }) => ({
     fields: [ledger.providerId],
     references: [clients.id],
   }),
+}));
+
+export const appLedgerRelations = relations(appLedger, ({ one }) => ({
+  client: one(clients, { fields: [appLedger.clientId], references: [clients.id] }),
+  user: one(users, { fields: [appLedger.userId], references: [users.id] }),
 }));
 
 export const redeemCodesRelations = relations(redeemCodes, ({ many }) => ({
@@ -533,6 +585,7 @@ export const withdrawalsRelations = relations(withdrawals, ({ one }) => ({
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type LedgerEntry = typeof ledger.$inferSelect;
+export type AppLedgerEntry = typeof appLedger.$inferSelect;
 export type DeviceAuthorization = typeof deviceAuthorizations.$inferSelect;
 export type LoginHandoff = typeof loginHandoffs.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;

@@ -165,10 +165,12 @@ const en = {
     redeem: "Redeemed a code",
     withdrawal: "Withdrawal requested",
     withdrawalRefund: "Withdrawal refunded",
+    appFund: "Funded {name}",
     transferOut: "Sent to {name}",
     transferIn: "Received from {name}",
     paymentFrom: "Payment from {name}",
     paymentTo: "Payment to {name}",
+    payoutFrom: "Payout from {name}",
     someone: "someone",
     statConnected: "Connected",
     statOwned: "Apps you own",
@@ -244,6 +246,7 @@ const en = {
       emptyDesc:
         "Register an OAuth app to let the group log into your site, then charge credits for what it does.",
       earned: "{n} earned",
+      appBalance: "{n} app balance",
       active: "active",
       disabled: "disabled",
       trusted: "trusted",
@@ -290,6 +293,7 @@ const en = {
       tabIntegration: "Integration",
       tabRedirects: "Redirect URIs",
       tabWebhook: "Webhook",
+      tabFunding: "Funding",
       tabSecret: "Secret",
       tabDisplay: "Display",
       tabData: "Data",
@@ -301,6 +305,9 @@ const en = {
       webhookTitle: "Payment webhook",
       webhookDesc:
         "We'll POST a signed notification here whenever a payment settles, so you aren't reliant on the browser redirect. Saving a URL reveals a signing secret once. Leave blank to disable.",
+      fundingTitle: "App balance",
+      fundingDesc:
+        "Transfer credits from your balance into this app, route future payment income into it, and pay credits back to users through the reverse pay API.",
       deleteTitle: "Delete this app",
       deleteDesc:
         "Permanently delete this app. Everyone signed in through it loses access, and its client ID and secret stop working. This can't be undone.",
@@ -334,6 +341,23 @@ const en = {
       webhookUrlPlaceholder: "https://yourapp.com/webhooks/payments",
       saveWebhook: "Save webhook",
       webhookSecretLabel: "Signing secret (shown once — store it now):",
+      appBalanceLabel: "App balance",
+      credits: "credits",
+      fundAmountLabel: "Amount",
+      fundReasonLabel: "Reason",
+      fundAmountPlaceholder: "Amount to add",
+      fundReasonPlaceholder: "Reason (optional)",
+      funding: "Funding…",
+      fundAppBalance: "Fund app balance",
+      incomeDestinationLabel: "New payment income",
+      incomeDestinationOwner: "Credit my owner balance",
+      incomeDestinationAppBalance: "Route to this app balance",
+      incomeDestinationHint:
+        "Owner-balance income is withdrawable. App-balance income can fund reverse payouts and is not withdrawable until you move it manually.",
+      saveIncomeDestination: "Save routing",
+      reversePayEndpoint: "Reverse pay endpoint",
+      reversePayHint:
+        "Call this server-to-server with client_id, client_secret, user_id, amount, and ref.",
       displayDesc:
         "Control how your app appears in the group's Explore directory. It's hidden until you turn on “Show in directory”.",
       displayTitleLabel: "Display title",
@@ -433,6 +457,10 @@ const en = {
     withdrawExceeds: "You can withdraw at most {available} earned credits.",
     withdrawRequested:
       "Withdrawal request for {amount} credits submitted — an admin will process it.",
+    appFundInvalidAmount: "Enter a positive whole number of credits.",
+    appFundInsufficient: "Your balance is too low. Current balance: {balance}.",
+    appFunded: "Added {amount} credits. App balance: {balance}.",
+    incomeDestinationSaved: "Income routing saved.",
   },
   admin: {
     title: "Admin",

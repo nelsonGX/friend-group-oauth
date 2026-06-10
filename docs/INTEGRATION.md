@@ -322,6 +322,7 @@ user to confirm.
 | Create intent    | `POST AUTH/api/pay/intent`   |
 | User confirms    | `GET  AUTH/pay?intent=…`     |
 | Verify result    | `POST AUTH/api/pay/verify`   |
+| Reverse pay      | `POST AUTH/api/pay/reverse`  |
 
 ### Step-by-step
 
@@ -386,6 +387,45 @@ client_id=…&client_secret=…&intent_id=uuid
 ```
 
 Only treat the payment as real when `paid === true` (or `status === "completed"`).
+
+### Reverse pay: pay credits to a user
+
+Apps can also pay users from the app's own balance. Fund that balance in the
+dashboard under **Manage -> Funding**, or route new payment income into the app
+balance instead of the owner's withdrawable balance. Reverse-paid credits are
+normal spendable user credits, but they are not developer `income` and are not
+withdrawable by the recipient.
+
+Call this server-side with client auth:
+
+```
+POST AUTH/api/pay/reverse
+client_id=...&client_secret=...
+&user_id=uuid
+&amount=10
+&ref=reward_8421
+&description=Quest reward
+```
+
+Response:
+
+```json
+{
+  "payout_id": "uuid",
+  "status": "completed",
+  "amount": 10,
+  "user_id": "uuid",
+  "ref": "reward_8421",
+  "description": "Quest reward",
+  "duplicate": false,
+  "app_balance": 90,
+  "paid": true
+}
+```
+
+`ref` is idempotent per app. Retrying the same `ref` returns `duplicate: true`
+without paying twice. If the app balance is too low, the endpoint returns
+`402 insufficient_funds` with the current `balance`.
 
 ### Node example
 

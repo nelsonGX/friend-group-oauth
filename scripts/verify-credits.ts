@@ -13,6 +13,12 @@ import {
 } from "../lib/credits";
 import { completeIntent, createIntent } from "../lib/payments";
 import { buildWebhookRequest, validateWebhookUrl } from "../lib/webhooks";
+import {
+  fundAppFromUserBalance,
+  getAppBalance,
+  reversePayout,
+  setIncomeDestination,
+} from "../lib/app-balance";
 import { hashSecret, hmacVerify } from "../lib/crypto";
 
 /** Verification of the credit ledger + payment intents against PGlite. */
@@ -255,10 +261,91 @@ async function main() {
     (await getIncome(dev.id)).length === devIncomeBefore,
   );
 
+  // --- App balance funding + reverse payouts ---
+  const fund = await fundAppFromUserBalance({
+    clientId: ownedApp.id,
+    userId: dev.id,
+    amount: 10,
+    reason: "manual fund",
+  });
+  check("manual app funding increases app balance", fund.ok && fund.appBalance === 10);
+  check("manual app funding debits the developer", (await getBalance(dev.id)) === 10);
+
+  const payout = await reversePayout({
+    clientId: ownedApp.id,
+    userId: user.id,
+    amount: 4,
+    ref: "reward1",
+    reason: "quest reward",
+  });
+  check("reverse payout succeeds", payout.ok && payout.balance === 6);
+  check("reverse payout credits the user", (await getBalance(user.id)) === 9);
+  check("reverse payout debits app balance", (await getAppBalance(ownedApp.id)) === 6);
+  check("reverse payout is not developer income", (await getIncome(user.id)).length === 0);
+  check("reverse payout shows as app_payout", (await getLedger(user.id))[0]?.kind === "app_payout");
+
+  const payoutDup = await reversePayout({
+    clientId: ownedApp.id,
+    userId: user.id,
+    amount: 4,
+    ref: "reward1",
+  });
+  check(
+    "reverse payout ref is idempotent",
+    payoutDup.ok &&
+      payoutDup.duplicate === true &&
+      (await getBalance(user.id)) === 9 &&
+      (await getAppBalance(ownedApp.id)) === 6,
+  );
+
+  const payoutOver = await reversePayout({
+    clientId: ownedApp.id,
+    userId: user.id,
+    amount: 9999,
+    ref: "reward2",
+  });
+  check(
+    "reverse payout cannot overdraw app balance",
+    !payoutOver.ok && payoutOver.reason === "insufficient_funds",
+  );
+
+  await setIncomeDestination({
+    clientId: ownedApp.id,
+    destination: "app_balance",
+  });
+  const routed = await charge({
+    userId: user.id,
+    providerId: ownedApp.id,
+    amount: 10,
+    ref: "owned-route1",
+    reason: "Route to app balance",
+  });
+  check("routed app-balance charge is blocked without payer funds", !routed.ok);
+  await topUp({ userId: user.id, amount: 10, reason: "test route funds" });
+  const routedWithFunds = await charge({
+    userId: user.id,
+    providerId: ownedApp.id,
+    amount: 10,
+    ref: "owned-route2",
+    reason: "Route to app balance",
+  });
+  check(
+    "routed app-balance charge debits payer",
+    routedWithFunds.ok && (await getBalance(user.id)) === 9,
+  );
+  check(
+    "routed app-balance charge credits app balance",
+    (await getAppBalance(ownedApp.id)) === 16,
+  );
+  check(
+    "routed app-balance charge does not add owner income",
+    (await getIncome(dev.id)).length === devIncomeBefore,
+  );
+
   // --- Peer transfers ---
   const t1 = await transfer({ fromUserId: dev.id, toUserId: user.id, amount: 5, reason: "thanks" });
-  check("transfer debits the sender", t1.ok && (await getBalance(dev.id)) === 15);
-  check("transfer credits the recipient", (await getBalance(user.id)) === 10);
+  check("transfer debits the sender", t1.ok && (await getBalance(dev.id)) === 5);
+  check("transfer credits the recipient", (await getBalance(user.id)) === 14);
 
   const tSelf = await transfer({ fromUserId: dev.id, toUserId: dev.id, amount: 1 });
   check("self-transfer is rejected", !tSelf.ok && tSelf.reason === "self_transfer");
@@ -270,7 +357,7 @@ async function main() {
   check("transfer beyond balance is rejected", !tOver.ok && tOver.reason === "insufficient_funds");
   check(
     "rejected transfer left balances unchanged",
-    (await getBalance(dev.id)) === 15 && (await getBalance(user.id)) === 10,
+    (await getBalance(dev.id)) === 5 && (await getBalance(user.id)) === 14,
   );
 
   const tMissing = await transfer({

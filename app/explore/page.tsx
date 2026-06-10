@@ -35,6 +35,11 @@ function activityLabel(entry: ActivityEntry, d: Dictionary["dashboard"]): string
       return format(d.transferIn, { name });
     case "income":
       return format(d.paymentFrom, { name });
+    case "app_payout":
+      return (
+        entry.reason ??
+        (entry.appName ? format(d.payoutFrom, { name: entry.appName }) : d.topUp)
+      );
     case "charge":
       return (
         entry.reason ??
@@ -48,6 +53,11 @@ function activityLabel(entry: ActivityEntry, d: Dictionary["dashboard"]): string
       return entry.reason ?? d.withdrawal;
     case "withdrawal_refund":
       return entry.reason ?? d.withdrawalRefund;
+    case "app_fund":
+      return (
+        entry.reason ??
+        (entry.appName ? format(d.appFund, { name: entry.appName }) : d.charge)
+      );
     default:
       return entry.reason ?? (entry.delta > 0 ? d.topUp : d.charge);
   }

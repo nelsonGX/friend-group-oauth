@@ -271,6 +271,7 @@ it to auto-configure.
 | Create pay intent  | \`POST ${o.base}/api/pay/intent\`         |
 | User confirms pay  | \`GET  ${o.base}/pay?intent=…\`           |
 | Verify pay         | \`POST ${o.base}/api/pay/verify\`         |
+| Reverse pay        | \`POST ${o.base}/api/pay/reverse\`        |
 | Data get           | \`POST ${o.base}/api/data/get\`           |
 | Data set           | \`POST ${o.base}/api/data/set\`           |
 | Data delete        | \`POST ${o.base}/api/data/delete\`        |
@@ -360,6 +361,19 @@ conversion, markup, or rounding, so an item costs the same on every platform.
    client_id=…&client_secret=…&intent_id={intent_id}
    \`\`\`
    → \`{ intent_id, status, amount, ref, description, user_id, paid }\`. Grant only when \`paid === true\`.
+
+### Reverse pay - pay/reward a user from app balance
+First fund the app's balance in the dashboard (**Manage -> Funding**) or route
+new payment income into app balance. Then call this server-side:
+\`\`\`
+POST ${o.base}/api/pay/reverse
+client_id=...&client_secret=...&user_id={sub}&amount={positive int}
+&ref={your payout idempotency key}&description={optional}
+\`\`\`
+-> \`{ payout_id, status:"completed", amount, user_id, ref, duplicate, app_balance, paid:true }\`.
+Retrying the same ref is safe and will not pay twice. Low app balance returns
+\`402 insufficient_funds\`. Reverse-paid credits are spendable user credits, not
+withdrawable developer income.
 
 ### Webhooks (optional, recommended)
 Configure a webhook URL on the app in the dashboard (**Manage → Webhook**); saving

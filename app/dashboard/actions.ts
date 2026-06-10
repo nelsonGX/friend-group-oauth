@@ -27,6 +27,11 @@ import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 import { createWithdrawal, cancelWithdrawal as cancelWithdrawalRequest } from "@/lib/withdrawals";
 import { env } from "@/lib/env";
 import { validateWebhookUrl } from "@/lib/webhooks";
+import {
+  fundAppFromUserBalance,
+  setIncomeDestination,
+  type IncomeDestination,
+} from "@/lib/app-balance";
 
 type ActionDict = Dictionary["dashboardActions"];
 
@@ -356,6 +361,92 @@ export async function updateAppListing(
   revalidatePath("/dashboard");
   revalidatePath("/explore");
   return { ok: true, message: d.displaySaved };
+}
+
+export interface FundingState {
+  ok: boolean;
+  message: string;
+}
+
+/** Add credits to an owned app's separate app balance. */
+export async function fundAppBalance(
+  _prev: FundingState,
+  formData: FormData,
+): Promise<FundingState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await auth();
+  if (!user) return { ok: false, message: d.notAuthorized };
+
+  const clientId = formData.get("clientId")?.toString();
+  const amount = Number(formData.get("amount"));
+  const reason = formData.get("reason")?.toString().trim() || "Manual app funding";
+  if (!clientId || !Number.isInteger(amount) || amount <= 0) {
+    return { ok: false, message: d.appFundInvalidAmount };
+  }
+
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
+    return { ok: false, message: d.notYourApp };
+  }
+
+  const result = await fundAppFromUserBalance({
+    clientId: client.id,
+    userId: user.id,
+    amount,
+    reason,
+  });
+  if (!result.ok) {
+    if (result.reason === "insufficient_funds") {
+      return {
+        ok: false,
+        message: format(d.appFundInsufficient, { balance: result.balance }),
+      };
+    }
+    return { ok: false, message: d.appFundInvalidAmount };
+  }
+
+  revalidatePath("/dashboard");
+  return {
+    ok: true,
+    message: format(d.appFunded, { amount, balance: result.appBalance }),
+  };
+}
+
+/** Choose whether future successful payments credit the owner or the app balance. */
+export async function updateIncomeDestination(
+  _prev: FundingState,
+  formData: FormData,
+): Promise<FundingState> {
+  const { t } = await getDictionary();
+  const d = t.dashboardActions;
+  const user = await auth();
+  if (!user) return { ok: false, message: d.notAuthorized };
+
+  const clientId = formData.get("clientId")?.toString();
+  const rawDestination = formData.get("incomeDestination")?.toString();
+  const destination: IncomeDestination =
+    rawDestination === "app_balance" ? "app_balance" : "owner";
+  if (!clientId) return { ok: false, message: d.missingApp };
+
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) {
+    return { ok: false, message: d.notYourApp };
+  }
+
+  await setIncomeDestination({ clientId: client.id, destination });
+  revalidatePath("/dashboard");
+  return { ok: true, message: d.incomeDestinationSaved };
 }
 
 /**

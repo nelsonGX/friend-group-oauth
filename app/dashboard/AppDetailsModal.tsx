@@ -10,6 +10,7 @@ import {
   EditName,
   EditRedirects,
   Field,
+  FundingSettings,
   RegenerateSecret,
   WebhookSettings,
 } from "./DashboardForms";
@@ -26,6 +27,8 @@ export interface AppView {
   isActive: boolean;
   trusted: boolean;
   earned: number;
+  appBalance: number;
+  incomeDestination: "owner" | "app_balance";
   webhookUrl: string | null;
   displayTitle: string | null;
   description: string | null;
@@ -45,6 +48,7 @@ type Tab =
   | "integration"
   | "redirects"
   | "webhook"
+  | "funding"
   | "data"
   | "secret"
   | "danger";
@@ -81,6 +85,7 @@ export function AppDetailsModal({
     { key: "integration", label: t.tabIntegration },
     { key: "redirects", label: t.tabRedirects },
     { key: "webhook", label: t.tabWebhook },
+    { key: "funding", label: t.tabFunding },
     { key: "data", label: t.tabData },
     { key: "secret", label: t.tabSecret },
     { key: "danger", label: t.tabDanger },
@@ -96,6 +101,7 @@ export function AppDetailsModal({
         </span>
         {app.trusted && <span className="badge badge-success">{appsT.trusted}</span>}
         <span className="badge">{appsT.earned.replace("{n}", String(app.earned))}</span>
+        <span className="badge">{appsT.appBalance.replace("{n}", String(app.appBalance))}</span>
         <CopyClientId clientId={app.clientId} copiedLabel={forms.copied} className="ml-auto" />
       </div>
 
@@ -163,6 +169,7 @@ export function AppDetailsModal({
                 <Field label="Pay (intent)" value={`${appUrl}/api/pay/intent`} />
                 <Field label="Pay (confirm)" value={`${appUrl}/pay`} />
                 <Field label="Pay (verify)" value={`${appUrl}/api/pay/verify`} />
+                <Field label="Reverse pay" value={`${appUrl}/api/pay/reverse`} />
               </div>
             </div>
           </div>
@@ -189,6 +196,17 @@ export function AppDetailsModal({
               t={forms}
             />
           </div>
+        )}
+
+        {tab === "funding" && (
+          <FundingSettings
+            clientId={app.clientId}
+            appBalance={app.appBalance}
+            incomeDestination={app.incomeDestination}
+            endpoint={`${appUrl}/api/pay/reverse`}
+            t={forms}
+            details={t}
+          />
         )}
 
         {tab === "data" && (
