@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { Boxes, ExternalLink, Shield } from "lucide-react";
 import { and, asc, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
-import { accessTokens, clients, users } from "@/db/schema";
+import { clients, refreshTokens, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
@@ -83,16 +83,18 @@ export default async function ExplorePage() {
 
   const db = getDb();
 
-  // Apps the user has authorized (live tokens), with display names.
+  // Apps the user has authorized, keyed on the durable grant (the refresh token)
+  // rather than the short-lived access token, so an app stays listed for the
+  // life of the grant instead of vanishing an hour after its last refresh.
   const connectedQuery = db
-    .selectDistinct({ clientId: accessTokens.clientId, name: clients.name })
-    .from(accessTokens)
-    .leftJoin(clients, eq(clients.clientId, accessTokens.clientId))
+    .selectDistinct({ clientId: refreshTokens.clientId, name: clients.name })
+    .from(refreshTokens)
+    .leftJoin(clients, eq(clients.clientId, refreshTokens.clientId))
     .where(
       and(
-        eq(accessTokens.userId, user.id),
-        eq(accessTokens.revoked, false),
-        gt(accessTokens.expiresAt, new Date()),
+        eq(refreshTokens.userId, user.id),
+        eq(refreshTokens.revoked, false),
+        gt(refreshTokens.expiresAt, new Date()),
       ),
     );
   // The opted-in, active directory listings, with their owner's display name.
