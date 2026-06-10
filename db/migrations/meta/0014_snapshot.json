@@ -1,6 +1,6 @@
 {
-  "id": "d5087883-9619-4a59-94cd-b82bdd2fbb9a",
-  "prevId": "1a15c667-0cb0-41ae-a82c-96d2e5b18b24",
+  "id": "b5a0c57e-83c3-4f1c-b30c-3bb8939a7409",
+  "prevId": "d5087883-9619-4a59-94cd-b82bdd2fbb9a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -657,6 +657,13 @@
           "notNull": true,
           "default": false
         },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'tools'"
+        },
         "income_destination": {
           "name": "income_destination",
           "type": "text",
@@ -703,6 +710,10 @@
         "clients_income_destination_check": {
           "name": "clients_income_destination_check",
           "value": "\"clients\".\"income_destination\" in ('owner', 'app_balance')"
+        },
+        "clients_category_check": {
+          "name": "clients_category_check",
+          "value": "\"clients\".\"category\" in ('tools', 'fun')"
         }
       },
       "isRLSEnabled": false

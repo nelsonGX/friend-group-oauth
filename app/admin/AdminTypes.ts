@@ -18,6 +18,7 @@ export interface AdminProviderRow {
   isActive: boolean;
   trusted: boolean;
   listed: boolean;
+  category: "tools" | "fun";
 }
 
 export interface AdminRedeemRow {

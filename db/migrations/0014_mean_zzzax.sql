@@ -1,0 +1,2 @@
+ALTER TABLE "clients" ADD COLUMN "category" text DEFAULT 'tools' NOT NULL;--> statement-breakpoint
+ALTER TABLE "clients" ADD CONSTRAINT "clients_category_check" CHECK ("clients"."category" in ('tools', 'fun'));

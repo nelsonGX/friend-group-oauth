@@ -79,6 +79,7 @@ export default async function AdminPage() {
     isActive: c.isActive,
     trusted: c.trusted,
     listed: c.listed,
+    category: c.category === "fun" ? "fun" : "tools",
   }));
 
   const allowedCount = allUsers.filter((u) => u.allowed).length;

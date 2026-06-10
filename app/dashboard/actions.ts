@@ -343,6 +343,7 @@ export async function updateAppListing(
   const iconUrl = formData.get("iconUrl")?.toString().trim() || null;
   const websiteUrl = formData.get("websiteUrl")?.toString().trim() || null;
   const listed = formData.get("listed") != null;
+  const category = formData.get("category")?.toString() === "fun" ? "fun" : "tools";
 
   // Validate the two URL fields when present.
   for (const url of [iconUrl, websiteUrl]) {
@@ -357,7 +358,7 @@ export async function updateAppListing(
 
   await db
     .update(clients)
-    .set({ displayTitle, description, iconUrl, websiteUrl, listed })
+    .set({ displayTitle, description, iconUrl, websiteUrl, listed, category })
     .where(eq(clients.clientId, clientId));
   revalidatePath("/dashboard");
   revalidatePath("/explore");

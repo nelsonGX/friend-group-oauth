@@ -276,6 +276,7 @@ export function EditListing({
   description,
   iconUrl,
   websiteUrl,
+  category,
   listed,
   t,
 }: {
@@ -284,6 +285,7 @@ export function EditListing({
   description: string | null;
   iconUrl: string | null;
   websiteUrl: string | null;
+  category: "tools" | "fun";
   listed: boolean;
   t: FormsDict;
 }) {
@@ -341,6 +343,20 @@ export function EditListing({
           placeholder={t.websiteUrlPlaceholder}
           defaultValue={websiteUrl ?? ""}
         />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium" htmlFor="category">
+          {t.categoryLabel}
+        </label>
+        <select
+          id="category"
+          className={inputClass}
+          name="category"
+          defaultValue={category}
+        >
+          <option value="tools">{t.categoryTools}</option>
+          <option value="fun">{t.categoryFun}</option>
+        </select>
       </div>
       <label className="flex items-center gap-2.5 text-sm">
         <input

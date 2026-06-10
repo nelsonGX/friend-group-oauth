@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AdminSearchBox } from "./AdminSearchBox";
-import { toggleClientActive, toggleClientTrusted } from "./actions";
+import { setClientCategory, toggleClientActive, toggleClientTrusted } from "./actions";
 import type { AdminProviderRow } from "./AdminTypes";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
@@ -43,6 +43,7 @@ export function ProvidersSection({
               <th className="p-4 font-medium">{t.th.scopes}</th>
               <th className="p-4 text-right font-medium">{t.th.earned}</th>
               <th className="p-4 font-medium">{t.th.status}</th>
+              <th className="p-4 font-medium">{t.category}</th>
               <th className="p-4 text-right font-medium">{t.th.actions}</th>
             </tr>
           </thead>
@@ -61,6 +62,21 @@ export function ProvidersSection({
                     {c.trusted && <span className="badge">{t.trusted}</span>}
                     {c.listed && <span className="badge">{t.listed}</span>}
                   </span>
+                </td>
+                <td className="p-4">
+                  <form action={setClientCategory}>
+                    <input type="hidden" name="clientId" value={c.clientId} />
+                    <select
+                      name="category"
+                      defaultValue={c.category}
+                      aria-label={t.category}
+                      onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                      className="input py-1.5! text-xs"
+                    >
+                      <option value="tools">{t.categoryTools}</option>
+                      <option value="fun">{t.categoryFun}</option>
+                    </select>
+                  </form>
                 </td>
                 <td className="p-4">
                   <div className="flex justify-end gap-2">
@@ -82,7 +98,7 @@ export function ProvidersSection({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-muted">
+                <td colSpan={7} className="p-6 text-center text-muted">
                   {providers.length === 0 ? t.noProviders : t.noResults}
                 </td>
               </tr>

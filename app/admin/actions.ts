@@ -169,6 +169,21 @@ export async function toggleClientTrusted(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/** Set a client's /explore directory category ('tools' or 'fun'). */
+export async function setClientCategory(formData: FormData) {
+  const user = await auth();
+  if (!user?.isAdmin) return;
+  const clientId = formData.get("clientId")?.toString();
+  if (!clientId) return;
+  const category = formData.get("category")?.toString() === "fun" ? "fun" : "tools";
+  await getDb()
+    .update(clients)
+    .set({ category })
+    .where(eq(clients.clientId, clientId));
+  revalidatePath("/admin");
+  revalidatePath("/explore");
+}
+
 /** Mint a redeem code worth `amount` credits. Returns the code once for sharing. */
 export async function createRedeemCode(
   _prev: ActionState,

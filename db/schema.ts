@@ -96,6 +96,8 @@ export const clients = pgTable(
     websiteUrl: text("website_url"),
     /** Whether the owner has opted this app into the public /explore directory. */
     listed: boolean("listed").notNull().default(false),
+    /** Directory grouping for /explore: 'tools' or 'fun' (set by owner or admin). */
+    category: text("category").notNull().default("tools"),
     /** Where successful app payments are credited: owner user balance or app balance. */
     incomeDestination: text("income_destination").notNull().default("owner"),
     ...timestamps,
@@ -105,6 +107,7 @@ export const clients = pgTable(
       "clients_income_destination_check",
       sql`${t.incomeDestination} in ('owner', 'app_balance')`,
     ),
+    check("clients_category_check", sql`${t.category} in ('tools', 'fun')`),
   ],
 );
 

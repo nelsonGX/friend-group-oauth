@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Boxes, ExternalLink, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { and, asc, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import { clients, refreshTokens, users } from "@/db/schema";
@@ -14,6 +14,7 @@ import { ConnectedApps } from "../dashboard/ConnectedApps";
 import { WalletActions } from "./WalletActions";
 import { RedeemCode } from "./RedeemCode";
 import { CreditBalance } from "./CreditBalance";
+import { ExploreDirectory, type AppCategory } from "./ExploreDirectory";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
 export const metadata: Metadata = {
@@ -107,6 +108,7 @@ export default async function ExplorePage() {
       description: clients.description,
       iconUrl: clients.iconUrl,
       websiteUrl: clients.websiteUrl,
+      category: clients.category,
       ownerName: users.globalName,
       ownerUsername: users.username,
     })
@@ -194,81 +196,30 @@ export default async function ExplorePage() {
           <h2 className="text-lg font-semibold">{e.heading}</h2>
           <p className="mt-1 max-w-xl text-sm text-muted">{e.subtitle}</p>
 
-          {listed.length === 0 ? (
-            <div className="card card-hover mt-4 flex flex-col items-center gap-3 px-6 py-12 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-surface-strong text-faint">
-                <Boxes size={22} />
-              </span>
-              <div>
-                <p className="font-medium">{e.emptyTitle}</p>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{e.emptyDesc}</p>
-              </div>
-            </div>
-          ) : (
-            <ul className="mt-4 space-y-3">
-              {listed.map((app) => {
-                const title = app.displayTitle ?? app.name;
-                const owner = app.ownerName ?? app.ownerUsername;
-                return (
-                  <li
-                    key={app.id}
-                    className="card card-hover-border flex items-center gap-4 p-5"
-                  >
-                    {app.iconUrl ? (
-                      <Image
-                        src={app.iconUrl}
-                        alt=""
-                        width={48}
-                        height={48}
-                        unoptimized
-                        className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-border"
-                      />
-                    ) : (
-                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand text-lg font-semibold text-white">
-                        {title.slice(0, 1).toUpperCase()}
-                      </span>
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="min-w-0 wrap-break-word font-medium leading-tight">
-                          {title}
-                        </h3>
-                        {connectedIds.has(app.clientId) && (
-                          <span className="badge badge-success shrink-0">
-                            <span className="dot" />
-                            {e.connected}
-                          </span>
-                        )}
-                      </div>
-                      {owner && (
-                        <p className="mt-0.5 text-xs text-faint">
-                          {format(e.by, { name: owner })}
-                        </p>
-                      )}
-                      {app.description && (
-                        <p className="mt-1.5 line-clamp-2 text-sm text-muted">
-                          {app.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {app.websiteUrl && (
-                      <a
-                        href={app.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-secondary shrink-0 py-1.5! text-sm"
-                      >
-                        <ExternalLink size={15} />
-                        {e.visit}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <ExploreDirectory
+            apps={listed.map((app) => ({
+              id: app.id,
+              clientId: app.clientId,
+              title: app.displayTitle ?? app.name,
+              owner: app.ownerName ?? app.ownerUsername,
+              description: app.description,
+              iconUrl: app.iconUrl,
+              websiteUrl: app.websiteUrl,
+              category: (app.category === "fun" ? "fun" : "tools") as AppCategory,
+              connected: connectedIds.has(app.clientId),
+            }))}
+            t={{
+              searchPlaceholder: e.searchPlaceholder,
+              categoryTools: e.categoryTools,
+              categoryFun: e.categoryFun,
+              noResults: e.noResults,
+              emptyTitle: e.emptyTitle,
+              emptyDesc: e.emptyDesc,
+              connected: e.connected,
+              visit: e.visit,
+              by: e.by,
+            }}
+          />
         </section>
 
         <aside className="reveal space-y-6 lg:sticky lg:top-20" style={{ animationDelay: "120ms" }}>

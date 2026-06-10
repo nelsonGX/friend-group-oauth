@@ -34,6 +34,7 @@ export interface AppView {
   description: string | null;
   iconUrl: string | null;
   websiteUrl: string | null;
+  category: "tools" | "fun";
   listed: boolean;
   createdAt: string;
 }
@@ -140,6 +141,7 @@ export function AppDetailsModal({
               description={app.description}
               iconUrl={app.iconUrl}
               websiteUrl={app.websiteUrl}
+              category={app.category}
               listed={app.listed}
               t={forms}
             />

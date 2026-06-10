@@ -70,6 +70,7 @@ export default async function DashboardPage() {
     description: c.description,
     iconUrl: c.iconUrl,
     websiteUrl: c.websiteUrl,
+    category: c.category === "fun" ? "fun" : "tools",
     listed: c.listed,
     createdAt: c.createdAt.toISOString(),
   }));
