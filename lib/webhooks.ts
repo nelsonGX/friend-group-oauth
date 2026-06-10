@@ -197,8 +197,11 @@ export async function deliverPaymentWebhook(
   const { body, headers } = buildWebhookRequest(intent, client.webhookSecret);
   const db = getDb();
 
-  let lastError = "delivery failed";
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  const deliverAttempt = async (
+    attempt: number,
+    lastError = "delivery failed",
+  ): Promise<string | null> => {
+    if (attempt > MAX_ATTEMPTS) return lastError;
     if (BACKOFF_MS[attempt - 1]) await sleep(BACKOFF_MS[attempt - 1]);
     try {
       const status = await postWebhook(url, headers, body);
@@ -212,14 +215,19 @@ export async function deliverPaymentWebhook(
             webhookDeliveredAt: new Date(),
           })
           .where(eq(paymentIntents.id, intent.id));
-        return;
+        return null;
       }
-      lastError = `HTTP ${status}`;
+      return deliverAttempt(attempt + 1, `HTTP ${status}`);
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
+      return deliverAttempt(
+        attempt + 1,
+        err instanceof Error ? err.message : String(err),
+      );
     }
-  }
+  };
 
+  const lastError = await deliverAttempt(1);
+  if (!lastError) return;
   await db
     .update(paymentIntents)
     .set({

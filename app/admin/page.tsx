@@ -9,25 +9,28 @@ import { format } from "@/lib/i18n/format";
 import { getBalance, getProviderEarnings } from "@/lib/credits";
 import { listRedeemCodes } from "@/lib/redeem";
 import { listWithdrawals } from "@/lib/withdrawals";
-import {
-  AdminClient,
-  type AdminProviderRow,
-  type AdminRedeemRow,
-  type AdminUserRow,
-  type AdminWithdrawalView,
-} from "./AdminClient";
+import { AdminClient } from "./AdminClient";
+import type {
+  AdminProviderRow,
+  AdminRedeemRow,
+  AdminUserRow,
+  AdminWithdrawalView,
+} from "./AdminTypes";
 
 export default async function AdminPage() {
-  const admin = await requireAdmin();
-  const { t } = await getDictionary();
+  const [admin, { t }] = await Promise.all([requireAdmin(), getDictionary()]);
   const db = getDb();
 
-  const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
-  const balances = await Promise.all(allUsers.map((u) => getBalance(u.id)));
-  const allClients = await db.select().from(clients).orderBy(desc(clients.createdAt));
-  const earnings = await Promise.all(allClients.map((c) => getProviderEarnings(c.id)));
-  const codes = await listRedeemCodes();
-  const withdrawals = await listWithdrawals();
+  const [allUsers, allClients, codes, withdrawals] = await Promise.all([
+    db.select().from(users).orderBy(desc(users.createdAt)),
+    db.select().from(clients).orderBy(desc(clients.createdAt)),
+    listRedeemCodes(),
+    listWithdrawals(),
+  ]);
+  const [balances, earnings] = await Promise.all([
+    Promise.all(allUsers.map((u) => getBalance(u.id))),
+    Promise.all(allClients.map((c) => getProviderEarnings(c.id))),
+  ]);
 
   const redeemRows: AdminRedeemRow[] = codes.map((c) => ({
     id: c.id,

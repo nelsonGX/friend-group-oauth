@@ -46,25 +46,24 @@ export async function getWithdrawableEarnings(
 ): Promise<WithdrawableEarnings> {
   const db = getDb();
 
-  const [earnedRow] = await db
-    .select({ earned: SUM_DELTA })
-    .from(ledger)
-    .where(and(eq(ledger.userId, userId), eq(ledger.kind, "income")));
-  const [balanceRow] = await db
-    .select({ balance: SUM_DELTA })
-    .from(ledger)
-    .where(eq(ledger.userId, userId));
-  const [reservedRow] = await db
-    .select({
-      reserved: sql<number>`cast(coalesce(sum(${withdrawals.amount}), 0) as int)`,
-    })
-    .from(withdrawals)
-    .where(
-      and(
-        eq(withdrawals.userId, userId),
-        inArray(withdrawals.status, [...RESERVED_STATUSES]),
+  const [[earnedRow], [balanceRow], [reservedRow]] = await Promise.all([
+    db
+      .select({ earned: SUM_DELTA })
+      .from(ledger)
+      .where(and(eq(ledger.userId, userId), eq(ledger.kind, "income"))),
+    db.select({ balance: SUM_DELTA }).from(ledger).where(eq(ledger.userId, userId)),
+    db
+      .select({
+        reserved: sql<number>`cast(coalesce(sum(${withdrawals.amount}), 0) as int)`,
+      })
+      .from(withdrawals)
+      .where(
+        and(
+          eq(withdrawals.userId, userId),
+          inArray(withdrawals.status, [...RESERVED_STATUSES]),
+        ),
       ),
-    );
+  ]);
 
   const earned = earnedRow?.earned ?? 0;
   const balance = balanceRow?.balance ?? 0;
@@ -106,25 +105,27 @@ export async function createWithdrawal(opts: {
       .where(eq(users.id, opts.userId))
       .for("update");
 
-    const [earnedRow] = await tx
-      .select({ earned: SUM_DELTA })
-      .from(ledger)
-      .where(and(eq(ledger.userId, opts.userId), eq(ledger.kind, "income")));
-    const [balanceRow] = await tx
-      .select({ balance: SUM_DELTA })
-      .from(ledger)
-      .where(eq(ledger.userId, opts.userId));
-    const [reservedRow] = await tx
-      .select({
-        reserved: sql<number>`cast(coalesce(sum(${withdrawals.amount}), 0) as int)`,
-      })
-      .from(withdrawals)
-      .where(
-        and(
-          eq(withdrawals.userId, opts.userId),
-          inArray(withdrawals.status, [...RESERVED_STATUSES]),
+    const [[earnedRow], [balanceRow], [reservedRow]] = await Promise.all([
+      tx
+        .select({ earned: SUM_DELTA })
+        .from(ledger)
+        .where(and(eq(ledger.userId, opts.userId), eq(ledger.kind, "income"))),
+      tx
+        .select({ balance: SUM_DELTA })
+        .from(ledger)
+        .where(eq(ledger.userId, opts.userId)),
+      tx
+        .select({
+          reserved: sql<number>`cast(coalesce(sum(${withdrawals.amount}), 0) as int)`,
+        })
+        .from(withdrawals)
+        .where(
+          and(
+            eq(withdrawals.userId, opts.userId),
+            inArray(withdrawals.status, [...RESERVED_STATUSES]),
+          ),
         ),
-      );
+    ]);
 
     const earned = earnedRow?.earned ?? 0;
     const balance = balanceRow?.balance ?? 0;

@@ -1,9 +1,15 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { TriangleAlert, KeyRound } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { getPendingByUserCode, normalizeUserCode, formatUserCode } from "@/lib/devices";
 import { DeviceApproval } from "./DeviceApproval";
+
+export const metadata: Metadata = {
+  title: "Authorize app | Friend Group Auth",
+  description: "Review and approve a device authorization request.",
+};
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -21,8 +27,7 @@ export default async function DevicePage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
-  const { t } = await getDictionary();
+  const [sp, { t }] = await Promise.all([searchParams, getDictionary()]);
   const d = t.device;
   const raw = Array.isArray(sp.code) ? sp.code[0] : sp.code;
   const code = raw ? normalizeUserCode(raw) : "";
@@ -75,9 +80,9 @@ export default async function DevicePage({
             <input
               className="input text-center font-mono tracking-widest uppercase"
               name="code"
+              aria-label={d.enterCodeTitle}
               placeholder="XXXX-XXXX"
               defaultValue={code ? formatUserCode(code) : ""}
-              autoFocus
             />
             <button className="btn btn-primary w-full" type="submit">
               {d.continue}

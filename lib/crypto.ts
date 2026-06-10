@@ -18,7 +18,7 @@ export function randomToken(bytes = 32): string {
   return randomBytes(bytes).toString("base64url");
 }
 
-export function sha256(input: string): string {
+function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
 
@@ -26,7 +26,7 @@ export function sha256(input: string): string {
 export const hashToken = sha256;
 
 /** Constant-time string comparison that tolerates length mismatch. */
-export function timingSafeEqualStr(a: string, b: string): boolean {
+function timingSafeEqualStr(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
   if (ab.length !== bb.length) return false;

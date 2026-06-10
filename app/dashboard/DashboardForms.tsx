@@ -21,7 +21,7 @@ const webhookInitial: WebhookState = { ok: false, message: "" };
 
 const inputClass = "input";
 
-export function Notice({ ok, message }: { ok: boolean; message: string }) {
+function Notice({ ok, message }: { ok: boolean; message: string }) {
   if (!message) return null;
   return (
     <p className={`text-sm ${ok ? "text-success" : "text-danger"}`}>
@@ -42,7 +42,7 @@ export function RegenerateSecret({
     <div>
       <form action={action}>
         <input type="hidden" name="clientId" value={clientId} />
-        <button className="btn btn-secondary text-sm" disabled={pending}>
+        <button type="submit" className="btn btn-secondary text-sm" disabled={pending}>
           {pending ? t.regenerating : t.regenerateSecret}
         </button>
       </form>
@@ -82,7 +82,7 @@ export function EditName({
         placeholder={t.appNamePlaceholder}
         defaultValue={name}
       />
-      <button className="btn btn-secondary text-sm" disabled={pending}>
+      <button type="submit" className="btn btn-secondary text-sm" disabled={pending}>
         {pending ? t.saving : t.saveName}
       </button>
       <Notice ok={state.ok} message={state.message} />
@@ -106,10 +106,11 @@ export function EditRedirects({
       <textarea
         className={inputClass}
         name="redirectUris"
+        aria-label={t.redirectUrisMustMatch}
         rows={3}
         defaultValue={redirectUris.join("\n")}
       />
-      <button className="btn btn-secondary text-sm" disabled={pending}>
+      <button type="submit" className="btn btn-secondary text-sm" disabled={pending}>
         {pending ? t.saving : t.saveRedirectUris}
       </button>
       <Notice ok={state.ok} message={state.message} />
@@ -134,10 +135,11 @@ export function WebhookSettings({
         className={inputClass}
         type="url"
         name="webhookUrl"
+        aria-label={t.webhookUrlPlaceholder}
         placeholder={t.webhookUrlPlaceholder}
         defaultValue={webhookUrl ?? ""}
       />
-      <button className="btn btn-secondary text-sm" disabled={pending}>
+      <button type="submit" className="btn btn-secondary text-sm" disabled={pending}>
         {pending ? t.saving : t.saveWebhook}
       </button>
       <Notice ok={state.ok} message={state.message} />
@@ -234,7 +236,7 @@ export function EditListing({
         />
         {t.listedLabel}
       </label>
-      <button className="btn btn-secondary text-sm" disabled={pending}>
+      <button type="submit" className="btn btn-secondary text-sm" disabled={pending}>
         {pending ? t.saving : t.saveDisplay}
       </button>
       <Notice ok={state.ok} message={state.message} />
@@ -291,7 +293,7 @@ export function DeleteApp({
         >
           {t.cancel}
         </button>
-        <button className="btn btn-danger text-sm" disabled={pending}>
+        <button type="submit" className="btn btn-danger text-sm" disabled={pending}>
           <Trash2 size={15} />
           {pending ? t.deleting : t.deleteConfirmYes}
         </button>

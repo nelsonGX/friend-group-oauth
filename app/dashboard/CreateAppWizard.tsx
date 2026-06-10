@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useReducer, useRef, useState } from "react";
 import { Plus, Trash2, Check, AlertTriangle, Sparkles, PencilLine } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { createOwnApp, type AppState } from "./actions";
@@ -15,6 +15,60 @@ type SkillDict = Dictionary["dashboard"]["skill"];
 
 const appInitial: AppState = { ok: false, message: "" };
 const TOTAL_STEPS = 3;
+
+type UriRow = {
+  id: string;
+  value: string;
+};
+
+type WizardFormState = {
+  step: number;
+  name: string;
+  uris: UriRow[];
+  scopes: string[];
+  error: string;
+};
+
+type WizardFormAction =
+  | { type: "setError"; error: string }
+  | { type: "setStep"; step: number }
+  | { type: "setName"; name: string }
+  | { type: "setUri"; id: string; value: string }
+  | { type: "addUri"; uri: UriRow }
+  | { type: "removeUri"; id: string }
+  | { type: "toggleScope"; scope: string };
+
+function wizardFormReducer(
+  state: WizardFormState,
+  action: WizardFormAction,
+): WizardFormState {
+  switch (action.type) {
+    case "setError":
+      return { ...state, error: action.error };
+    case "setStep":
+      return { ...state, step: action.step };
+    case "setName":
+      return { ...state, name: action.name };
+    case "setUri":
+      return {
+        ...state,
+        uris: state.uris.map((u) =>
+          u.id === action.id ? { ...u, value: action.value } : u,
+        ),
+      };
+    case "addUri":
+      return { ...state, uris: [...state.uris, action.uri] };
+    case "removeUri":
+      return { ...state, uris: state.uris.filter((u) => u.id !== action.id) };
+    case "toggleScope":
+      return {
+        ...state,
+        scopes: state.scopes.includes(action.scope)
+          ? state.scopes.filter((s) => s !== action.scope)
+          : [...state.scopes, action.scope],
+      };
+  }
+}
 
 /**
  * Create-app popup. Opens on a chooser: the recommended one-click integration
@@ -46,60 +100,73 @@ export function CreateAppWizard({
 
   // "choose" shows the one-click vs manual chooser; "manual" runs the wizard.
   const [mode, setMode] = useState<"choose" | "manual">("choose");
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState("");
-  const [uris, setUris] = useState<string[]>([""]);
-  const [scopes, setScopes] = useState<string[]>(["identify"]);
-  const [error, setError] = useState("");
+  const [form, dispatch] = useReducer(wizardFormReducer, {
+    step: 1,
+    name: "",
+    uris: [{ id: "initial", value: "" }],
+    scopes: ["identify"],
+    error: "",
+  });
+  const nextUriId = useRef(1);
+  const { step, name, uris, scopes, error } = form;
 
   // On a successful create, the action revalidates the dashboard and returns the
   // secret — the success screen renders in place of the form.
   const done = state.ok && !!state.clientId;
 
-  function setUri(i: number, value: string) {
-    setUris((prev) => prev.map((u, idx) => (idx === i ? value : u)));
+  function setUri(id: string, value: string) {
+    dispatch({ type: "setUri", id, value });
   }
   function addUri() {
-    setUris((prev) => [...prev, ""]);
+    const id = `uri-${nextUriId.current}`;
+    nextUriId.current += 1;
+    dispatch({ type: "addUri", uri: { id, value: "" } });
   }
-  function removeUri(i: number) {
-    setUris((prev) => prev.filter((_, idx) => idx !== i));
+  function removeUri(id: string) {
+    dispatch({ type: "removeUri", id });
   }
   function toggleScope(scope: string) {
-    setScopes((prev) =>
-      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
-    );
+    dispatch({ type: "toggleScope", scope });
   }
 
   function next() {
     if (step === 1) {
-      if (!name.trim()) return setError(t.nameRequired);
+      if (!name.trim()) return dispatch({ type: "setError", error: t.nameRequired });
     }
     if (step === 2) {
-      const filled = uris.map((u) => u.trim()).filter(Boolean);
-      if (filled.length === 0) return setError(t.uriRequired);
+      const filled = uris.flatMap((u) => {
+        const uri = u.value.trim();
+        return uri ? [uri] : [];
+      });
+      if (filled.length === 0) return dispatch({ type: "setError", error: t.uriRequired });
       for (const uri of filled) {
         try {
           new URL(uri);
         } catch {
-          return setError(format(t.uriInvalid, { uri }));
+          return dispatch({
+            type: "setError",
+            error: format(t.uriInvalid, { uri }),
+          });
         }
       }
     }
-    setError("");
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+    dispatch({ type: "setError", error: "" });
+    dispatch({ type: "setStep", step: Math.min(step + 1, TOTAL_STEPS) });
   }
   function back() {
-    setError("");
+    dispatch({ type: "setError", error: "" });
     // From the first step, step back out to the one-click / manual chooser.
     if (step === 1) {
       setMode("choose");
       return;
     }
-    setStep((s) => Math.max(s - 1, 1));
+    dispatch({ type: "setStep", step: Math.max(step - 1, 1) });
   }
 
-  const cleanUris = uris.map((u) => u.trim()).filter(Boolean);
+  const cleanUris = uris.flatMap((u) => {
+    const uri = u.value.trim();
+    return uri ? [uri] : [];
+  });
 
   return (
     <Modal
@@ -128,8 +195,8 @@ export function CreateAppWizard({
           skillT={skillT}
           t={t}
           onManual={() => {
-            setError("");
-            setStep(1);
+            dispatch({ type: "setError", error: "" });
+            dispatch({ type: "setStep", step: 1 });
             setMode("manual");
           }}
         />
@@ -163,9 +230,10 @@ export function CreateAppWizard({
                 id="wiz-name"
                 className="input"
                 value={name}
-                autoFocus
                 placeholder={t.namePlaceholder}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) =>
+                  dispatch({ type: "setName", name: e.target.value })
+                }
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -183,12 +251,13 @@ export function CreateAppWizard({
               <label className="label mt-3">{t.redirectLabel}</label>
               <div className="space-y-2">
                 {uris.map((uri, i) => (
-                  <div key={i} className="flex items-center gap-2">
+                  <div key={uri.id} className="flex items-center gap-2">
                     <input
                       className="input"
-                      value={uri}
+                      value={uri.value}
+                      aria-label={`${t.redirectLabel} ${i + 1}`}
                       placeholder={t.redirectPlaceholder}
-                      onChange={(e) => setUri(i, e.target.value)}
+                      onChange={(e) => setUri(uri.id, e.target.value)}
                       onKeyDown={(e) => {
                         // Without this, Enter in the lone URI field triggers the
                         // browser's implicit form submission — running the create
@@ -202,7 +271,7 @@ export function CreateAppWizard({
                     {uris.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => removeUri(i)}
+                        onClick={() => removeUri(uri.id)}
                         aria-label={t.removeUri}
                         className="shrink-0 rounded-lg p-2 text-faint transition-colors hover:bg-surface-strong hover:text-danger"
                       >

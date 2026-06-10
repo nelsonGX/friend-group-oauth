@@ -18,13 +18,14 @@ export async function POST(request: Request) {
   const prompt = url.searchParams.get("prompt") === "consent" ? "consent" : undefined;
   const state = randomToken(16);
 
-  const jwt = await new SignJWT({ state, returnTo })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("10m")
-    .sign(new TextEncoder().encode(env.SESSION_SECRET));
-
-  const store = await cookies();
+  const [jwt, store] = await Promise.all([
+    new SignJWT({ state, returnTo })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("10m")
+      .sign(new TextEncoder().encode(env.SESSION_SECRET)),
+    cookies(),
+  ]);
   store.set("fg_login", jwt, {
     httpOnly: true,
     secure: env.APP_URL.startsWith("https"),

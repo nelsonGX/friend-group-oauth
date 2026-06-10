@@ -1,12 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Users, KeyRound, Wallet } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { DiscordIcon } from "@/components/DiscordIcon";
 
+export const metadata: Metadata = {
+  title: "Friend Group Auth",
+  description: "Discord login and shared credits for self-hosted group tools.",
+};
+
 export default async function Home() {
-  const user = await getCurrentUser();
-  const { t } = await getDictionary();
+  const [user, { t }] = await Promise.all([getCurrentUser(), getDictionary()]);
 
   const features = [
     { ...t.home.features.login, Icon: Users },

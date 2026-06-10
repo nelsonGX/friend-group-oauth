@@ -24,8 +24,10 @@ function matchAcceptLanguage(header: string | null): Locale {
   // zh-TW; everything else falls through to the default.
   const tags = header
     .split(",")
-    .map((part) => part.split(";")[0]?.trim().toLowerCase())
-    .filter(Boolean);
+    .flatMap((part) => {
+      const tag = part.split(";")[0]?.trim().toLowerCase();
+      return tag ? [tag] : [];
+    });
   for (const tag of tags) {
     if (tag.startsWith("zh")) return "zh-TW";
     if (tag.startsWith("en")) return "en";
@@ -34,7 +36,7 @@ function matchAcceptLanguage(header: string | null): Locale {
 }
 
 /** Resolve the active locale for the current request. */
-export async function getLocale(): Promise<Locale> {
+async function getLocale(): Promise<Locale> {
   const cookieStore = await cookies();
   const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value;
   if (isLocale(fromCookie)) return fromCookie;

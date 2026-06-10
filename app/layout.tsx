@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { HeaderNav } from "@/components/HeaderNav";
 import { TopProgress } from "@/components/TopProgress";
 import "./globals.css";
@@ -32,10 +32,11 @@ function Brand() {
       className="group inline-flex items-center gap-2.5 text-sm font-semibold tracking-tight"
     >
       <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-white p-1 ring-1 ring-border transition-transform duration-300 group-hover:scale-105">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/assets/icon.webp"
           alt="FriendAuth"
+          width={36}
+          height={36}
           className="h-full w-full object-contain"
         />
       </span>
@@ -51,8 +52,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
-  const { locale, t } = await getDictionary();
+  const [user, { locale, t }] = await Promise.all([
+    getCurrentUser(),
+    getDictionary(),
+  ]);
 
   return (
     <html
@@ -67,9 +70,8 @@ export default async function RootLayout({
             <HeaderNav
               user={!!user}
               t={t.nav}
-              switcher={
-                <LanguageSwitcher active={locale} label={t.switcher.label} />
-              }
+              switcherLocale={locale}
+              switcherLabel={t.switcher.label}
             />
           </div>
         </header>

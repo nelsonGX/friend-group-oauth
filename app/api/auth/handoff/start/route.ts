@@ -1,5 +1,5 @@
 import { startLoginHandoff } from "@/lib/handoff";
-import { qrSvg } from "@/lib/qr";
+import { qrDataUrl } from "@/lib/qr";
 import { env } from "@/lib/env";
 
 /**
@@ -12,7 +12,7 @@ import { env } from "@/lib/env";
  */
 export async function POST() {
   const handoff = await startLoginHandoff();
-  const qr = await qrSvg(`${env.APP_URL}/handoff/${handoff.publicId}`);
+  const qr = await qrDataUrl(`${env.APP_URL}/handoff/${handoff.publicId}`);
 
   return json(
     {

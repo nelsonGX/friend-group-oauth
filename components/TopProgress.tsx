@@ -50,23 +50,15 @@ export function TopProgress() {
   return (
     <div
       aria-hidden
+      className="top-progress"
       style={{
         opacity: isFinished ? 0 : 1,
-        pointerEvents: "none",
         transition: `opacity ${animationDuration}ms linear`,
       }}
     >
       <div
+        className="top-progress-bar"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 100,
-          height: 2,
-          width: "100%",
-          background: "var(--color-brand-soft)",
-          boxShadow:
-            "0 0 8px var(--color-brand-soft), 0 0 4px var(--color-brand)",
           transform: `translate3d(${(-1 + progress) * 100}%, 0, 0)`,
           transition: `transform ${animationDuration}ms linear`,
         }}

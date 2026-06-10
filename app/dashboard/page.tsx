@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Shield, Boxes, Coins, Wallet } from "lucide-react";
 import { eq } from "drizzle-orm";
@@ -26,16 +27,25 @@ export default async function DashboardPage() {
   // Not in the server at all — show the dedicated "switch account" gate instead.
   if (!user.inGuild) redirect("/no-access");
 
-  const { t } = await getDictionary();
   const db = getDb();
 
   const owned = await db.select().from(clients).where(eq(clients.ownerUserId, user.id));
-  const ownedEarnings = await Promise.all(owned.map((c) => getProviderEarnings(c.id)));
+  const [
+    { t },
+    ownedEarnings,
+    balance,
+    income,
+    withdrawable,
+    myWithdrawals,
+  ] = await Promise.all([
+    getDictionary(),
+    Promise.all(owned.map((c) => getProviderEarnings(c.id))),
+    getBalance(user.id),
+    getIncome(user.id, 50),
+    getWithdrawableEarnings(user.id),
+    listUserWithdrawals(user.id),
+  ]);
   const totalEarned = ownedEarnings.reduce((sum, n) => sum + n, 0);
-  const balance = await getBalance(user.id);
-  const income = await getIncome(user.id, 50);
-  const withdrawable = await getWithdrawableEarnings(user.id);
-  const myWithdrawals = await listUserWithdrawals(user.id);
   const canRegister = user.allowed || user.isAdmin;
   const appUrl = env.APP_URL;
   const skillCmds = installCommands();
@@ -95,10 +105,11 @@ export default async function DashboardPage() {
       >
         <div className="flex items-center gap-3.5">
           {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`}
               alt=""
+              width={48}
+              height={48}
               className="h-12 w-12 rounded-full ring-2 ring-border"
             />
           ) : (

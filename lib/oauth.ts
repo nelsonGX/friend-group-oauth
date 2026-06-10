@@ -29,7 +29,7 @@ const AUTH_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const ACCESS_TTL_SECONDS = 60 * 60; // 1 hour
 const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
-export function parseScopes(raw: string | null | undefined): string[] {
+function parseScopes(raw: string | null | undefined): string[] {
   const scopes = (raw ?? "identify").split(/\s+/).filter(Boolean);
   return scopes.length ? scopes : ["identify"];
 }
@@ -214,7 +214,7 @@ export interface TokenResponse {
   scope: string;
 }
 
-export async function issueTokens(opts: {
+async function issueTokens(opts: {
   clientId: string;
   userId: string;
   scope: string;

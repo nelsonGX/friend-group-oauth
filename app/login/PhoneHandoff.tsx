@@ -1,11 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
+import Image from "next/image";
 import { Loader2, RotateCw } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
 type LoginDict = Dictionary["login"];
 type Phase = "starting" | "ready" | "approved" | "expired" | "error";
+type HandoffState = {
+  phase: Phase;
+  qr: string | null;
+};
+type HandoffAction =
+  | { type: "starting" }
+  | { type: "ready"; qr: string }
+  | { type: "approved" }
+  | { type: "expired" }
+  | { type: "error" };
+
+function handoffReducer(
+  _state: HandoffState,
+  action: HandoffAction,
+): HandoffState {
+  switch (action.type) {
+    case "starting":
+      return { phase: "starting", qr: null };
+    case "ready":
+      return { phase: "ready", qr: action.qr };
+    case "approved":
+      return { phase: "approved", qr: null };
+    case "expired":
+      return { phase: "expired", qr: null };
+    case "error":
+      return { phase: "error", qr: null };
+  }
+}
 
 /**
  * Desktop side of the cross-device login hand-off. Starts a hand-off, renders
@@ -21,19 +50,22 @@ export function PhoneHandoff({
   returnPath: string;
   t: LoginDict;
 }) {
-  const [phase, setPhase] = useState<Phase>("starting");
-  const [qr, setQr] = useState<string | null>(null);
-  // Bumping this restarts the effect to mint a fresh hand-off after expiry.
-  const [attempt, setAttempt] = useState(0);
+  const [{ phase, qr }, dispatch] = useReducer(handoffReducer, {
+    phase: "starting",
+    qr: null,
+  });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => {
+  const startHandoff = useCallback(() => {
+    cleanupRef.current?.();
+
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     let pollToken = "";
     let intervalMs = 3000;
 
     const schedule = () => {
-      timer = setTimeout(poll, intervalMs);
+      timerRef.current = setTimeout(poll, intervalMs);
     };
 
     async function poll() {
@@ -47,13 +79,13 @@ export function PhoneHandoff({
         if (cancelled) return;
         switch (data.status) {
           case "approved":
-            setPhase("approved");
+            dispatch({ type: "approved" });
             window.location.assign(returnPath);
             return;
           case "expired":
           case "invalid":
           case "denied":
-            setPhase("expired");
+            dispatch({ type: "expired" });
             return;
           default:
             schedule();
@@ -65,8 +97,7 @@ export function PhoneHandoff({
     }
 
     async function start() {
-      setPhase("starting");
-      setQr(null);
+      dispatch({ type: "starting" });
       try {
         const res = await fetch("/api/auth/handoff/start", { method: "POST" });
         if (!res.ok) throw new Error("start failed");
@@ -78,20 +109,28 @@ export function PhoneHandoff({
         if (cancelled) return;
         pollToken = data.poll_token;
         intervalMs = Math.max(1, Number(data.interval) || 3) * 1000;
-        setQr(data.qr);
-        setPhase("ready");
+        dispatch({ type: "ready", qr: data.qr });
         schedule();
       } catch {
-        if (!cancelled) setPhase("error");
+        if (!cancelled) dispatch({ type: "error" });
       }
     }
 
-    start();
-    return () => {
+    const cleanup = () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = null;
     };
-  }, [returnPath, attempt]);
+    cleanupRef.current = cleanup;
+
+    start();
+    return cleanup;
+  }, [returnPath]);
+
+  useEffect(() => {
+    const cleanup = startHandoff();
+    return cleanup;
+  }, [startHandoff]);
 
   return (
     <div className="mt-7">
@@ -106,11 +145,16 @@ export function PhoneHandoff({
       <div className="mt-4 flex flex-col items-center gap-3">
         {phase === "ready" && qr ? (
           <>
-            <div
-              className="rounded-xl bg-white p-3 ring-1 ring-border [&>svg]:block [&>svg]:h-40 [&>svg]:w-40"
-              // QR SVG is generated server-side from our own URL — trusted markup.
-              dangerouslySetInnerHTML={{ __html: qr }}
-            />
+            <div className="rounded-xl bg-white p-3 ring-1 ring-border">
+              <Image
+                src={qr}
+                alt=""
+                width={160}
+                height={160}
+                unoptimized
+                className="block h-40 w-40"
+              />
+            </div>
             <p className="text-xs text-faint">{t.phoneHint}</p>
           </>
         ) : phase === "approved" ? (
@@ -124,7 +168,7 @@ export function PhoneHandoff({
             </div>
             <button
               type="button"
-              onClick={() => setAttempt((n) => n + 1)}
+              onClick={startHandoff}
               className="btn btn-ghost text-sm"
             >
               <RotateCw size={15} strokeWidth={1.9} />

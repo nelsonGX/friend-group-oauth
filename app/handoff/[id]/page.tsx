@@ -1,9 +1,15 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { TriangleAlert } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { getHandoffByPublicId } from "@/lib/handoff";
 import { HandoffApproval } from "./HandoffApproval";
+
+export const metadata: Metadata = {
+  title: "Sign-in request | Friend Group Auth",
+  description: "Approve or reject a cross-device sign-in request.",
+};
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -21,8 +27,7 @@ export default async function HandoffPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const { t } = await getDictionary();
+  const [{ id }, { t }] = await Promise.all([params, getDictionary()]);
   const h = t.handoff;
 
   // Require a logged-in session; come back here afterwards to approve.

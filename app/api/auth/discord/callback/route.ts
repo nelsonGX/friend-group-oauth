@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { jwtVerify } from "jose";
+import { type JWTPayload, jwtVerify } from "jose";
 import { sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
@@ -39,17 +39,20 @@ export async function GET(request: Request) {
     redirect("/login?error=invalid_request");
   }
 
-  let expectedState: unknown;
+  let statePayload: JWTPayload | null = null;
   try {
     const { payload } = await jwtVerify(
       loginCookie,
       new TextEncoder().encode(env.SESSION_SECRET),
     );
-    expectedState = payload.state;
+    statePayload = payload;
   } catch {
+    statePayload = null;
+  }
+  if (!statePayload) {
     redirect("/login?error=invalid_state");
   }
-  if (expectedState !== state) {
+  if (statePayload.state !== state) {
     redirect("/login?error=state_mismatch");
   }
 
@@ -91,33 +94,35 @@ export async function POST(request: Request) {
     redirect("/login?error=invalid_request");
   }
 
-  let returnTo = "/explore";
-  let expectedState: unknown;
+  let statePayload: JWTPayload | null = null;
   try {
     const { payload } = await jwtVerify(
       loginCookie,
       new TextEncoder().encode(env.SESSION_SECRET),
     );
-    expectedState = payload.state;
-    returnTo = sanitizeReturnPath(payload.returnTo as string | undefined);
+    statePayload = payload;
   } catch {
+    statePayload = null;
+  }
+  if (!statePayload) {
     redirect("/login?error=invalid_state");
   }
-  if (expectedState !== state) {
+  if (statePayload.state !== state) {
     redirect("/login?error=state_mismatch");
   }
+  const returnTo = sanitizeReturnPath(
+    statePayload.returnTo as string | undefined,
+  );
   store.delete("fg_login");
 
-  let allowed = false;
-  let inGuild = false;
+  let callbackResult:
+    | { ok: true; allowed: boolean; inGuild: boolean }
+    | { ok: false } = { ok: false };
   try {
     const accessToken = await exchangeCode(code);
     const discordUser = await getDiscordUser(accessToken);
     const member = await getGuildMember(discordUser.id);
     const access = evaluateAccess(member);
-    allowed = access.allowed;
-    inGuild = access.inGuild;
-
     const isAdmin = env.ADMIN_DISCORD_IDS.includes(discordUser.id);
     const profile = {
       discordId: discordUser.id,
@@ -145,13 +150,21 @@ export async function POST(request: Request) {
       .returning();
 
     await createSession(user.id);
+    callbackResult = {
+      ok: true,
+      allowed: access.allowed,
+      inGuild: access.inGuild,
+    };
   } catch (err) {
     console.error("Discord callback failed:", err);
+    callbackResult = { ok: false };
+  }
+  if (!callbackResult.ok) {
     redirect("/login?error=discord");
   }
 
   // Users who aren't in the server at all get a dedicated full-screen gate that
   // prompts them to switch accounts. Members who are in the server but lack a
   // required role land on /explore, which shows their access status inline.
-  redirect(allowed || inGuild ? returnTo : "/no-access");
+  redirect(callbackResult.allowed || callbackResult.inGuild ? returnTo : "/no-access");
 }

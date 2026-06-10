@@ -70,7 +70,9 @@ export function ConnectedApps({
             </button>
             <form action={revokeAppAccess} onSubmit={() => setConfirming(null)}>
               <input type="hidden" name="clientId" value={confirming.clientId} />
-              <button className="btn btn-primary text-sm">{t.revokeConfirm.confirm}</button>
+              <button type="submit" className="btn btn-primary text-sm">
+                {t.revokeConfirm.confirm}
+              </button>
             </form>
           </div>
         </Modal>

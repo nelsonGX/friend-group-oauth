@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { Boxes, ExternalLink, Shield } from "lucide-react";
 import { and, asc, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -13,6 +15,11 @@ import { WalletActions } from "./WalletActions";
 import { RedeemCode } from "./RedeemCode";
 import { CreditBalance } from "./CreditBalance";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+
+export const metadata: Metadata = {
+  title: "Explore | Friend Group Auth",
+  description: "Browse group apps, manage connected apps, and use shared credits.",
+};
 
 function fmt(d: Date) {
   return d.toISOString().slice(0, 16).replace("T", " ");
@@ -57,13 +64,10 @@ export default async function ExplorePage() {
   // Not in the server at all — show the dedicated "switch account" gate instead.
   if (!user.inGuild) redirect("/no-access");
 
-  const { t } = await getDictionary();
   const db = getDb();
-  const balance = await getBalance(user.id);
-  const entries = await getActivity(user.id, 25);
 
   // Apps the user has authorized (live tokens), with display names.
-  const connected = await db
+  const connectedQuery = db
     .selectDistinct({ clientId: accessTokens.clientId, name: clients.name })
     .from(accessTokens)
     .leftJoin(clients, eq(clients.clientId, accessTokens.clientId))
@@ -74,10 +78,8 @@ export default async function ExplorePage() {
         gt(accessTokens.expiresAt, new Date()),
       ),
     );
-  const connectedIds = new Set(connected.map((c) => c.clientId));
-
   // The opted-in, active directory listings, with their owner's display name.
-  const listed = await db
+  const listedQuery = db
     .select({
       id: clients.id,
       clientId: clients.clientId,
@@ -93,6 +95,15 @@ export default async function ExplorePage() {
     .leftJoin(users, eq(users.id, clients.ownerUserId))
     .where(and(eq(clients.listed, true), eq(clients.isActive, true)))
     .orderBy(asc(clients.name));
+
+  const [{ t }, balance, entries, connected, listed] = await Promise.all([
+    getDictionary(),
+    getBalance(user.id),
+    getActivity(user.id, 25),
+    connectedQuery,
+    listedQuery,
+  ]);
+  const connectedIds = new Set(connected.map((c) => c.clientId));
 
   const d = t.dashboard;
   const e = t.explore;
@@ -114,10 +125,11 @@ export default async function ExplorePage() {
       >
         <div className="flex items-center gap-3.5">
           {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`}
               alt=""
+              width={48}
+              height={48}
               className="h-12 w-12 rounded-full ring-2 ring-border"
             />
           ) : (
@@ -184,10 +196,12 @@ export default async function ExplorePage() {
                     className="card card-hover-border flex items-center gap-4 p-5"
                   >
                     {app.iconUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={app.iconUrl}
                         alt=""
+                        width={48}
+                        height={48}
+                        unoptimized
                         className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-border"
                       />
                     ) : (

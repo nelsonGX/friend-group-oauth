@@ -96,6 +96,7 @@ export function Withdrawals({
                 <input
                   className="input !pr-16"
                   name="amount"
+                  aria-label={t.amountPlaceholder}
                   type="number"
                   min="1"
                   max={available}
@@ -118,13 +119,19 @@ export function Withdrawals({
                 <textarea
                   className="input"
                   name="payoutDetails"
+                  aria-label={t.payoutLabel}
                   rows={3}
                   placeholder={t.payoutPlaceholder}
                 />
                 <p className="mt-1 text-xs text-faint">{t.payoutHint}</p>
               </div>
-              <input className="input" name="note" placeholder={t.notePlaceholder} />
-              <button className="btn btn-primary text-sm" disabled={pending}>
+              <input
+                className="input"
+                name="note"
+                aria-label={t.notePlaceholder}
+                placeholder={t.notePlaceholder}
+              />
+              <button type="submit" className="btn btn-primary text-sm" disabled={pending}>
                 {pending ? t.submitting : t.submit}
               </button>
               {state.message && (
@@ -168,18 +175,7 @@ export function Withdrawals({
                     </p>
                   )}
                   {w.status === "pending" && (
-                    <form
-                      action={cancelWithdrawal}
-                      className="mt-3"
-                      onSubmit={(e) => {
-                        if (!confirm(t.cancelConfirm)) e.preventDefault();
-                      }}
-                    >
-                      <input type="hidden" name="id" value={w.id} />
-                      <button className="btn btn-ghost !px-2.5 !py-1.5 text-xs">
-                        {t.cancel}
-                      </button>
-                    </form>
+                    <CancelWithdrawalForm id={w.id} t={t} />
                   )}
                 </li>
               ))}
@@ -188,5 +184,40 @@ export function Withdrawals({
         </div>
       </div>
     </section>
+  );
+}
+
+function CancelWithdrawalForm({ id, t }: { id: string; t: WithdrawDict }) {
+  const [confirming, setConfirming] = useState(false);
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        className="mt-3 btn btn-ghost !px-2.5 !py-1.5 text-xs"
+      >
+        {t.cancel}
+      </button>
+    );
+  }
+
+  return (
+    <form action={cancelWithdrawal} className="mt-3 space-y-2">
+      <input type="hidden" name="id" value={id} />
+      <p className="text-xs text-danger">{t.cancelConfirm}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="btn btn-ghost !px-2.5 !py-1.5 text-xs"
+        >
+          {t.statusCancelled}
+        </button>
+        <button type="submit" className="btn btn-primary !px-2.5 !py-1.5 text-xs">
+          {t.cancel}
+        </button>
+      </div>
+    </form>
   );
 }

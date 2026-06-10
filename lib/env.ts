@@ -18,8 +18,10 @@ function required(name: string): string {
 function list(name: string): string[] {
   return (process.env[name] ?? "")
     .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .flatMap((s) => {
+      const item = s.trim();
+      return item ? [item] : [];
+    });
 }
 
 export const env = {

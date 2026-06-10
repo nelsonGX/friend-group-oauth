@@ -32,19 +32,21 @@ function cookieOptions() {
 /** Create a session row for the user and set the signed session cookie. */
 export async function createSession(userId: string): Promise<void> {
   const db = getDb();
+  const storePromise = cookies();
   const expiresAt = new Date(Date.now() + MAX_AGE_SECONDS * 1000);
   const [row] = await db
     .insert(sessions)
     .values({ userId, expiresAt })
     .returning({ id: sessions.id });
 
-  const jwt = await new SignJWT({ sid: row.id })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(key());
-
-  const store = await cookies();
+  const [jwt, store] = await Promise.all([
+    new SignJWT({ sid: row.id })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("7d")
+      .sign(key()),
+    storePromise,
+  ]);
   store.set(COOKIE, jwt, cookieOptions());
 }
 

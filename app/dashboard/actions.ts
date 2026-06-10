@@ -85,7 +85,10 @@ export async function regenerateSecret(
 
 /** Split a textarea/comma list into trimmed, non-empty entries. */
 function parseList(raw: string | undefined): string[] {
-  return (raw ?? "").split(/[\s,]+/).filter(Boolean);
+  return (raw ?? "").split(/[\s,]+/).flatMap((s) => {
+    const item = s.trim();
+    return item ? [item] : [];
+  });
 }
 
 /** Validate redirect URIs (absolute URLs). Returns an error message or null. */
@@ -370,11 +373,11 @@ export async function deleteOwnApp(
     return { ok: false, message: d.notYourApp };
   }
 
-  await db.delete(accessTokens).where(eq(accessTokens.clientId, clientId));
-  await db.delete(refreshTokens).where(eq(refreshTokens.clientId, clientId));
-  await db
-    .delete(authorizationCodes)
-    .where(eq(authorizationCodes.clientId, clientId));
+  await Promise.all([
+    db.delete(accessTokens).where(eq(accessTokens.clientId, clientId)),
+    db.delete(refreshTokens).where(eq(refreshTokens.clientId, clientId)),
+    db.delete(authorizationCodes).where(eq(authorizationCodes.clientId, clientId)),
+  ]);
   await db.delete(clients).where(eq(clients.clientId, clientId));
 
   revalidatePath("/dashboard");

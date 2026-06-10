@@ -18,14 +18,14 @@ import { ledger, redeemCodes, redemptions, type RedeemCode } from "@/db/schema";
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 /** A formatted `XXXX-XXXX` code drawn from {@link CODE_ALPHABET}. */
-export function generateCode(): string {
+function generateCode(): string {
   const pick = () =>
     Array.from({ length: 4 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join("");
   return `${pick()}-${pick()}`;
 }
 
 /** Normalize user-entered codes so case/whitespace don't matter. */
-export function normalizeCode(code: string): string {
+function normalizeCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
@@ -60,8 +60,11 @@ export async function createRedeemCode(opts: {
 
   // A caller-supplied code is used as-is (one attempt); a generated one retries.
   const attempts = opts.code ? [normalizeCode(opts.code)] : Array.from({ length: 5 }, generateCode);
-  let lastErr: unknown;
-  for (const code of attempts) {
+  const tryInsert = async (index: number, lastErr?: unknown): Promise<RedeemCode> => {
+    const code = attempts[index];
+    if (!code) {
+      throw lastErr ?? new Error("Could not create a unique redeem code.");
+    }
     try {
       const [row] = await db
         .insert(redeemCodes)
@@ -69,11 +72,11 @@ export async function createRedeemCode(opts: {
         .returning();
       return row;
     } catch (err) {
-      lastErr = err;
-      // Unique violation on `code` → try the next candidate (generated codes only).
+      // Unique violation on `code` means try the next candidate (generated codes only).
+      return tryInsert(index + 1, err);
     }
-  }
-  throw lastErr ?? new Error("Could not create a unique redeem code.");
+  };
+  return tryInsert(0);
 }
 
 export type RedeemResult =
@@ -140,20 +143,39 @@ export async function redeemCode(opts: {
       .values({ codeId: code.id, userId: opts.userId })
       .returning({ id: redemptions.id });
 
-    await tx.insert(ledger).values({
-      userId: opts.userId,
-      providerId: null,
-      delta: code.amount,
-      kind: "redeem",
-      reason: `Redeemed code ${code.code}`,
-      ref: `redeem:${redemption.id}`,
-    });
-
-    const [r] = await tx
-      .select({ b: sql<number>`cast(coalesce(sum(${ledger.delta}), 0) as int)` })
-      .from(ledger)
-      .where(eq(ledger.userId, opts.userId));
-    return { ok: true, amount: code.amount, balance: r?.b ?? 0 };
+    const balanceResult = await tx.execute<{ b: number }>(sql`
+      with prior_balance as (
+        select cast(coalesce(sum(${ledger.delta}), 0) as int) as b
+        from ${ledger}
+        where ${ledger.userId} = ${opts.userId}
+      ),
+      inserted as (
+        insert into ${ledger} (
+          user_id,
+          provider_id,
+          delta,
+          kind,
+          reason,
+          ref
+        )
+        values (
+          ${opts.userId},
+          null,
+          ${code.amount},
+          'redeem',
+          ${`Redeemed code ${code.code}`},
+          ${`redeem:${redemption.id}`}
+        )
+        returning ${ledger.delta}
+      )
+      select prior_balance.b + inserted.delta as b
+      from prior_balance, inserted
+    `);
+    return {
+      ok: true,
+      amount: code.amount,
+      balance: balanceResult.rows[0]?.b ?? 0,
+    };
   });
 }
 

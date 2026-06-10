@@ -18,8 +18,8 @@ import { hashToken, randomToken } from "@/lib/crypto";
  *    caller mints that user's session.
  */
 
-export const HANDOFF_TTL_MS = 5 * 60 * 1000; // 5 minutes
-export const HANDOFF_POLL_INTERVAL_SECONDS = 3;
+const HANDOFF_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const HANDOFF_POLL_INTERVAL_SECONDS = 3;
 
 export type StartHandoffResult = {
   pollToken: string;
@@ -81,13 +81,14 @@ export async function pollLoginHandoff(
   const tooSoon =
     row.lastPolledAt != null &&
     now - row.lastPolledAt.getTime() < (HANDOFF_POLL_INTERVAL_SECONDS - 1) * 1000;
-  await db
-    .update(loginHandoffs)
-    .set({ lastPolledAt: new Date(now) })
-    .where(eq(loginHandoffs.id, row.id));
   if (tooSoon && row.status === "pending") return { status: "slow_down" };
-
-  if (row.status === "pending") return { status: "pending" };
+  if (row.status === "pending") {
+    await db
+      .update(loginHandoffs)
+      .set({ lastPolledAt: new Date(now) })
+      .where(eq(loginHandoffs.id, row.id));
+    return { status: "pending" };
+  }
 
   // status === "approved": hand over the user once, then consume.
   if (!row.userId) return { status: "invalid" };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -11,8 +11,7 @@ const widths = {
 
 /**
  * A lightweight, dependency-free dialog. Portals to <body>, dims+blurs the page,
- * and closes on backdrop click, the X button, or Escape. Body scroll is locked
- * while open. Renders nothing when closed.
+ * and closes on the X button or Escape. Renders nothing when closed.
  */
 export function Modal({
   open,
@@ -31,69 +30,63 @@ export function Modal({
   footer?: ReactNode;
   size?: keyof typeof widths;
 }) {
-  // Close on Escape + lock background scroll while open.
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeModal = useEffectEvent(onClose);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+    const onCancel = (event: Event) => {
+      event.preventDefault();
+      closeModal();
     };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    dialog.addEventListener("cancel", onCancel);
     return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      dialog.removeEventListener("cancel", onCancel);
+      if (dialog.open) dialog.close();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   // Modals only ever mount in response to a client interaction (their open state
   // starts closed on the server), so `document` is always available here.
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="modal-backdrop"
-      onMouseDown={(e) => {
-        // Only close when the press starts on the backdrop itself, so a drag
-        // that ends outside the panel (e.g. selecting text) doesn't close it.
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <dialog
+      ref={dialogRef}
+      className={`modal-panel ${widths[size]}`}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className={`modal-panel ${widths[size]}`}
-      >
-        {(title || description) && (
-          <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
-            <div className="min-w-0">
-              {title && (
-                <h2 className="text-base font-semibold leading-tight">{title}</h2>
-              )}
-              {description && (
-                <p className="mt-1 text-sm text-muted">{description}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="-mr-1.5 -mt-1 shrink-0 rounded-lg p-1.5 text-faint transition-colors hover:bg-surface-strong hover:text-ink"
-            >
-              <X size={18} />
-            </button>
+      {(title || description) && (
+        <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+          <div className="min-w-0">
+            {title && (
+              <h2 className="text-base font-semibold leading-tight">{title}</h2>
+            )}
+            {description && (
+              <p className="mt-1 text-sm text-muted">{description}</p>
+            )}
           </div>
-        )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1.5 -mt-1 shrink-0 rounded-lg p-1.5 text-faint transition-colors hover:bg-surface-strong hover:text-ink"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
 
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
+      <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
 
-        {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>,
+      {footer && (
+        <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
+          {footer}
+        </div>
+      )}
+    </dialog>,
     document.body,
   );
 }

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
@@ -6,6 +7,11 @@ import { getClientByClientId } from "@/lib/oauth";
 import { getBalance } from "@/lib/credits";
 import { getIntent } from "@/lib/payments";
 import { confirmPayment } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Confirm payment | Friend Group Auth",
+  description: "Review and approve a credit payment request.",
+};
 
 function Notice({ title, message }: { title: string; message: string }) {
   return (
@@ -23,8 +29,7 @@ export default async function PayPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
-  const { t } = await getDictionary();
+  const [sp, { t }] = await Promise.all([searchParams, getDictionary()]);
   const n = t.pay.notices;
   const intentId = Array.isArray(sp.intent) ? sp.intent[0] : sp.intent;
   if (!intentId) {
@@ -54,8 +59,10 @@ export default async function PayPage({
     return <Notice title={n.noAccessTitle} message={n.noAccessMsg} />;
   }
 
-  const client = await getClientByClientId(intent.clientId);
-  const balance = await getBalance(user.id);
+  const [client, balance] = await Promise.all([
+    getClientByClientId(intent.clientId),
+    getBalance(user.id),
+  ]);
   const insufficient = balance < intent.amount;
 
   return (

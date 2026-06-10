@@ -25,20 +25,27 @@ export function WalletActions({ t }: { t: WalletDict }) {
         <input
           className="input"
           name="recipient"
+          aria-label={t.recipientPlaceholder}
           placeholder={t.recipientPlaceholder}
           autoComplete="off"
         />
         <input
           className="input"
           name="amount"
+          aria-label={t.amountPlaceholder}
           type="number"
           min={1}
           step={1}
           inputMode="numeric"
           placeholder={t.amountPlaceholder}
         />
-        <input className="input" name="note" placeholder={t.notePlaceholder} />
-        <button className="btn btn-primary w-full text-sm" disabled={pending}>
+        <input
+          className="input"
+          name="note"
+          aria-label={t.notePlaceholder}
+          placeholder={t.notePlaceholder}
+        />
+        <button type="submit" className="btn btn-primary w-full text-sm" disabled={pending}>
           <Send size={15} />
           {pending ? t.sending : t.send}
         </button>

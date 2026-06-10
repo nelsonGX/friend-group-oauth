@@ -1,6 +1,11 @@
 import { env } from "@/lib/env";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 
+const TOKEN_ENDPOINT_AUTH_METHODS = [
+  "client_secret_basic",
+  "client_secret_post",
+] as const;
+
 /**
  * OAuth 2.0 Authorization Server Metadata (RFC 8414).
  *
@@ -11,7 +16,6 @@ import { SUPPORTED_SCOPES } from "@/lib/oauth";
  */
 export async function GET() {
   const base = env.APP_URL;
-  const authMethods = ["client_secret_basic", "client_secret_post"];
 
   return Response.json(
     {
@@ -24,8 +28,8 @@ export async function GET() {
       response_types_supported: ["code"],
       grant_types_supported: ["authorization_code", "refresh_token"],
       code_challenge_methods_supported: ["S256"],
-      token_endpoint_auth_methods_supported: authMethods,
-      revocation_endpoint_auth_methods_supported: authMethods,
+      token_endpoint_auth_methods_supported: TOKEN_ENDPOINT_AUTH_METHODS,
+      revocation_endpoint_auth_methods_supported: TOKEN_ENDPOINT_AUTH_METHODS,
       service_documentation: `${base}/docs/INTEGRATION.md`,
 
       // Extension: the credit/payment flow (not part of RFC 8414).

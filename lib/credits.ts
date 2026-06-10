@@ -444,16 +444,3 @@ export async function getProviderEarnings(providerId: string): Promise<number> {
     .where(and(eq(ledger.providerId, providerId), sql`${ledger.delta} < 0`));
   return row?.earned ?? 0;
 }
-
-/** Resolve a client's internal id from its public client_id. */
-export async function getClientInternalId(
-  clientId: string,
-): Promise<string | null> {
-  const db = getDb();
-  const [row] = await db
-    .select({ id: clients.id })
-    .from(clients)
-    .where(eq(clients.clientId, clientId))
-    .limit(1);
-  return row?.id ?? null;
-}

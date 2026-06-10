@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, Compass, LayoutDashboard, LogOut, LogIn } from "lucide-react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { type Locale } from "@/lib/i18n/config";
 
 export type NavStrings = {
   dashboard: string;
@@ -159,11 +161,13 @@ function MenuLinks({
 export function HeaderNav({
   user,
   t,
-  switcher,
+  switcherLocale,
+  switcherLabel,
 }: {
   user: boolean;
   t: NavStrings;
-  switcher: React.ReactNode;
+  switcherLocale: Locale;
+  switcherLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -180,7 +184,7 @@ export function HeaderNav({
 
   return (
     <nav className="flex items-center gap-2 text-sm">
-      {switcher}
+      <LanguageSwitcher active={switcherLocale} label={switcherLabel} />
 
       {/* ≥sm: page links inline in the bar. */}
       <div className="hidden items-center gap-1 sm:flex">

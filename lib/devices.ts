@@ -28,8 +28,8 @@ import { env } from "@/lib/env";
  *    row marked consumed.
  */
 
-export const DEVICE_TTL_MS = 15 * 60 * 1000; // 15 minutes
-export const POLL_INTERVAL_SECONDS = 5;
+const DEVICE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const POLL_INTERVAL_SECONDS = 5;
 
 /** Crockford base32 without ambiguous chars (no I, L, O, U). */
 const USER_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -168,13 +168,14 @@ export async function pollDeviceAuthorization(
   const tooSoon =
     row.lastPolledAt != null &&
     now - row.lastPolledAt.getTime() < (POLL_INTERVAL_SECONDS - 1) * 1000;
-  await db
-    .update(deviceAuthorizations)
-    .set({ lastPolledAt: new Date(now) })
-    .where(eq(deviceAuthorizations.id, row.id));
   if (tooSoon && row.status === "pending") return { status: "slow_down" };
-
-  if (row.status === "pending") return { status: "pending" };
+  if (row.status === "pending") {
+    await db
+      .update(deviceAuthorizations)
+      .set({ lastPolledAt: new Date(now) })
+      .where(eq(deviceAuthorizations.id, row.id));
+    return { status: "pending" };
+  }
 
   // status === "approved": hand over the credentials once, then consume.
   if (!row.clientId || !row.clientSecret) return { status: "invalid" };

@@ -41,10 +41,16 @@ export async function POST(request: Request) {
 /** Accept either an array of strings or a space/comma-separated string. */
 function toList(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value.map((v) => String(v).trim()).filter(Boolean);
+    return value.flatMap((v) => {
+      const item = String(v).trim();
+      return item ? [item] : [];
+    });
   }
   if (typeof value === "string") {
-    return value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+    return value.split(/[\s,]+/).flatMap((s) => {
+      const item = s.trim();
+      return item ? [item] : [];
+    });
   }
   return [];
 }

@@ -31,12 +31,13 @@ export function RedeemCode({ t }: { t: RedeemDict }) {
         <input
           className="input font-mono uppercase tracking-wide"
           name="code"
+          aria-label={t.placeholder}
           placeholder={t.placeholder}
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
         />
-        <button className="btn btn-primary w-full text-sm" disabled={pending}>
+        <button type="submit" className="btn btn-primary w-full text-sm" disabled={pending}>
           <Ticket size={15} />
           {pending ? t.redeeming : t.redeem}
         </button>
