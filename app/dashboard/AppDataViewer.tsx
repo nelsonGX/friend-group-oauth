@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
-import { Check, Copy, RefreshCw, Search, Trash2, User } from "lucide-react";
+import { Check, Copy, Database, RefreshCw, Search, Trash2, User } from "lucide-react";
 import {
   deleteAppDataEntry,
   fetchAppData,
@@ -235,28 +235,32 @@ export function AppDataViewer({
       </div>
 
       {/* prefix filter */}
-      <form onSubmit={onSearch} className="flex items-center gap-2">
+      <form onSubmit={onSearch} className="relative">
+        <Search
+          size={15}
+          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-faint"
+        />
         <input
-          className="input"
+          className="input pl-9"
           value={draft}
           onChange={(e) => dispatch({ type: "setDraft", value: e.target.value })}
           placeholder={t.searchPlaceholder}
           aria-label={t.searchPlaceholder}
         />
-        <button type="submit" className="btn btn-secondary shrink-0 text-sm">
-          <Search size={15} />
-        </button>
       </form>
 
       {/* list */}
       {state.loading ? (
-        <p className="py-6 text-center text-sm text-muted">{t.loading}</p>
+        <p className="py-10 text-center text-sm text-muted">{t.loading}</p>
       ) : state.error ? (
-        <p className="py-6 text-center text-sm text-danger">{t.error}</p>
+        <p className="py-10 text-center text-sm text-danger">{t.error}</p>
       ) : entries.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted">
-          {prefix ? t.emptyFiltered : t.empty}
-        </p>
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <Database size={22} className="text-faint" />
+          <p className="text-sm text-muted">
+            {prefix ? t.emptyFiltered : t.empty}
+          </p>
+        </div>
       ) : (
         <ul className="space-y-2">
           {entries.map((r) => {

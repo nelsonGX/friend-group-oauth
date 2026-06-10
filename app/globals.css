@@ -340,6 +340,7 @@ select:focus-visible {
   /* segmented tabs (app details modal) ------------------------------------ */
   .tab {
     flex: 1 1 0;
+    white-space: nowrap;
     border-radius: 0.5rem;
     padding: 0.45rem 0.7rem;
     font-size: 0.8125rem;
