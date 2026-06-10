@@ -50,6 +50,47 @@ export async function topUp(opts: {
   return getBalance(opts.userId);
 }
 
+export type AdjustBalanceResult =
+  | { ok: true; balance: number }
+  | { ok: false; reason: "invalid_amount" }
+  | { ok: false; reason: "insufficient_funds"; balance: number };
+
+/** Apply an admin balance correction. Positive deltas grant, negative deltas reduce. */
+export async function adjustBalance(opts: {
+  userId: string;
+  delta: number;
+  reason?: string;
+}): Promise<AdjustBalanceResult> {
+  if (!Number.isInteger(opts.delta) || opts.delta === 0) {
+    return { ok: false, reason: "invalid_amount" };
+  }
+
+  const db = getDb();
+  return db.transaction(async (tx) => {
+    await tx.select({ id: users.id }).from(users).where(eq(users.id, opts.userId)).for("update");
+
+    const [r] = await tx
+      .select({ b: sql<number>`cast(coalesce(sum(${ledger.delta}), 0) as int)` })
+      .from(ledger)
+      .where(eq(ledger.userId, opts.userId));
+    const balance = r?.b ?? 0;
+    const nextBalance = balance + opts.delta;
+    if (nextBalance < 0) {
+      return { ok: false, reason: "insufficient_funds", balance };
+    }
+
+    await tx.insert(ledger).values({
+      userId: opts.userId,
+      providerId: null,
+      delta: opts.delta,
+      kind: opts.delta > 0 ? "topup" : "adjustment",
+      reason: opts.reason ?? (opts.delta > 0 ? "Admin top-up" : "Admin adjustment"),
+      ref: null,
+    });
+    return { ok: true, balance: nextBalance };
+  });
+}
+
 export type ChargeResult =
   | { ok: true; balance: number; duplicate: boolean }
   | { ok: false; reason: "insufficient_funds"; balance: number };

@@ -12,8 +12,8 @@ const inputClass = "input";
 const buttonClass = "btn btn-primary text-sm";
 
 /**
- * Grant credits to a Discord user. The target Discord ID is controlled by the
- * admin page so table row actions can prefill this field.
+ * Adjust credits for a Discord user. The target Discord ID is controlled by
+ * the admin page so table row actions can prefill this field.
  */
 export function GrantCreditsForm({
   t,
@@ -40,7 +40,7 @@ export function GrantCreditsForm({
         className={inputClass}
         name="amount"
         type="number"
-        min="1"
+        step="1"
         aria-label={t.amountPlaceholder}
         placeholder={t.amountPlaceholder}
       />

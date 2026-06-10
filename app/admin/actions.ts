@@ -7,7 +7,7 @@ import { clients, users } from "@/db/schema";
 import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
-import { topUp } from "@/lib/credits";
+import { adjustBalance } from "@/lib/credits";
 import {
   markWithdrawalPaid as markWithdrawalPaidLib,
   rejectWithdrawal as rejectWithdrawalLib,
@@ -25,7 +25,7 @@ export interface ActionState {
   code?: string;
 }
 
-/** Grant credits to a user identified by Discord ID (manual top-up). */
+/** Adjust credits for a user identified by Discord ID (manual admin correction). */
 export async function grantCredits(
   _prev: ActionState,
   formData: FormData,
@@ -37,9 +37,9 @@ export async function grantCredits(
 
   const discordId = formData.get("discordId")?.toString().trim();
   const amount = Number(formData.get("amount"));
-  const reason = formData.get("reason")?.toString().trim() || "Admin top-up";
+  const reason = formData.get("reason")?.toString().trim() || "Admin adjustment";
 
-  if (!discordId || !Number.isInteger(amount) || amount <= 0) {
+  if (!discordId || !Number.isInteger(amount) || amount === 0) {
     return { ok: false, message: d.provideIdAndAmount };
   }
 
@@ -53,11 +53,24 @@ export async function grantCredits(
     return { ok: false, message: d.noUserWithId };
   }
 
-  const balance = await topUp({ userId: target.id, amount, reason });
+  const result = await adjustBalance({ userId: target.id, delta: amount, reason });
+  if (!result.ok) {
+    return {
+      ok: false,
+      message:
+        result.reason === "insufficient_funds"
+          ? format(d.adjustmentInsufficient, { balance: result.balance })
+          : d.provideIdAndAmount,
+    };
+  }
   revalidatePath("/admin");
   return {
     ok: true,
-    message: format(d.granted, { amount, user: target.username, balance }),
+    message: format(d.adjusted, {
+      amount,
+      user: target.username,
+      balance: result.balance,
+    }),
   };
 }
 

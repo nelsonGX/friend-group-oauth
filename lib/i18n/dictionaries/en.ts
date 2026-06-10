@@ -438,8 +438,8 @@ const en = {
     title: "Admin",
     elevated: "elevated",
     dashboard: "Dashboard",
-    grantCredits: "Grant credits",
-    grantCreditsDesc: "Manual top-up after a user pays you out-of-band.",
+    grantCredits: "Adjust credits",
+    grantCreditsDesc: "Add or subtract credits from a member's balance.",
     registerProvider: "Register a provider",
     registerProviderDesc: "Create OAuth credentials for a friend's site.",
     createRedeemCode: "Create a redeem code",
@@ -473,7 +473,7 @@ const en = {
     searchProviders: "Search providers…",
     searchUsers: "Search users…",
     noResults: "No matches.",
-    grant: "Grant",
+    grant: "Adjust",
     listed: "listed",
     you: "you",
     th: {
@@ -509,15 +509,15 @@ const en = {
     noAccessBadge: "no access",
     forms: {
       discordIdPlaceholder: "Discord user ID",
-      amountPlaceholder: "Amount (credits)",
+      amountPlaceholder: "Amount (+/- credits)",
       reasonPlaceholder: "Reason (optional)",
       appNamePlaceholder: "App name",
       redirectUrisPlaceholder: "Redirect URIs (one per line or comma-separated)",
       scopesPlaceholder: "Scopes (e.g. identify roles credits)",
       ownerDiscordIdPlaceholder: "Owner Discord ID (optional)",
       trustedLabel: "Trusted (skip the consent screen)",
-      granting: "Granting…",
-      grantCredits: "Grant credits",
+      granting: "Adjusting…",
+      grantCredits: "Adjust credits",
       creating: "Creating…",
       createClient: "Create client",
       maxRedemptionsPlaceholder: "Max uses (blank = unlimited)",
@@ -529,10 +529,13 @@ const en = {
   },
   adminActions: {
     notAuthorized: "Not authorized.",
-    provideIdAndAmount: "Provide a Discord ID and a positive integer amount.",
+    provideIdAndAmount: "Provide a Discord ID and a non-zero integer amount.",
     noUserWithId:
       "No user with that Discord ID (they must log in here once first).",
     granted: "Granted {amount} credits to {user}. New balance: {balance}.",
+    adjusted: "Adjusted {user}'s balance by {amount} credits. New balance: {balance}.",
+    adjustmentInsufficient:
+      "That reduction would overdraw this user. Current balance: {balance}.",
     nameAndRedirectRequired:
       "Name and at least one redirect URI are required.",
     invalidRedirectUri: "Invalid redirect URI: {uri}",

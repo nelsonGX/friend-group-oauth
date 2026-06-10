@@ -1,6 +1,7 @@
 import { check, createTestDb, schema, summarize } from "./harness";
 import { eq } from "drizzle-orm";
 import {
+  adjustBalance,
   charge,
   getBalance,
   getIncome,
@@ -39,8 +40,27 @@ async function main() {
     .then(() => check("topUp rejects zero amount", false))
     .catch(() => check("topUp rejects zero amount", true));
 
+  const adminDebit = await adjustBalance({
+    userId: user.id,
+    delta: -25,
+    reason: "admin correction",
+  });
+  check("admin adjustment can reduce balance", adminDebit.ok && (await getBalance(user.id)) === 75);
+  const invalidAdjustment = await adjustBalance({ userId: user.id, delta: 0 });
+  check(
+    "zero admin adjustment is rejected",
+    !invalidAdjustment.ok && invalidAdjustment.reason === "invalid_amount",
+  );
+  const overAdjustment = await adjustBalance({ userId: user.id, delta: -1000 });
+  check(
+    "admin adjustment cannot overdraw balance",
+    !overAdjustment.ok &&
+      overAdjustment.reason === "insufficient_funds" &&
+      (await getBalance(user.id)) === 75,
+  );
+
   const c1 = await charge({ userId: user.id, providerId: client.id, amount: 30, ref: "r1" });
-  check("charge debits balance to 70", c1.ok && (await getBalance(user.id)) === 70);
+  check("charge debits balance to 45", c1.ok && (await getBalance(user.id)) === 45);
   await charge({ userId: user.id, providerId: client.id, amount: -1, ref: "bad-charge" })
     .then(() => check("charge rejects negative amount", false))
     .catch(() => check("charge rejects negative amount", true));
@@ -48,15 +68,15 @@ async function main() {
   const dup = await charge({ userId: user.id, providerId: client.id, amount: 30, ref: "r1" });
   check(
     "duplicate ref does not double-charge",
-    dup.ok && dup.duplicate === true && (await getBalance(user.id)) === 70,
+    dup.ok && dup.duplicate === true && (await getBalance(user.id)) === 45,
   );
 
   const over = await charge({ userId: user.id, providerId: client.id, amount: 1000, ref: "r2" });
   check("charge beyond balance is rejected", !over.ok && over.reason === "insufficient_funds");
-  check("rejected charge left balance unchanged", (await getBalance(user.id)) === 70);
+  check("rejected charge left balance unchanged", (await getBalance(user.id)) === 45);
 
   check("provider earnings reflect charges", (await getProviderEarnings(client.id)) === 30);
-  check("ledger history has 2 entries", (await getLedger(user.id)).length === 2);
+  check("ledger history has 3 entries", (await getLedger(user.id)).length === 3);
 
   const created = await createIntent({
     client,
@@ -126,7 +146,7 @@ async function main() {
     const done = settled.ok ? settled.intent : null;
     const again = await settlePaymentIntent({ intentId: intent.id, userId: user.id });
     check("completed intent cannot re-settle", !again.ok && again.reason === "not_pending");
-    check("balance after intent is 50", (await getBalance(user.id)) === 50);
+    check("balance after intent is 25", (await getBalance(user.id)) === 25);
 
     if (done) {
       const { body, headers } = buildWebhookRequest(done, "whsec_test");
@@ -155,7 +175,7 @@ async function main() {
       userId: user.id,
     });
     check("expired intent cannot settle", !expiredSettle.ok && expiredSettle.reason === "expired");
-    check("expired intent left balance unchanged", (await getBalance(user.id)) === 50);
+    check("expired intent left balance unchanged", (await getBalance(user.id)) === 25);
     const expiredComplete = await completeIntent(expired.intent.id, user.id);
     check("completeIntent enforces expiry", expiredComplete === null);
   }
@@ -177,7 +197,7 @@ async function main() {
     })
     .returning();
 
-  // user's balance is 50 here; pay 20 to the dev's app.
+  // user's balance is 25 here; pay 20 to the dev's app.
   const inc = await charge({
     userId: user.id,
     providerId: ownedApp.id,
@@ -185,7 +205,7 @@ async function main() {
     ref: "owned1",
     reason: "Pro plan",
   });
-  check("payment to owned app debits payer", inc.ok && (await getBalance(user.id)) === 30);
+  check("payment to owned app debits payer", inc.ok && (await getBalance(user.id)) === 5);
   check("payment to owned app credits the owner", (await getBalance(dev.id)) === 20);
 
   const incomeRows = await getIncome(dev.id);
@@ -238,7 +258,7 @@ async function main() {
   // --- Peer transfers ---
   const t1 = await transfer({ fromUserId: dev.id, toUserId: user.id, amount: 5, reason: "thanks" });
   check("transfer debits the sender", t1.ok && (await getBalance(dev.id)) === 15);
-  check("transfer credits the recipient", (await getBalance(user.id)) === 35);
+  check("transfer credits the recipient", (await getBalance(user.id)) === 10);
 
   const tSelf = await transfer({ fromUserId: dev.id, toUserId: dev.id, amount: 1 });
   check("self-transfer is rejected", !tSelf.ok && tSelf.reason === "self_transfer");
@@ -250,7 +270,7 @@ async function main() {
   check("transfer beyond balance is rejected", !tOver.ok && tOver.reason === "insufficient_funds");
   check(
     "rejected transfer left balances unchanged",
-    (await getBalance(dev.id)) === 15 && (await getBalance(user.id)) === 35,
+    (await getBalance(dev.id)) === 15 && (await getBalance(user.id)) === 10,
   );
 
   const tMissing = await transfer({
