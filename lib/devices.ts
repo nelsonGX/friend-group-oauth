@@ -2,14 +2,14 @@ import { randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
+  clients,
   deviceAuthorizations,
   type DeviceAuthorization,
   type User,
 } from "@/db/schema";
-import { hashToken, randomToken } from "@/lib/crypto";
+import { hashSecret, hashToken, randomToken } from "@/lib/crypto";
 import {
   findInvalidRedirectUri,
-  registerClient,
   unknownScopes,
 } from "@/lib/apps";
 import { env } from "@/lib/env";
@@ -152,47 +152,55 @@ export async function pollDeviceAuthorization(
 ): Promise<PollResult> {
   if (!deviceCode) return { status: "invalid" };
   const db = getDb();
-  const [row] = await db
-    .select()
-    .from(deviceAuthorizations)
-    .where(eq(deviceAuthorizations.deviceCodeHash, hashToken(deviceCode)))
-    .limit(1);
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(deviceAuthorizations)
+      .where(eq(deviceAuthorizations.deviceCodeHash, hashToken(deviceCode)))
+      .limit(1)
+      .for("update");
 
-  if (!row) return { status: "invalid" };
-  if (row.status === "consumed") return { status: "invalid" };
-  if (row.expiresAt.getTime() < Date.now()) return { status: "expired" };
-  if (row.status === "denied") return { status: "denied" };
+    if (!row) return { status: "invalid" };
+    if (row.status === "consumed") return { status: "invalid" };
+    if (row.expiresAt.getTime() < Date.now()) return { status: "expired" };
+    if (row.status === "denied") return { status: "denied" };
 
-  // Enforce a minimum poll interval (slow-down without erroring the flow).
-  const now = Date.now();
-  const tooSoon =
-    row.lastPolledAt != null &&
-    now - row.lastPolledAt.getTime() < (POLL_INTERVAL_SECONDS - 1) * 1000;
-  if (tooSoon && row.status === "pending") return { status: "slow_down" };
-  if (row.status === "pending") {
-    await db
+    // Enforce a minimum poll interval (slow-down without erroring the flow).
+    const now = Date.now();
+    const tooSoon =
+      row.lastPolledAt != null &&
+      now - row.lastPolledAt.getTime() < (POLL_INTERVAL_SECONDS - 1) * 1000;
+    if (tooSoon && row.status === "pending") return { status: "slow_down" };
+    if (row.status === "pending") {
+      await tx
+        .update(deviceAuthorizations)
+        .set({ lastPolledAt: new Date(now) })
+        .where(eq(deviceAuthorizations.id, row.id));
+      return { status: "pending" };
+    }
+
+    // status === "approved": hand over the credentials once, then consume.
+    if (!row.clientId || !row.clientSecret) return { status: "invalid" };
+    await tx
       .update(deviceAuthorizations)
-      .set({ lastPolledAt: new Date(now) })
-      .where(eq(deviceAuthorizations.id, row.id));
-    return { status: "pending" };
-  }
+      .set({ status: "consumed", clientSecret: null })
+      .where(
+        and(
+          eq(deviceAuthorizations.id, row.id),
+          eq(deviceAuthorizations.status, "approved"),
+        ),
+      );
 
-  // status === "approved": hand over the credentials once, then consume.
-  if (!row.clientId || !row.clientSecret) return { status: "invalid" };
-  await db
-    .update(deviceAuthorizations)
-    .set({ status: "consumed", clientSecret: null })
-    .where(eq(deviceAuthorizations.id, row.id));
-
-  return {
-    status: "approved",
-    credentials: {
-      clientId: row.clientId,
-      clientSecret: row.clientSecret,
-      redirectUris: row.requestedRedirectUris,
-      scopes: row.requestedScopes,
-    },
-  };
+    return {
+      status: "approved",
+      credentials: {
+        clientId: row.clientId,
+        clientSecret: row.clientSecret,
+        redirectUris: row.requestedRedirectUris,
+        scopes: row.requestedScopes,
+      },
+    };
+  });
 }
 
 /** Look up a still-pending, unexpired request by its short user code. */
@@ -228,34 +236,62 @@ export async function approveDevice(
   userCode: string,
   user: User,
 ): Promise<ApproveResult> {
-  const row = await getPendingByUserCode(userCode);
-  if (!row) return { ok: false, reason: "not_found" };
-
-  const { clientId, secret } = await registerClient({
-    ownerUserId: user.id,
-    name: row.requestedName,
-    redirectUris: row.requestedRedirectUris,
-    scopes: row.requestedScopes,
-  });
-
   const db = getDb();
-  await db
-    .update(deviceAuthorizations)
-    .set({ status: "approved", userId: user.id, clientId, clientSecret: secret })
-    .where(eq(deviceAuthorizations.id, row.id));
-  return { ok: true };
+  const code = normalizeUserCode(userCode);
+  if (!code) return { ok: false, reason: "not_found" };
+
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(deviceAuthorizations)
+      .where(eq(deviceAuthorizations.userCode, code))
+      .limit(1)
+      .for("update");
+    if (!row || row.status !== "pending") return { ok: false, reason: "not_found" };
+    if (row.expiresAt.getTime() < Date.now()) return { ok: false, reason: "expired" };
+
+    const clientId = `fgc_${randomToken(8)}`;
+    const secret = randomToken(32);
+    await tx.insert(clients).values({
+      name: row.requestedName,
+      clientId,
+      clientSecretHash: hashSecret(secret),
+      redirectUris: row.requestedRedirectUris,
+      allowedScopes: row.requestedScopes.length ? row.requestedScopes : ["identify"],
+      trusted: false,
+      ownerUserId: user.id,
+    });
+
+    await tx
+      .update(deviceAuthorizations)
+      .set({ status: "approved", userId: user.id, clientId, clientSecret: secret })
+      .where(
+        and(
+          eq(deviceAuthorizations.id, row.id),
+          eq(deviceAuthorizations.status, "pending"),
+        ),
+      );
+    return { ok: true };
+  });
 }
 
 /** Deny a pending request. */
 export async function denyDevice(userCode: string): Promise<ApproveResult> {
-  const row = await getPendingByUserCode(userCode);
-  if (!row) return { ok: false, reason: "not_found" };
   const db = getDb();
-  await db
+  const code = normalizeUserCode(userCode);
+  if (!code) return { ok: false, reason: "not_found" };
+  const [row] = await db
     .update(deviceAuthorizations)
     .set({ status: "denied" })
-    .where(eq(deviceAuthorizations.id, row.id));
-  return { ok: true };
+    .where(
+      and(
+        eq(deviceAuthorizations.userCode, code),
+        eq(deviceAuthorizations.status, "pending"),
+        gt(deviceAuthorizations.expiresAt, new Date()),
+      ),
+    )
+    .returning({ id: deviceAuthorizations.id });
+  return row ? { ok: true } : { ok: false, reason: "not_found" };
 }
 
 /** Endpoint URLs advertised to skills + used in the verification doc. */

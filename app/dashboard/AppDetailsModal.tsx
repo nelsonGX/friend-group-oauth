@@ -13,6 +13,7 @@ import {
   RegenerateSecret,
   WebhookSettings,
 } from "./DashboardForms";
+import { AppDataViewer } from "./AppDataViewer";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
@@ -37,8 +38,16 @@ export interface AppView {
 type DetailsDict = Dictionary["dashboard"]["details"];
 type AppsDict = Dictionary["dashboard"]["apps"];
 type FormsDict = Dictionary["dashboard"]["forms"];
+type DataDict = Dictionary["dashboard"]["data"];
 
-type Tab = "display" | "integration" | "redirects" | "webhook" | "secret" | "danger";
+type Tab =
+  | "display"
+  | "integration"
+  | "redirects"
+  | "webhook"
+  | "data"
+  | "secret"
+  | "danger";
 
 /** Tabbed management surface for one provider app, opened from its card. */
 export function AppDetailsModal({
@@ -47,6 +56,7 @@ export function AppDetailsModal({
   t,
   appsT,
   forms,
+  dataT,
   onClose,
 }: {
   app: AppView;
@@ -54,6 +64,7 @@ export function AppDetailsModal({
   t: DetailsDict;
   appsT: AppsDict;
   forms: FormsDict;
+  dataT: DataDict;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("display");
@@ -70,6 +81,7 @@ export function AppDetailsModal({
     { key: "integration", label: t.tabIntegration },
     { key: "redirects", label: t.tabRedirects },
     { key: "webhook", label: t.tabWebhook },
+    { key: "data", label: t.tabData },
     { key: "secret", label: t.tabSecret },
     { key: "danger", label: t.tabDanger },
   ];
@@ -171,6 +183,10 @@ export function AppDetailsModal({
               t={forms}
             />
           </div>
+        )}
+
+        {tab === "data" && (
+          <AppDataViewer clientId={app.clientId} t={dataT} />
         )}
 
         {tab === "secret" && (

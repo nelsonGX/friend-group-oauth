@@ -1,6 +1,6 @@
 import { and, eq, gt } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { getDb } from "@/db";
+import { getDb, type Database } from "@/db";
 import {
   accessTokens,
   authorizationCodes,
@@ -242,15 +242,15 @@ export interface TokenResponse {
   scope: string;
 }
 
-async function issueTokens(opts: {
-  clientId: string;
-  userId: string;
-  scope: string;
-  /** Token-family id. Omit to start a fresh family (authorization_code grant);
-   *  pass the existing id to keep a rotated refresh token in its lineage. */
-  familyId?: string;
-}): Promise<TokenResponse> {
-  const db = getDb();
+async function issueTokensWithDb(
+  db: Database,
+  opts: {
+    clientId: string;
+    userId: string;
+    scope: string;
+    familyId?: string;
+  },
+): Promise<TokenResponse> {
   const accessToken = randomToken(32);
   const refreshToken = randomToken(32);
   const familyId = opts.familyId ?? randomUUID();
@@ -293,37 +293,47 @@ export async function redeemAuthorizationCode(opts: {
   { ok: true; tokens: TokenResponse } | { ok: false; description: string }
 > {
   const db = getDb();
-  const [row] = await db
-    .update(authorizationCodes)
-    .set({ used: true })
-    .where(
-      and(
-        eq(authorizationCodes.codeHash, hashToken(opts.code)),
-        eq(authorizationCodes.used, false),
-      ),
-    )
-    .returning();
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(authorizationCodes)
+      .where(eq(authorizationCodes.codeHash, hashToken(opts.code)))
+      .limit(1)
+      .for("update");
 
-  if (!row) return { ok: false, description: "Authorization code is invalid or already used." };
-  if (row.clientId !== opts.client.clientId) {
-    return { ok: false, description: "Code was not issued to this client." };
-  }
-  if (row.expiresAt < new Date()) {
-    return { ok: false, description: "Authorization code has expired." };
-  }
-  if (row.redirectUri !== opts.redirectUri) {
-    return { ok: false, description: "redirect_uri does not match." };
-  }
-  if (!row.codeChallenge || !verifyPkceS256(opts.codeVerifier, row.codeChallenge)) {
-    return { ok: false, description: "PKCE verification failed." };
-  }
+    if (!row || row.used) {
+      return { ok: false, description: "Authorization code is invalid or already used." };
+    }
+    if (row.clientId !== opts.client.clientId) {
+      return { ok: false, description: "Code was not issued to this client." };
+    }
+    if (row.expiresAt < new Date()) {
+      return { ok: false, description: "Authorization code has expired." };
+    }
+    if (row.redirectUri !== opts.redirectUri) {
+      return { ok: false, description: "redirect_uri does not match." };
+    }
+    if (!row.codeChallenge || !verifyPkceS256(opts.codeVerifier, row.codeChallenge)) {
+      return { ok: false, description: "PKCE verification failed." };
+    }
 
-  const tokens = await issueTokens({
-    clientId: row.clientId,
-    userId: row.userId,
-    scope: row.scope,
+    await tx
+      .update(authorizationCodes)
+      .set({ used: true })
+      .where(
+        and(
+          eq(authorizationCodes.codeHash, row.codeHash),
+          eq(authorizationCodes.used, false),
+        ),
+      );
+
+    const tokens = await issueTokensWithDb(tx as Database, {
+      clientId: row.clientId,
+      userId: row.userId,
+      scope: row.scope,
+    });
+    return { ok: true, tokens };
   });
-  return { ok: true, tokens };
 }
 
 /**
@@ -340,12 +350,14 @@ export async function rotateRefreshToken(opts: {
 > {
   const db = getDb();
   const hash = hashToken(opts.refreshToken);
+  return db.transaction(async (tx) => {
 
-  const [row] = await db
+  const [row] = await tx
     .select()
     .from(refreshTokens)
     .where(eq(refreshTokens.tokenHash, hash))
-    .limit(1);
+    .limit(1)
+    .for("update");
 
   if (!row || row.clientId !== opts.client.clientId) {
     return { ok: false, description: "Refresh token is invalid or expired." };
@@ -353,7 +365,7 @@ export async function rotateRefreshToken(opts: {
 
   // Reuse of a token we already rotated away → assume the family is compromised.
   if (row.revoked) {
-    await revokeFamily(row.familyId);
+    await revokeFamilyWithDb(tx as Database, row.familyId);
     return {
       ok: false,
       description:
@@ -367,7 +379,7 @@ export async function rotateRefreshToken(opts: {
 
   // Claim the token atomically; losing the race means a concurrent use of the
   // same token — also reuse, so revoke the family.
-  const [claimed] = await db
+  const [claimed] = await tx
     .update(refreshTokens)
     .set({ revoked: true })
     .where(
@@ -375,7 +387,7 @@ export async function rotateRefreshToken(opts: {
     )
     .returning();
   if (!claimed) {
-    await revokeFamily(row.familyId);
+    await revokeFamilyWithDb(tx as Database, row.familyId);
     return {
       ok: false,
       description:
@@ -383,18 +395,17 @@ export async function rotateRefreshToken(opts: {
     };
   }
 
-  const tokens = await issueTokens({
+  const tokens = await issueTokensWithDb(tx as Database, {
     clientId: row.clientId,
     userId: row.userId,
     scope: row.scope,
     familyId: row.familyId,
   });
   return { ok: true, tokens };
+  });
 }
 
-/** Revoke every access + refresh token in a token family. */
-async function revokeFamily(familyId: string): Promise<void> {
-  const db = getDb();
+async function revokeFamilyWithDb(db: Database, familyId: string): Promise<void> {
   await db
     .update(accessTokens)
     .set({ revoked: true })

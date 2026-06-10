@@ -130,6 +130,7 @@ export function ProviderApps({
           t={t.details}
           appsT={t.apps}
           forms={t.forms}
+          dataT={t.data}
           onClose={() => setSelected(null)}
         />
       )}

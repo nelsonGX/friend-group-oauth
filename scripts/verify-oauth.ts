@@ -152,6 +152,13 @@ async function main() {
   });
   const badPkce = await redeemAuthorizationCode({ client, code: code2, redirectUri, codeVerifier: "wrong" });
   check("wrong PKCE verifier is rejected", !badPkce.ok);
+  const goodAfterBadPkce = await redeemAuthorizationCode({
+    client,
+    code: code2,
+    redirectUri,
+    codeVerifier: verifier,
+  });
+  check("failed PKCE attempt does not consume the authorization code", goodAfterBadPkce.ok);
 
   const code3 = await issueAuthorizationCode({
     clientId: client.clientId,

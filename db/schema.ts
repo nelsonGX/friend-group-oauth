@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -101,7 +102,9 @@ export const authorizationCodes = pgTable(
   "authorization_codes",
   {
     codeHash: text("code_hash").primaryKey(),
-    clientId: text("client_id").notNull(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => clients.clientId, { onDelete: "cascade" }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -121,7 +124,9 @@ export const accessTokens = pgTable(
   "access_tokens",
   {
     tokenHash: text("token_hash").primaryKey(),
-    clientId: text("client_id").notNull(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => clients.clientId, { onDelete: "cascade" }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -145,7 +150,9 @@ export const refreshTokens = pgTable(
   "refresh_tokens",
   {
     tokenHash: text("token_hash").primaryKey(),
-    clientId: text("client_id").notNull(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => clients.clientId, { onDelete: "cascade" }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -199,6 +206,10 @@ export const ledger = pgTable(
   (t) => [
     index("ledger_user_id_idx").on(t.userId),
     index("ledger_provider_id_idx").on(t.providerId),
+    check(
+      "ledger_kind_check",
+      sql`${t.kind} in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'adjustment')`,
+    ),
   ],
 );
 
@@ -212,7 +223,9 @@ export const paymentIntents = pgTable(
   "payment_intents",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    clientId: text("client_id").notNull(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => clients.clientId, { onDelete: "cascade" }),
     amount: integer("amount").notNull(),
     description: text("description"),
     /** Provider's own idempotency key for this charge. */
@@ -236,7 +249,19 @@ export const paymentIntents = pgTable(
     }),
     ...timestamps,
   },
-  (t) => [uniqueIndex("payment_intents_client_ref_idx").on(t.clientId, t.ref)],
+  (t) => [
+    uniqueIndex("payment_intents_client_ref_idx").on(t.clientId, t.ref),
+    check("payment_intents_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "payment_intents_status_check",
+      sql`${t.status} in ('pending', 'completed', 'cancelled')`,
+    ),
+    check(
+      "payment_intents_webhook_status_check",
+      sql`${t.webhookStatus} is null or ${t.webhookStatus} in ('pending', 'delivered', 'failed')`,
+    ),
+    check("payment_intents_webhook_attempts_nonnegative", sql`${t.webhookAttempts} >= 0`),
+  ],
 );
 
 /**
@@ -279,7 +304,13 @@ export const deviceAuthorizations = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ...timestamps,
   },
-  (t) => [index("device_authorizations_user_code_idx").on(t.userCode)],
+  (t) => [
+    index("device_authorizations_user_code_idx").on(t.userCode),
+    check(
+      "device_authorizations_status_check",
+      sql`${t.status} in ('pending', 'approved', 'denied', 'consumed')`,
+    ),
+  ],
 );
 
 /**
@@ -309,7 +340,13 @@ export const loginHandoffs = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ...timestamps,
   },
-  (t) => [index("login_handoffs_public_id_idx").on(t.publicId)],
+  (t) => [
+    index("login_handoffs_public_id_idx").on(t.publicId),
+    check(
+      "login_handoffs_status_check",
+      sql`${t.status} in ('pending', 'approved', 'denied', 'consumed')`,
+    ),
+  ],
 );
 
 /**
@@ -334,7 +371,13 @@ export const redeemCodes = pgTable("redeem_codes", {
     onDelete: "set null",
   }),
   ...timestamps,
-});
+}, (t) => [
+  check("redeem_codes_amount_positive", sql`${t.amount} > 0`),
+  check(
+    "redeem_codes_max_redemptions_positive",
+    sql`${t.maxRedemptions} is null or ${t.maxRedemptions} > 0`,
+  ),
+]);
 
 /** One member's redemption of a code. Unique (codeId, userId) enforces once-per-user. */
 export const redemptions = pgTable(
@@ -393,6 +436,11 @@ export const withdrawals = pgTable(
   (t) => [
     index("withdrawals_user_id_idx").on(t.userId),
     index("withdrawals_status_idx").on(t.status),
+    check("withdrawals_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "withdrawals_status_check",
+      sql`${t.status} in ('pending', 'paid', 'rejected', 'cancelled')`,
+    ),
   ],
 );
 

@@ -96,6 +96,29 @@ async function main() {
     "intent rejects unregistered redirect_uri",
     !badRedirect.ok && badRedirect.error === "invalid_redirect_uri",
   );
+  await db
+    .insert(schema.paymentIntents)
+    .values({
+      clientId: client.clientId,
+      amount: 0,
+      ref: "bad-db-amount",
+      redirectUri: "https://x.example/cb",
+      expiresAt: new Date(Date.now() + 1000),
+    })
+    .then(() => check("database rejects non-positive payment intent amounts", false))
+    .catch(() => check("database rejects non-positive payment intent amounts", true));
+  await db
+    .insert(schema.paymentIntents)
+    .values({
+      clientId: client.clientId,
+      amount: 1,
+      ref: "bad-db-status",
+      redirectUri: "https://x.example/cb",
+      status: "bogus",
+      expiresAt: new Date(Date.now() + 1000),
+    })
+    .then(() => check("database rejects invalid payment intent statuses", false))
+    .catch(() => check("database rejects invalid payment intent statuses", true));
 
   if (intent) {
     const settled = await settlePaymentIntent({ intentId: intent.id, userId: user.id });

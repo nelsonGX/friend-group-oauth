@@ -1,6 +1,6 @@
 import { and, asc, eq, gt, isNull, like, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { appData } from "@/db/schema";
+import { appData, users } from "@/db/schema";
 
 /**
  * Hosted JSON key–value store for provider apps ("database as a service"). Pure
@@ -216,5 +216,176 @@ export async function listData(
       updatedAt: r.updatedAt,
     })),
     nextCursor: hasMore ? page[page.length - 1].key : null,
+  };
+}
+
+// --- Owner-facing reads (the dashboard data viewer) ---------------------------
+// These browse an app's whole store across users, so they take the client's
+// uuid directly (an app owns its data) rather than a scope the app supplies.
+
+export const OWNER_LIST_DEFAULT = 50;
+export const OWNER_LIST_MAX = 200;
+
+export interface AppDataStats {
+  /** Number of app-global keys. */
+  appKeys: number;
+  /** Number of per-user keys across all users. */
+  userKeys: number;
+  /** Distinct users that have per-user data. */
+  users: number;
+}
+
+export interface OwnerDataEntry {
+  key: string;
+  value: unknown;
+  updatedAt: Date;
+  /** null for app-global rows; the owning user's id for per-user rows. */
+  userId: string | null;
+  username: string | null;
+  globalName: string | null;
+}
+
+/** Counts for the data-viewer header. */
+export async function getAppDataStats(clientId: string): Promise<AppDataStats> {
+  const db = getDb();
+  const [appRow] = await db
+    .select({ n: sql<number>`cast(count(*) as int)` })
+    .from(appData)
+    .where(and(eq(appData.clientId, clientId), isNull(appData.userId)));
+  const [userRow] = await db
+    .select({
+      n: sql<number>`cast(count(*) as int)`,
+      u: sql<number>`cast(count(distinct ${appData.userId}) as int)`,
+    })
+    .from(appData)
+    .where(and(eq(appData.clientId, clientId), sql`${appData.userId} is not null`));
+  return {
+    appKeys: appRow?.n ?? 0,
+    userKeys: userRow?.n ?? 0,
+    users: userRow?.u ?? 0,
+  };
+}
+
+/** Opaque keyset cursor: the last (user, key) seen, base64url-encoded JSON. */
+function encodeCursor(c: { u: string | null; k: string }): string {
+  return Buffer.from(JSON.stringify(c), "utf8").toString("base64url");
+}
+
+function decodeCursor(s: string): { u: string | null; k: string } | null {
+  try {
+    const o = JSON.parse(Buffer.from(s, "base64url").toString("utf8"));
+    if (
+      o &&
+      typeof o.k === "string" &&
+      (o.u === null || (typeof o.u === "string" && UUID_RE.test(o.u)))
+    ) {
+      return o as { u: string | null; k: string };
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
+function clampOwnerLimit(raw: number | undefined): number {
+  if (raw === undefined || !Number.isInteger(raw) || raw <= 0) {
+    return OWNER_LIST_DEFAULT;
+  }
+  return Math.min(raw, OWNER_LIST_MAX);
+}
+
+/**
+ * Browse an app's stored data for its owner. `scope: "app"` lists app-global
+ * keys (ordered by key); `scope: "user"` lists every per-user key joined to the
+ * owning user for display, ordered by (user, key). Both keyset-paginate via the
+ * opaque `cursor`/`nextCursor`, and `prefix` filters keys by literal prefix.
+ */
+export async function listAppDataForOwner(
+  clientId: string,
+  opts: {
+    scope: "app" | "user";
+    prefix?: string;
+    limit?: number;
+    cursor?: string;
+  },
+): Promise<{ entries: OwnerDataEntry[]; nextCursor: string | null }> {
+  const db = getDb();
+  const limit = clampOwnerLimit(opts.limit);
+  const cursor = opts.cursor ? decodeCursor(opts.cursor) : null;
+  const prefixCond = opts.prefix
+    ? like(appData.key, `${escapeLikePrefix(opts.prefix)}%`)
+    : undefined;
+
+  if (opts.scope === "app") {
+    const conds = [eq(appData.clientId, clientId), isNull(appData.userId)];
+    if (prefixCond) conds.push(prefixCond);
+    if (cursor) conds.push(gt(appData.key, cursor.k));
+    const rows = await db
+      .select({
+        key: appData.key,
+        value: appData.value,
+        updatedAt: appData.updatedAt,
+      })
+      .from(appData)
+      .where(and(...conds))
+      .orderBy(asc(appData.key))
+      .limit(limit + 1);
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      entries: page.map((r) => ({
+        key: r.key,
+        value: (r.value as Envelope).v,
+        updatedAt: r.updatedAt,
+        userId: null,
+        username: null,
+        globalName: null,
+      })),
+      nextCursor: hasMore
+        ? encodeCursor({ u: null, k: page[page.length - 1].key })
+        : null,
+    };
+  }
+
+  const conds = [eq(appData.clientId, clientId), sql`${appData.userId} is not null`];
+  if (prefixCond) conds.push(prefixCond);
+  // Composite keyset over (user_id, key); cast the cursor user id to uuid so the
+  // row comparison is well-typed.
+  if (cursor && cursor.u) {
+    conds.push(
+      sql`(${appData.userId}, ${appData.key}) > (${cursor.u}::uuid, ${cursor.k})`,
+    );
+  }
+  const rows = await db
+    .select({
+      key: appData.key,
+      value: appData.value,
+      updatedAt: appData.updatedAt,
+      userId: appData.userId,
+      username: users.username,
+      globalName: users.globalName,
+    })
+    .from(appData)
+    .leftJoin(users, eq(users.id, appData.userId))
+    .where(and(...conds))
+    .orderBy(asc(appData.userId), asc(appData.key))
+    .limit(limit + 1);
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  return {
+    entries: page.map((r) => ({
+      key: r.key,
+      value: (r.value as Envelope).v,
+      updatedAt: r.updatedAt,
+      userId: r.userId,
+      username: r.username,
+      globalName: r.globalName,
+    })),
+    nextCursor: hasMore
+      ? encodeCursor({
+          u: page[page.length - 1].userId,
+          k: page[page.length - 1].key,
+        })
+      : null,
   };
 }

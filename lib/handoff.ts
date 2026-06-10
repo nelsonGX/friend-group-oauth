@@ -65,39 +65,47 @@ export async function pollLoginHandoff(
 ): Promise<HandoffPollResult> {
   if (!pollToken) return { status: "invalid" };
   const db = getDb();
-  const [row] = await db
-    .select()
-    .from(loginHandoffs)
-    .where(eq(loginHandoffs.pollTokenHash, hashToken(pollToken)))
-    .limit(1);
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(loginHandoffs)
+      .where(eq(loginHandoffs.pollTokenHash, hashToken(pollToken)))
+      .limit(1)
+      .for("update");
 
-  if (!row) return { status: "invalid" };
-  if (row.status === "consumed") return { status: "invalid" };
-  if (row.expiresAt.getTime() < Date.now()) return { status: "expired" };
-  if (row.status === "denied") return { status: "denied" };
+    if (!row) return { status: "invalid" };
+    if (row.status === "consumed") return { status: "invalid" };
+    if (row.expiresAt.getTime() < Date.now()) return { status: "expired" };
+    if (row.status === "denied") return { status: "denied" };
 
-  // Enforce a minimum poll interval (slow-down without erroring the flow).
-  const now = Date.now();
-  const tooSoon =
-    row.lastPolledAt != null &&
-    now - row.lastPolledAt.getTime() < (HANDOFF_POLL_INTERVAL_SECONDS - 1) * 1000;
-  if (tooSoon && row.status === "pending") return { status: "slow_down" };
-  if (row.status === "pending") {
-    await db
+    // Enforce a minimum poll interval (slow-down without erroring the flow).
+    const now = Date.now();
+    const tooSoon =
+      row.lastPolledAt != null &&
+      now - row.lastPolledAt.getTime() < (HANDOFF_POLL_INTERVAL_SECONDS - 1) * 1000;
+    if (tooSoon && row.status === "pending") return { status: "slow_down" };
+    if (row.status === "pending") {
+      await tx
+        .update(loginHandoffs)
+        .set({ lastPolledAt: new Date(now) })
+        .where(eq(loginHandoffs.id, row.id));
+      return { status: "pending" };
+    }
+
+    // status === "approved": hand over the user once, then consume.
+    if (!row.userId) return { status: "invalid" };
+    await tx
       .update(loginHandoffs)
-      .set({ lastPolledAt: new Date(now) })
-      .where(eq(loginHandoffs.id, row.id));
-    return { status: "pending" };
-  }
+      .set({ status: "consumed" })
+      .where(
+        and(
+          eq(loginHandoffs.id, row.id),
+          eq(loginHandoffs.status, "approved"),
+        ),
+      );
 
-  // status === "approved": hand over the user once, then consume.
-  if (!row.userId) return { status: "invalid" };
-  await db
-    .update(loginHandoffs)
-    .set({ status: "consumed" })
-    .where(eq(loginHandoffs.id, row.id));
-
-  return { status: "approved", userId: row.userId };
+    return { status: "approved", userId: row.userId };
+  });
 }
 
 /** Look up a still-pending, unexpired hand-off by its public id. */
@@ -129,26 +137,36 @@ export async function approveLoginHandoff(
   publicId: string,
   user: User,
 ): Promise<HandoffDecisionResult> {
-  const row = await getHandoffByPublicId(publicId);
-  if (!row) return { ok: false, reason: "not_found" };
   const db = getDb();
-  await db
+  const [row] = await db
     .update(loginHandoffs)
     .set({ status: "approved", userId: user.id })
-    .where(eq(loginHandoffs.id, row.id));
-  return { ok: true };
+    .where(
+      and(
+        eq(loginHandoffs.publicId, publicId),
+        eq(loginHandoffs.status, "pending"),
+        gt(loginHandoffs.expiresAt, new Date()),
+      ),
+    )
+    .returning({ id: loginHandoffs.id });
+  return row ? { ok: true } : { ok: false, reason: "not_found" };
 }
 
 /** Deny a pending hand-off. */
 export async function denyLoginHandoff(
   publicId: string,
 ): Promise<HandoffDecisionResult> {
-  const row = await getHandoffByPublicId(publicId);
-  if (!row) return { ok: false, reason: "not_found" };
   const db = getDb();
-  await db
+  const [row] = await db
     .update(loginHandoffs)
     .set({ status: "denied" })
-    .where(eq(loginHandoffs.id, row.id));
-  return { ok: true };
+    .where(
+      and(
+        eq(loginHandoffs.publicId, publicId),
+        eq(loginHandoffs.status, "pending"),
+        gt(loginHandoffs.expiresAt, new Date()),
+      ),
+    )
+    .returning({ id: loginHandoffs.id });
+  return row ? { ok: true } : { ok: false, reason: "not_found" };
 }

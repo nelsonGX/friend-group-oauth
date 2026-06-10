@@ -2,7 +2,9 @@ import { check, createTestDb, schema, summarize } from "./harness";
 import { eq } from "drizzle-orm";
 import {
   deleteData,
+  getAppDataStats,
   getData,
+  listAppDataForOwner,
   listData,
   MAX_KEY_LENGTH,
   resolveScope,
@@ -152,6 +154,74 @@ async function main() {
       page2.entries[0].key === "item:3" &&
       page2.nextCursor === null,
   );
+
+  // --- Owner-facing reads (the dashboard data viewer) ---
+  // app1 now holds: app-global k, item:1..3, other:1 (5 keys); per-user k for
+  // userA and userB (2 rows, 2 distinct users).
+  const stats = await getAppDataStats(app1.id);
+  check("stats count app-global keys", stats.appKeys === 5);
+  check(
+    "stats count per-user keys and distinct users",
+    stats.userKeys === 2 && stats.users === 2,
+  );
+
+  const ownerApp = await listAppDataForOwner(app1.id, { scope: "app" });
+  check(
+    "owner app-scope lists every app-global key",
+    ownerApp.entries.length === 5 &&
+      ownerApp.nextCursor === null &&
+      ownerApp.entries.every((e) => e.userId === null),
+  );
+  const ownerPrefixed = await listAppDataForOwner(app1.id, {
+    scope: "app",
+    prefix: "item:",
+  });
+  check("owner app-scope prefix filters", ownerPrefixed.entries.length === 3);
+
+  const op1 = await listAppDataForOwner(app1.id, { scope: "app", limit: 2 });
+  check("owner app-scope paginates", op1.entries.length === 2 && op1.nextCursor !== null);
+  const op2 = await listAppDataForOwner(app1.id, {
+    scope: "app",
+    limit: 2,
+    cursor: op1.nextCursor!,
+  });
+  check(
+    "owner app-scope cursor advances without overlap",
+    op2.entries.length > 0 && op2.entries[0].key > op1.entries[1].key,
+  );
+
+  const ownerUser = await listAppDataForOwner(app1.id, { scope: "user" });
+  check(
+    "owner user-scope lists per-user rows with the owner joined",
+    ownerUser.entries.length === 2 &&
+      ownerUser.entries.every((e) => e.userId !== null && e.username !== null),
+  );
+  const up1 = await listAppDataForOwner(app1.id, { scope: "user", limit: 1 });
+  check(
+    "owner user-scope paginates by (user, key)",
+    up1.entries.length === 1 && up1.nextCursor !== null,
+  );
+  const up2 = await listAppDataForOwner(app1.id, {
+    scope: "user",
+    limit: 1,
+    cursor: up1.nextCursor!,
+  });
+  check(
+    "owner user-scope cursor fetches the next user's row and exhausts",
+    up2.entries.length === 1 &&
+      up2.entries[0].userId !== up1.entries[0].userId &&
+      up2.nextCursor === null,
+  );
+  const badOwnerCursor = Buffer.from(
+    JSON.stringify({ u: "not-a-uuid", k: "k" }),
+    "utf8",
+  ).toString("base64url");
+  await listAppDataForOwner(app1.id, {
+    scope: "user",
+    cursor: badOwnerCursor,
+  })
+    .then(() => check("owner data list ignores malformed cursors", true))
+    .catch(() => check("owner data list ignores malformed cursors", false));
 
   // --- Cascade: deleting a user removes per-user rows, keeps app-global ---
   await db.delete(schema.users).where(eq(schema.users.id, userA.id));

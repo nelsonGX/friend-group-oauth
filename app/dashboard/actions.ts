@@ -11,6 +11,12 @@ import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
 import { registerClient } from "@/lib/apps";
+import {
+  deleteData,
+  getAppDataStats,
+  listAppDataForOwner,
+  type AppDataStats,
+} from "@/lib/data";
 import { buildIntegrationPrompt } from "@/lib/integrationPrompt";
 import { createWithdrawal, cancelWithdrawal as cancelWithdrawalRequest } from "@/lib/withdrawals";
 import { env } from "@/lib/env";
@@ -441,4 +447,105 @@ export async function cancelWithdrawal(formData: FormData) {
   if (!id) return;
   await cancelWithdrawalRequest({ id, userId: user.id });
   revalidatePath("/dashboard");
+}
+
+// --- Data store viewer --------------------------------------------------------
+
+/** Load a client by its public id and confirm the caller owns it (or is admin). */
+async function ownedClient(
+  clientId: string | undefined,
+  user: { id: string; isAdmin: boolean },
+) {
+  if (!clientId) return null;
+  const db = getDb();
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.clientId, clientId))
+    .limit(1);
+  if (!client || (client.ownerUserId !== user.id && !user.isAdmin)) return null;
+  return client;
+}
+
+function fmtDate(d: Date) {
+  return d.toISOString().slice(0, 16).replace("T", " ");
+}
+
+export interface AppDataRow {
+  key: string;
+  /** The stored value, pretty-printed as JSON for display. */
+  valueJson: string;
+  updatedAt: string;
+  /** null for app-global rows; the owning user's id otherwise. */
+  userId: string | null;
+  /** Display name for a per-user row's owner (null for app-global). */
+  userLabel: string | null;
+}
+
+export interface AppDataResult {
+  ok: boolean;
+  scope: "app" | "user";
+  entries: AppDataRow[];
+  nextCursor: string | null;
+  stats: AppDataStats;
+}
+
+const EMPTY_STATS: AppDataStats = { appKeys: 0, userKeys: 0, users: 0 };
+
+/**
+ * Read a page of an owned app's stored data for the dashboard viewer. Values and
+ * dates are serialized to strings so the result can cross to the client.
+ */
+export async function fetchAppData(input: {
+  clientId: string;
+  scope: "app" | "user";
+  prefix?: string;
+  cursor?: string;
+}): Promise<AppDataResult> {
+  const scope = input.scope === "user" ? "user" : "app";
+  const user = await auth();
+  if (!user) return { ok: false, scope, entries: [], nextCursor: null, stats: EMPTY_STATS };
+
+  const client = await ownedClient(input.clientId, user);
+  if (!client) {
+    return { ok: false, scope, entries: [], nextCursor: null, stats: EMPTY_STATS };
+  }
+
+  const prefix = input.prefix?.trim() || undefined;
+  const [{ entries, nextCursor }, stats] = await Promise.all([
+    listAppDataForOwner(client.id, { scope, prefix, cursor: input.cursor }),
+    getAppDataStats(client.id),
+  ]);
+
+  return {
+    ok: true,
+    scope,
+    entries: entries.map((e) => ({
+      key: e.key,
+      valueJson: JSON.stringify(e.value, null, 2),
+      updatedAt: fmtDate(e.updatedAt),
+      userId: e.userId,
+      userLabel:
+        e.userId === null ? null : e.globalName ?? e.username ?? e.userId,
+    })),
+    nextCursor,
+    stats,
+  };
+}
+
+/** Delete one stored key from an owned app's data store. */
+export async function deleteAppDataEntry(input: {
+  clientId: string;
+  scope: "app" | "user";
+  userId?: string | null;
+  key: string;
+}): Promise<{ ok: boolean }> {
+  const user = await auth();
+  if (!user) return { ok: false };
+  const client = await ownedClient(input.clientId, user);
+  if (!client || !input.key) return { ok: false };
+
+  const userId = input.scope === "user" ? input.userId ?? null : null;
+  await deleteData({ clientId: client.id, userId }, input.key);
+  return { ok: true };
 }
