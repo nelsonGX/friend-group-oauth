@@ -32,7 +32,13 @@ export function ProviderApps({
   t: DashDict;
 }) {
   const [creating, setCreating] = useState(false);
-  const [selected, setSelected] = useState<AppView | null>(null);
+  // Track the open app by id (not a snapshot) so a server-action revalidate of
+  // `apps` flows straight into the modal — otherwise saved edits would keep
+  // showing stale values until a reload. Resolves to null if the app is gone
+  // (e.g. just deleted), which also closes the modal.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected =
+    selectedId === null ? null : apps.find((app) => app.id === selectedId) ?? null;
   const a = t.apps;
 
   return (
@@ -100,7 +106,7 @@ export function ProviderApps({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setSelected(app)}
+                  onClick={() => setSelectedId(app.id)}
                   className="btn btn-ghost py-1.5! text-sm"
                 >
                   <Settings2 size={15} />
@@ -131,7 +137,7 @@ export function ProviderApps({
           appsT={t.apps}
           forms={t.forms}
           dataT={t.data}
-          onClose={() => setSelected(null)}
+          onClose={() => setSelectedId(null)}
         />
       )}
     </section>

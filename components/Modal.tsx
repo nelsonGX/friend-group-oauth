@@ -43,9 +43,17 @@ export function Modal({
       closeModal();
     };
     dialog.addEventListener("cancel", onCancel);
+
+    // Lock page scroll while open — a native modal <dialog> blocks clicks but
+    // some browsers still let the page behind scroll on wheel/touch.
+    const html = document.documentElement;
+    const prevOverflow = html.style.overflow;
+    html.style.overflow = "hidden";
+
     return () => {
       dialog.removeEventListener("cancel", onCancel);
       if (dialog.open) dialog.close();
+      html.style.overflow = prevOverflow;
     };
   }, [open]);
 

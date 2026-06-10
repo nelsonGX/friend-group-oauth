@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Copy } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import {
   CopyButton,
@@ -88,7 +88,7 @@ export function AppDetailsModal({
 
   return (
     <Modal open onClose={onClose} title={app.name} size="lg">
-      {/* status + identifier */}
+      {/* status badges + copyable client identifier */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className={`badge ${app.isActive ? "badge-success" : "badge-danger"}`}>
           <span className="dot" />
@@ -96,27 +96,33 @@ export function AppDetailsModal({
         </span>
         {app.trusted && <span className="badge badge-success">{appsT.trusted}</span>}
         <span className="badge">{appsT.earned.replace("{n}", String(app.earned))}</span>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <span className="font-mono text-xs text-faint break-all">{app.clientId}</span>
-        <CopyButton text={app.clientId} t={forms} />
+        <CopyClientId clientId={app.clientId} copiedLabel={forms.copied} className="ml-auto" />
       </div>
 
-      {/* tabs */}
-      <div className="tablist mt-4">
-        {tabs.map((tb) => (
-          <button
-            key={tb.key}
-            type="button"
-            onClick={() => setTab(tb.key)}
-            className={`tab ${tab === tb.key ? "tab-active" : ""}`}
-          >
-            {tb.label}
-          </button>
-        ))}
-      </div>
+      {/* section rail (left) + section content (right) */}
+      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:gap-6">
+        <nav
+          aria-label={app.name}
+          className="flex shrink-0 gap-0.5 overflow-x-auto rounded-xl border border-border bg-black/25 p-1 sm:w-40 sm:flex-col sm:self-start sm:overflow-x-visible sm:sticky sm:top-0"
+        >
+          {tabs.map((tb) => (
+            <button
+              key={tb.key}
+              type="button"
+              onClick={() => setTab(tb.key)}
+              aria-current={tab === tb.key}
+              className={`shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3 py-2 text-left text-[0.8125rem] font-medium transition-all active:scale-[0.97] sm:w-full ${
+                tab === tb.key
+                  ? "bg-surface-strong text-ink"
+                  : "text-muted hover:bg-white/5 hover:text-ink"
+              }`}
+            >
+              {tb.label}
+            </button>
+          ))}
+        </nav>
 
-      <div className="mt-4">
+        <div className="min-w-0 flex-1">
         {tab === "display" && (
           <div className="space-y-3">
             <EditName clientId={app.clientId} name={app.name} t={forms} />
@@ -210,7 +216,45 @@ export function AppDetailsModal({
             <DeleteApp clientId={app.clientId} t={forms} onDeleted={onClose} />
           </div>
         )}
+        </div>
       </div>
     </Modal>
+  );
+}
+
+/** Compact, copy-on-click pill showing the app's client ID. */
+function CopyClientId({
+  clientId,
+  copiedLabel,
+  className = "",
+}: {
+  clientId: string;
+  copiedLabel: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(clientId);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          setCopied(false);
+        }
+      }}
+      title={copied ? copiedLabel : clientId}
+      aria-label={clientId}
+      className={`group flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-black/25 px-2.5 py-1 font-mono text-xs text-muted transition-colors hover:border-border-strong hover:text-ink ${className}`}
+    >
+      <span className="truncate">{clientId}</span>
+      {copied ? (
+        <Check size={13} className="shrink-0 text-success" />
+      ) : (
+        <Copy size={13} className="shrink-0 text-faint transition-colors group-hover:text-ink" />
+      )}
+    </button>
   );
 }
