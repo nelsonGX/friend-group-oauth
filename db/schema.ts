@@ -191,7 +191,8 @@ export const refreshTokens = pgTable(
  * the other side, and `kind` lets the UI label each row.
  * `ref` is a unique idempotency key (nullable for admin top-ups).
  * `kind`: topup | charge | income | transfer_in | transfer_out | redeem |
- *         withdrawal | withdrawal_refund | app_fund | app_payout | adjustment
+ *         withdrawal | withdrawal_refund | app_fund | app_withdrawal |
+ *         app_payout | adjustment
  */
 export const ledger = pgTable(
   "ledger",
@@ -208,7 +209,7 @@ export const ledger = pgTable(
       onDelete: "set null",
     }),
     delta: integer("delta").notNull(),
-    /** topup | charge | income | transfer_in | transfer_out | app_fund | app_payout | adjustment */
+    /** topup | charge | income | transfer_in | transfer_out | app_fund | app_withdrawal | app_payout | adjustment */
     kind: text("kind").notNull().default("adjustment"),
     reason: text("reason"),
     ref: text("ref").unique(),
@@ -219,7 +220,7 @@ export const ledger = pgTable(
     index("ledger_provider_id_idx").on(t.providerId),
     check(
       "ledger_kind_check",
-      sql`${t.kind} in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'app_fund', 'app_payout', 'adjustment')`,
+      sql`${t.kind} in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'app_fund', 'app_withdrawal', 'app_payout', 'adjustment')`,
     ),
   ],
 );
@@ -233,7 +234,7 @@ export const ledger = pgTable(
  * an app accumulate a platform balance and pay users without making routed
  * income automatically withdrawable by the developer.
  *
- * `kind`: manual_fund | routed_income | reverse_payout | adjustment
+ * `kind`: manual_fund | routed_income | owner_withdrawal | reverse_payout | adjustment
  */
 export const appLedger = pgTable(
   "app_ledger",
@@ -254,7 +255,7 @@ export const appLedger = pgTable(
     index("app_ledger_user_id_idx").on(t.userId),
     check(
       "app_ledger_kind_check",
-      sql`${t.kind} in ('manual_fund', 'routed_income', 'reverse_payout', 'adjustment')`,
+      sql`${t.kind} in ('manual_fund', 'routed_income', 'owner_withdrawal', 'reverse_payout', 'adjustment')`,
     ),
   ],
 );

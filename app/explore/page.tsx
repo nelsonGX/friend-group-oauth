@@ -58,6 +58,13 @@ function activityLabel(entry: ActivityEntry, d: Dictionary["dashboard"]): string
         entry.reason ??
         (entry.appName ? format(d.appFund, { name: entry.appName }) : d.charge)
       );
+    case "app_withdrawal":
+      return (
+        entry.reason ??
+        (entry.appName
+          ? format(d.appWithdrawal, { name: entry.appName })
+          : d.topUp)
+      );
     default:
       return entry.reason ?? (entry.delta > 0 ? d.topUp : d.charge);
   }

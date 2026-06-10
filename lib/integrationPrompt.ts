@@ -130,7 +130,9 @@ same number of credits on every platform.
    -> { payout_id, status:"completed", amount, user_id, ref, duplicate, app_balance, paid:true }
    Retrying the same ref is safe and won't pay twice. A low app balance returns
    402 insufficient_funds. Reverse-paid credits are spendable user credits, not
-   withdrawable developer income.
+   withdrawable developer income. Unused app balance can be moved back to the
+   owner's regular credit balance in the dashboard by entering a negative
+   funding amount, but that also is not withdrawable developer income.
 
 5) OPTIONAL (recommended) webhook: if I configure a webhook URL in the dashboard,
    you'll receive POST JSON on settle with headers X-Webhook-Id (idempotency key)

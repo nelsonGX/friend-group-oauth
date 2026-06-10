@@ -1,5 +1,5 @@
 {
-  "id": "bfb5426d-1565-47a1-92e8-6a1d9501e672",
+  "id": "1a15c667-0cb0-41ae-a82c-96d2e5b18b24",
   "prevId": "8c220077-f368-43e7-8dcf-ad2be6ec930b",
   "version": "7",
   "dialect": "postgresql",
@@ -428,7 +428,7 @@
       "checkConstraints": {
         "app_ledger_kind_check": {
           "name": "app_ledger_kind_check",
-          "value": "\"app_ledger\".\"kind\" in ('manual_fund', 'routed_income', 'reverse_payout', 'adjustment')"
+          "value": "\"app_ledger\".\"kind\" in ('manual_fund', 'routed_income', 'owner_withdrawal', 'reverse_payout', 'adjustment')"
         }
       },
       "isRLSEnabled": false
@@ -1002,7 +1002,7 @@
       "checkConstraints": {
         "ledger_kind_check": {
           "name": "ledger_kind_check",
-          "value": "\"ledger\".\"kind\" in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'app_fund', 'app_payout', 'adjustment')"
+          "value": "\"ledger\".\"kind\" in ('topup', 'charge', 'income', 'transfer_in', 'transfer_out', 'redeem', 'withdrawal', 'withdrawal_refund', 'app_fund', 'app_withdrawal', 'app_payout', 'adjustment')"
         }
       },
       "isRLSEnabled": false

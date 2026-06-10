@@ -179,6 +179,86 @@ export async function fundAppFromUserBalance(opts: {
   });
 }
 
+export type WithdrawAppBalanceResult =
+  | { ok: true; appBalance: number; userBalance: number }
+  | { ok: false; reason: "invalid_amount" }
+  | { ok: false; reason: "not_found" }
+  | { ok: false; reason: "insufficient_funds"; balance: number };
+
+/** Move credits from an app balance back into its owner's user balance. */
+export async function withdrawAppBalanceToOwner(opts: {
+  clientId: string;
+  ownerUserId: string;
+  amount: number;
+  reason?: string;
+}): Promise<WithdrawAppBalanceResult> {
+  if (!Number.isInteger(opts.amount) || opts.amount <= 0) {
+    return { ok: false, reason: "invalid_amount" };
+  }
+
+  const db = getDb();
+  return db.transaction(async (tx) => {
+    const [client] = await tx
+      .select({ id: clients.id, ownerUserId: clients.ownerUserId })
+      .from(clients)
+      .where(eq(clients.id, opts.clientId))
+      .limit(1)
+      .for("update");
+    if (!client || client.ownerUserId !== opts.ownerUserId) {
+      return { ok: false, reason: "not_found" };
+    }
+
+    await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, opts.ownerUserId))
+      .limit(1)
+      .for("update");
+
+    const [[appRow], [userRow]] = await Promise.all([
+      tx
+        .select({ balance: SUM_APP_DELTA })
+        .from(appLedger)
+        .where(eq(appLedger.clientId, opts.clientId)),
+      tx
+        .select({ balance: sql<number>`cast(coalesce(sum(${ledger.delta}), 0) as int)` })
+        .from(ledger)
+        .where(eq(ledger.userId, opts.ownerUserId)),
+    ]);
+
+    const appBalance = appRow?.balance ?? 0;
+    if (appBalance < opts.amount) {
+      return { ok: false, reason: "insufficient_funds", balance: appBalance };
+    }
+
+    const userBalance = userRow?.balance ?? 0;
+    const ref = `app-withdraw:${randomUUID()}`;
+    const reason = opts.reason ?? "App balance withdrawal";
+    await tx.insert(appLedger).values({
+      clientId: opts.clientId,
+      userId: opts.ownerUserId,
+      delta: -opts.amount,
+      kind: "owner_withdrawal",
+      reason,
+      ref: `${ref}:out`,
+    });
+    await tx.insert(ledger).values({
+      userId: opts.ownerUserId,
+      providerId: opts.clientId,
+      delta: opts.amount,
+      kind: "app_withdrawal",
+      reason,
+      ref: `${ref}:in`,
+    });
+
+    return {
+      ok: true,
+      appBalance: appBalance - opts.amount,
+      userBalance: userBalance + opts.amount,
+    };
+  });
+}
+
 export async function setIncomeDestination(opts: {
   clientId: string;
   destination: IncomeDestination;

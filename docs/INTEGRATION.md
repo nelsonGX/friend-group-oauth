@@ -396,6 +396,10 @@ balance instead of the owner's withdrawable balance. Reverse-paid credits are
 normal spendable user credits, but they are not developer `income` and are not
 withdrawable by the recipient.
 
+The owner can also move unused app balance back to their regular credit balance
+from the same Funding tab by entering a negative amount. That returns spendable
+credits, but does not create withdrawable developer `income`.
+
 Call this server-side with client auth:
 
 ```

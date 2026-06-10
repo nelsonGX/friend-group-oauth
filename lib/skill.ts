@@ -373,7 +373,9 @@ client_id=...&client_secret=...&user_id={sub}&amount={positive int}
 -> \`{ payout_id, status:"completed", amount, user_id, ref, duplicate, app_balance, paid:true }\`.
 Retrying the same ref is safe and will not pay twice. Low app balance returns
 \`402 insufficient_funds\`. Reverse-paid credits are spendable user credits, not
-withdrawable developer income.
+withdrawable developer income. Unused app balance can be moved back to the
+owner's regular credit balance in the dashboard by entering a negative funding
+amount, but that also is not withdrawable developer income.
 
 ### Webhooks (optional, recommended)
 Configure a webhook URL on the app in the dashboard (**Manage → Webhook**); saving

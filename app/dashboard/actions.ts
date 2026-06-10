@@ -30,6 +30,7 @@ import { validateWebhookUrl } from "@/lib/webhooks";
 import {
   fundAppFromUserBalance,
   setIncomeDestination,
+  withdrawAppBalanceToOwner,
   type IncomeDestination,
 } from "@/lib/app-balance";
 
@@ -380,8 +381,8 @@ export async function fundAppBalance(
 
   const clientId = formData.get("clientId")?.toString();
   const amount = Number(formData.get("amount"));
-  const reason = formData.get("reason")?.toString().trim() || "Manual app funding";
-  if (!clientId || !Number.isInteger(amount) || amount <= 0) {
+  const reason = formData.get("reason")?.toString().trim();
+  if (!clientId || !Number.isInteger(amount) || amount === 0) {
     return { ok: false, message: d.appFundInvalidAmount };
   }
 
@@ -395,27 +396,46 @@ export async function fundAppBalance(
     return { ok: false, message: d.notYourApp };
   }
 
-  const result = await fundAppFromUserBalance({
-    clientId: client.id,
-    userId: user.id,
-    amount,
-    reason,
-  });
+  const result =
+    amount > 0
+      ? await fundAppFromUserBalance({
+          clientId: client.id,
+          userId: user.id,
+          amount,
+          reason: reason || "App balance funding",
+        })
+      : await withdrawAppBalanceToOwner({
+          clientId: client.id,
+          ownerUserId: user.id,
+          amount: Math.abs(amount),
+          reason: reason || "App balance withdrawal",
+        });
   if (!result.ok) {
     if (result.reason === "insufficient_funds") {
       return {
         ok: false,
-        message: format(d.appFundInsufficient, { balance: result.balance }),
+        message: format(
+          amount > 0 ? d.appFundInsufficient : d.appWithdrawInsufficient,
+          { balance: result.balance },
+        ),
       };
     }
     return { ok: false, message: d.appFundInvalidAmount };
   }
 
   revalidatePath("/dashboard");
-  return {
-    ok: true,
-    message: format(d.appFunded, { amount, balance: result.appBalance }),
-  };
+  return amount > 0
+    ? {
+        ok: true,
+        message: format(d.appFunded, { amount, balance: result.appBalance }),
+      }
+    : {
+        ok: true,
+        message: format(d.appWithdrawn, {
+          amount: Math.abs(amount),
+          balance: result.appBalance,
+        }),
+      };
 }
 
 /** Choose whether future successful payments credit the owner or the app balance. */

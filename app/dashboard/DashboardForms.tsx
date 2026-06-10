@@ -214,7 +214,6 @@ export function FundingSettings({
               id="fundAmount"
               className={inputClass}
               type="number"
-              min={1}
               step={1}
               name="amount"
               placeholder={t.fundAmountPlaceholder}
@@ -234,7 +233,7 @@ export function FundingSettings({
           </div>
         </div>
         <button type="submit" className="btn btn-secondary text-sm" disabled={funding}>
-          {funding ? t.funding : t.fundAppBalance}
+          {funding ? t.funding : t.updateAppBalance}
         </button>
         <Notice ok={fundState.ok} message={fundState.message} />
       </form>
