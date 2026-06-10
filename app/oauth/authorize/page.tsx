@@ -135,10 +135,10 @@ export default async function AuthorizePage({
               width={68}
               height={68}
               unoptimized
-              className="h-[68px] w-[68px] rounded-2xl object-cover ring-2 ring-border"
+              className="h-17 w-17 rounded-2xl object-cover ring-2 ring-border"
             />
           ) : (
-            <span className="grid h-[68px] w-[68px] shrink-0 place-items-center rounded-2xl bg-brand text-white">
+            <span className="grid h-17 w-17 shrink-0 place-items-center rounded-2xl bg-brand text-white">
               <ShieldCheck size={30} strokeWidth={1.7} />
             </span>
           )}
@@ -153,10 +153,10 @@ export default async function AuthorizePage({
               alt=""
               width={68}
               height={68}
-              className="h-[68px] w-[68px] rounded-full object-cover ring-2 ring-border"
+              className="h-17 w-17 rounded-full object-cover ring-2 ring-border"
             />
           ) : (
-            <span className="grid h-[68px] w-[68px] shrink-0 place-items-center rounded-full bg-surface-strong text-2xl font-semibold text-ink ring-2 ring-border">
+            <span className="grid h-17 w-17 shrink-0 place-items-center rounded-full bg-surface-strong text-2xl font-semibold text-ink ring-2 ring-border">
               {displayName.slice(0, 1).toUpperCase()}
             </span>
           )}

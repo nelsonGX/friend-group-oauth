@@ -38,7 +38,7 @@ function CommandRow({
               setCopied(false);
             }
           }}
-          className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 !py-1.5 text-xs`}
+          className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 py-1.5! text-xs`}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
           {copied ? copiedLabel : copyLabel}
@@ -74,7 +74,7 @@ function PromptBlock({
               setCopied(false);
             }
           }}
-          className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 !py-1.5 text-xs`}
+          className={`${copied ? "btn btn-secondary" : "btn btn-primary"} shrink-0 py-1.5! text-xs`}
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
           {copied ? copiedLabel : copyLabel}

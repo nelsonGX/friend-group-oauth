@@ -36,7 +36,7 @@ function BarLinks({
 }) {
   if (!user) {
     return (
-      <Link href="/login" className="btn btn-primary !px-3.5 !py-1.5">
+      <Link href="/login" className="btn btn-primary px-3.5! py-1.5!">
         {t.signIn}
       </Link>
     );
@@ -72,7 +72,7 @@ function BarLinks({
       <form action="/api/auth/logout" method="post">
         <button
           type="submit"
-          className={`${base} ${idle} hover:!bg-danger/10 hover:!text-danger`}
+          className={`${base} ${idle} hover:bg-danger/10! hover:text-danger!`}
         >
           <LogOut size={16} />
           {t.logout}
@@ -154,8 +154,8 @@ function MenuLinks({
 
 /**
  * Responsive header navigation. The language switcher (a Server Component) is
- * passed in as `switcher` and stays visible at every width; the page links sit
- * inline on ≥sm and collapse into a floating menu card below `sm`. The link for
+ * passed in as `switcher`and stays visible at every width; the page links sit
+ * inline on ≥sm and into a floating menu card below`sm`. The link for
  * the current route is highlighted at both widths.
  */
 export function HeaderNav({

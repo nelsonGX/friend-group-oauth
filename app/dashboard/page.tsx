@@ -127,7 +127,7 @@ export default async function DashboardPage() {
           </div>
         </div>
         {user.isAdmin && (
-          <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
+          <Link href="/admin" className="btn btn-ghost py-2! text-sm">
             <Shield size={15} />
             {t.dashboard.admin}
           </Link>

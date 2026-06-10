@@ -130,7 +130,7 @@ function WithdrawalCard({ w, t }: { w: AdminWithdrawalView; t: AdminDict }) {
         </div>
       </div>
 
-      <div className="sunken mt-3 whitespace-pre-wrap break-words p-3 text-xs text-muted">
+      <div className="sunken mt-3 whitespace-pre-wrap wrap-break-word p-3 text-xs text-muted">
         {w.payoutDetails}
       </div>
       {w.note && (
@@ -149,7 +149,7 @@ function WithdrawalCard({ w, t }: { w: AdminWithdrawalView; t: AdminDict }) {
         <form className="mt-3 space-y-2">
           <input type="hidden" name="id" value={w.id} />
           <input
-            className="input !py-2 text-sm"
+            className="input py-2! text-sm"
             name="adminNote"
             aria-label={t.adminNotePlaceholder}
             placeholder={t.adminNotePlaceholder}
@@ -158,7 +158,7 @@ function WithdrawalCard({ w, t }: { w: AdminWithdrawalView; t: AdminDict }) {
             <button
               type="submit"
               formAction={markWithdrawalPaid}
-              className="btn btn-primary !py-1.5 text-xs"
+              className="btn btn-primary py-1.5! text-xs"
             >
               {t.markPaid}
             </button>
@@ -168,7 +168,7 @@ function WithdrawalCard({ w, t }: { w: AdminWithdrawalView; t: AdminDict }) {
               onClick={(e) => {
                 if (!confirm(t.rejectConfirm)) e.preventDefault();
               }}
-              className="btn btn-ghost !py-1.5 text-xs"
+              className="btn btn-ghost py-1.5! text-xs"
             >
               {t.reject}
             </button>

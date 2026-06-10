@@ -66,13 +66,13 @@ export function ProvidersSection({
                   <div className="flex justify-end gap-2">
                     <form action={toggleClientActive}>
                       <input type="hidden" name="clientId" value={c.clientId} />
-                      <button type="submit" className="btn btn-ghost !px-2.5 !py-1.5 text-xs">
+                      <button type="submit" className="btn btn-ghost px-2.5! py-1.5! text-xs">
                         {c.isActive ? t.disable : t.enable}
                       </button>
                     </form>
                     <form action={toggleClientTrusted}>
                       <input type="hidden" name="clientId" value={c.clientId} />
-                      <button type="submit" className="btn btn-ghost !px-2.5 !py-1.5 text-xs">
+                      <button type="submit" className="btn btn-ghost px-2.5! py-1.5! text-xs">
                         {c.trusted ? t.untrust : t.trust}
                       </button>
                     </form>

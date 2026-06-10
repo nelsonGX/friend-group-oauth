@@ -18,7 +18,7 @@ export function AdminSearchBox({
         className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint"
       />
       <input
-        className="input !py-2 !pl-9 text-sm"
+        className="input py-2! pl-9! text-sm"
         value={value}
         aria-label={placeholder}
         onChange={(e) => onChange(e.target.value)}

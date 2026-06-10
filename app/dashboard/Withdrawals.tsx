@@ -94,7 +94,7 @@ export function Withdrawals({
             <form action={action} className="mt-5 space-y-3">
               <div className="relative">
                 <input
-                  className="input !pr-16"
+                  className="input pr-16!"
                   name="amount"
                   aria-label={t.amountPlaceholder}
                   type="number"
@@ -165,7 +165,7 @@ export function Withdrawals({
                     </span>
                   </div>
                   <p className="mt-1 font-mono text-xs text-faint">{w.date}</p>
-                  <p className="mt-2 whitespace-pre-wrap break-words text-xs text-muted">
+                  <p className="mt-2 whitespace-pre-wrap wrap-break-word text-xs text-muted">
                     {w.payoutDetails}
                   </p>
                   {w.adminNote && (
@@ -195,7 +195,7 @@ function CancelWithdrawalForm({ id, t }: { id: string; t: WithdrawDict }) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="mt-3 btn btn-ghost !px-2.5 !py-1.5 text-xs"
+        className="mt-3 btn btn-ghost px-2.5! py-1.5! text-xs"
       >
         {t.cancel}
       </button>
@@ -210,11 +210,11 @@ function CancelWithdrawalForm({ id, t }: { id: string; t: WithdrawDict }) {
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="btn btn-ghost !px-2.5 !py-1.5 text-xs"
+          className="btn btn-ghost px-2.5! py-1.5! text-xs"
         >
           {t.statusCancelled}
         </button>
-        <button type="submit" className="btn btn-primary !px-2.5 !py-1.5 text-xs">
+        <button type="submit" className="btn btn-primary px-2.5! py-1.5! text-xs">
           {t.cancel}
         </button>
       </div>

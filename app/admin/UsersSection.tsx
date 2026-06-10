@@ -83,7 +83,7 @@ export function UsersSection({
                     <button
                       type="button"
                       onClick={() => onGrant(u.discordId)}
-                      className="btn btn-ghost !px-2.5 !py-1.5 text-xs"
+                      className="btn btn-ghost px-2.5! py-1.5! text-xs"
                     >
                       <Coins size={13} />
                       {t.grant}

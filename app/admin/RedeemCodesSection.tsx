@@ -64,7 +64,7 @@ export function RedeemCodesSection({
                   <div className="flex justify-end">
                     <form action={toggleRedeemCodeActive}>
                       <input type="hidden" name="id" value={c.id} />
-                      <button type="submit" className="btn btn-ghost !px-2.5 !py-1.5 text-xs">
+                      <button type="submit" className="btn btn-ghost px-2.5! py-1.5! text-xs">
                         {c.active ? t.disable : t.enable}
                       </button>
                     </form>

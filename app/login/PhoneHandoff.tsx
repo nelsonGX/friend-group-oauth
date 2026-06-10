@@ -158,12 +158,12 @@ export function PhoneHandoff({
             <p className="text-xs text-faint">{t.phoneHint}</p>
           </>
         ) : phase === "approved" ? (
-          <div className="grid h-[10.5rem] w-[10.5rem] place-items-center rounded-xl border border-success/30 bg-success/10 text-success">
+          <div className="grid h-42 w-42 place-items-center rounded-xl border border-success/30 bg-success/10 text-success">
             <Loader2 size={28} className="animate-spin" strokeWidth={1.8} />
           </div>
         ) : phase === "expired" || phase === "error" ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="grid h-[10.5rem] w-[10.5rem] place-items-center rounded-xl border border-dashed border-border bg-surface px-4 text-center text-xs text-faint">
+            <div className="grid h-42 w-42 place-items-center rounded-xl border border-dashed border-border bg-surface px-4 text-center text-xs text-faint">
               {phase === "expired" ? t.phoneExpired : t.phoneError}
             </div>
             <button
@@ -177,7 +177,7 @@ export function PhoneHandoff({
           </div>
         ) : (
           // starting
-          <div className="grid h-[10.5rem] w-[10.5rem] animate-pulse place-items-center rounded-xl border border-border bg-surface text-faint">
+          <div className="grid h-42 w-42 animate-pulse place-items-center rounded-xl border border-border bg-surface text-faint">
             <Loader2 size={24} className="animate-spin" strokeWidth={1.8} />
           </div>
         )}

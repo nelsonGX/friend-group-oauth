@@ -81,7 +81,7 @@ export function ProviderApps({
           {apps.map((app) => (
             <li key={app.id} className="card card-hover-border flex flex-col p-5">
               <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 break-words font-medium">{app.name}</span>
+                <span className="min-w-0 wrap-break-word font-medium">{app.name}</span>
                 <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
                   {!app.isActive && (
                     <span className="badge badge-danger">{a.disabled}</span>
@@ -101,7 +101,7 @@ export function ProviderApps({
                 <button
                   type="button"
                   onClick={() => setSelected(app)}
-                  className="btn btn-ghost !py-1.5 text-sm"
+                  className="btn btn-ghost py-1.5! text-sm"
                 >
                   <Settings2 size={15} />
                   {a.manage}

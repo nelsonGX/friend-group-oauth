@@ -345,7 +345,7 @@ export function OneShotPrompt({ prompt, t }: { prompt: string; t: FormsDict }) {
         <p className="text-xs text-muted">{t.pastePrompt}</p>
         <CopyButton text={prompt} t={t} />
       </div>
-      <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap break-words text-muted">
+      <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap wrap-break-word text-muted">
 {prompt}
       </pre>
     </div>

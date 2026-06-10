@@ -161,7 +161,7 @@ export default async function ExplorePage() {
             }}
           />
           {user.isAdmin && (
-            <Link href="/admin" className="btn btn-ghost !py-2 text-sm">
+            <Link href="/admin" className="btn btn-ghost py-2! text-sm">
               <Shield size={15} />
               {d.admin}
             </Link>
@@ -212,7 +212,7 @@ export default async function ExplorePage() {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="min-w-0 break-words font-medium leading-tight">
+                        <h3 className="min-w-0 wrap-break-word font-medium leading-tight">
                           {title}
                         </h3>
                         {connectedIds.has(app.clientId) && (
@@ -239,7 +239,7 @@ export default async function ExplorePage() {
                         href={app.websiteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-secondary shrink-0 !py-1.5 text-sm"
+                        className="btn btn-secondary shrink-0 py-1.5! text-sm"
                       >
                         <ExternalLink size={15} />
                         {e.visit}

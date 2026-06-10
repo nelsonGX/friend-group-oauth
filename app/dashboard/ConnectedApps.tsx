@@ -40,7 +40,7 @@ export function ConnectedApps({
               key={c.clientId}
               className="flex items-center justify-between gap-3 p-4"
             >
-              <span className="min-w-0 break-words text-sm font-medium">
+              <span className="min-w-0 wrap-break-word text-sm font-medium">
                 {c.name ?? c.clientId}
               </span>
               <button

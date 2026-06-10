@@ -126,7 +126,7 @@ export default async function AdminPage() {
             {t.admin.elevated}
           </span>
         </div>
-        <Link href="/dashboard" className="btn btn-ghost !py-2 text-sm">
+        <Link href="/dashboard" className="btn btn-ghost py-2! text-sm">
           <ArrowLeft size={15} />
           {t.admin.dashboard}
         </Link>

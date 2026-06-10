@@ -129,7 +129,7 @@ export function AppDetailsModal({
                 <p className="text-sm text-muted">{forms.pastePrompt}</p>
                 <CopyButton text={prompt} t={forms} />
               </div>
-              <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap break-words text-muted">
+              <pre className="sunken mt-2 max-h-72 overflow-auto p-3 font-mono text-xs whitespace-pre-wrap wrap-break-word text-muted">
 {prompt}
               </pre>
             </div>
