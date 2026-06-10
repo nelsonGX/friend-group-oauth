@@ -41,6 +41,12 @@ export async function GET() {
       device_authorization_endpoint: `${base}/api/manage/device/start`,
       device_poll_endpoint: `${base}/api/manage/device/poll`,
       device_verification_uri: `${base}/device`,
+
+      // Extension: hosted JSON data store (client-authenticated, server-to-server).
+      data_get_endpoint: `${base}/api/data/get`,
+      data_set_endpoint: `${base}/api/data/set`,
+      data_delete_endpoint: `${base}/api/data/delete`,
+      data_list_endpoint: `${base}/api/data/list`,
     },
     {
       headers: {

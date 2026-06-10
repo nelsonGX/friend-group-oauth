@@ -16,7 +16,8 @@
     "verify:credits": "tsx scripts/verify-credits.ts",
     "verify:devices": "tsx scripts/verify-devices.ts",
     "verify:redeem": "tsx scripts/verify-redeem.ts",
-    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem",
+    "verify:data": "tsx scripts/verify-data.ts",
+    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem && npm run verify:data",
     "doctor": "npx react-doctor@latest",
     "lint-css": "npx @tailwindcss/upgrade --force && npx tailwind-lint --fix"
   },

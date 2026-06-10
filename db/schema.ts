@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -396,6 +396,50 @@ export const withdrawals = pgTable(
   ],
 );
 
+/**
+ * Hosted JSON key–value store for provider apps ("database as a service").
+ *
+ * Each row is one JSON value addressed by `key` within a namespace owned by a
+ * client (the app). Two scopes share the table:
+ *  - app-global : `userId IS NULL` — data shared across the whole app.
+ *  - per-user   : `userId` set — data keyed to one of the app's users (the OAuth
+ *                 `sub`). Apps store/fetch it server-to-server with their client
+ *                 credentials.
+ *
+ * Uniqueness is enforced per scope by two PARTIAL unique indexes rather than one
+ * composite unique, because a nullable `userId` can't anchor a single key: in
+ * Postgres NULLs are distinct, so `(client_id, NULL, key)` would never collide
+ * and app-global keys could duplicate. Splitting on `userId IS [NOT] NULL` gives
+ * exactly one slot per (app, key) and per (app, user, key).
+ */
+export const appData = pgTable(
+  "app_data",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    /** Owning user for per-user data; NULL marks an app-global value. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    /** Arbitrary JSON; may legitimately be the JSON value `null`. */
+    value: jsonb("value").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("app_data_app_key_idx")
+      .on(t.clientId, t.key)
+      .where(sql`${t.userId} is null`),
+    uniqueIndex("app_data_user_key_idx")
+      .on(t.clientId, t.userId, t.key)
+      .where(sql`${t.userId} is not null`),
+    index("app_data_scope_idx").on(t.clientId, t.userId),
+  ],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   ledger: many(ledger),
@@ -446,3 +490,4 @@ export type LoginHandoff = typeof loginHandoffs.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;
 export type Redemption = typeof redemptions.$inferSelect;
 export type Withdrawal = typeof withdrawals.$inferSelect;
+export type AppDatum = typeof appData.$inferSelect;

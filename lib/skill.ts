@@ -271,6 +271,10 @@ it to auto-configure.
 | Create pay intent  | \`POST ${o.base}/api/pay/intent\`         |
 | User confirms pay  | \`GET  ${o.base}/pay?intent=…\`           |
 | Verify pay         | \`POST ${o.base}/api/pay/verify\`         |
+| Data get           | \`POST ${o.base}/api/data/get\`           |
+| Data set           | \`POST ${o.base}/api/data/set\`           |
+| Data delete        | \`POST ${o.base}/api/data/delete\`        |
+| Data list          | \`POST ${o.base}/api/data/list\`          |
 
 ## Hard rules
 - PKCE (S256) is **required** on the authorization request.
@@ -364,6 +368,38 @@ reveals a signing secret once. On settle we POST JSON with headers
 \`X-Webhook-Signature: t=<unix>,v1=<base64url HMAC-SHA256 of \\\`<t>.<rawBody>\\\`>\`.
 Verify the signature, de-dupe on the id, and still treat verify as authoritative.
 Delivery is best-effort.
+
+## Data store — store/fetch JSON (only if the app needs to persist data)
+**When to use this — read first.** This store is a *fallback for apps that have no
+database of their own*. If the project already has a database (Postgres, SQLite,
+Mongo, Supabase, an ORM, etc.), use that — do **not** reach for this. Only consider
+it when there is genuinely no datastore and the user would otherwise have to set
+one up. Before using it, **ask the user** ("Your app has no database — want me to
+use Friend Group Auth's hosted JSON store instead of setting one up?") and wait for
+a yes. Don't wire it in unprompted.
+
+A hosted JSON key–value store scoped to the app, for persisting data from a
+serverless/edge backend without its own database. Plain client-authenticated
+HTTPS + JSON (no driver/pool). **Server-to-server only — never call it from the
+browser.** Authenticate like the pay endpoints (client_id + client_secret in the
+JSON body, or HTTP Basic). Two scopes:
+- \`scope: "user"\` — keyed to one user; pass their \`sub\` (from userinfo) as
+  \`user_id\`. Per-user state/preferences/saves.
+- \`scope: "app"\` — one namespace shared across the whole app; omit \`user_id\`.
+
+Data is isolated per app. All endpoints are \`POST\` with a JSON body:
+- **Set** \`/api/data/set\` — \`{ client_id, client_secret, scope, user_id?, key, value }\`
+  → \`{ key, ok:true, updated_at }\` (upsert, last-write-wins).
+- **Get** \`/api/data/get\` — \`{ …, scope, user_id?, key }\`
+  → \`{ key, value, found }\` (\`value\` is null when \`found===false\`).
+- **Delete** \`/api/data/delete\` — \`{ …, scope, user_id?, key }\` → \`{ key, deleted }\`.
+- **List** \`/api/data/list\` — \`{ …, scope, user_id?, prefix?, limit?, cursor? }\`
+  → \`{ entries:[{ key, value, updated_at }], next_cursor }\` (ordered by key; page
+  by passing \`next_cursor\` back as \`cursor\` until it's null).
+
+\`value\` may be any JSON (including \`null\`) — use \`found\` to tell a stored null
+from a missing key. Limits: key ≤ 256 chars, value ≤ 256 KB JSON-encoded; bad
+input → \`400 invalid_request\`, bad creds → \`401 invalid_client\`.
 
 ## Gotchas
 - \`redirect_uri\` mismatch (scheme/host/path) is the most common failure.

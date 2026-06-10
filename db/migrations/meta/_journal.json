@@ -71,6 +71,13 @@
       "when": 1781032836564,
       "tag": "0009_lying_emma_frost",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781076239288,
+      "tag": "0010_aspiring_callisto",
+      "breakpoints": true
     }
   ]
 }

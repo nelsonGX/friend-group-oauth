@@ -59,26 +59,54 @@ export async function authenticateClient(
   return client;
 }
 
+export interface ClientCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
+/** Decode HTTP Basic credentials (client_secret_basic), or null if absent. */
+function parseBasicAuth(request: Request): ClientCredentials | null {
+  const auth = request.headers.get("authorization");
+  if (!auth?.startsWith("Basic ")) return null;
+  const decoded = Buffer.from(auth.slice(6), "base64").toString("utf8");
+  const i = decoded.indexOf(":");
+  if (i < 0) return null;
+  return {
+    clientId: decodeURIComponent(decoded.slice(0, i)),
+    clientSecret: decodeURIComponent(decoded.slice(i + 1)),
+  };
+}
+
 /** Read client credentials from HTTP Basic auth or the form body. */
 export function getClientCredentials(
   request: Request,
   form: FormData,
-): { clientId: string; clientSecret: string } {
-  const auth = request.headers.get("authorization");
-  if (auth?.startsWith("Basic ")) {
-    const decoded = Buffer.from(auth.slice(6), "base64").toString("utf8");
-    const i = decoded.indexOf(":");
-    if (i >= 0) {
-      return {
-        clientId: decodeURIComponent(decoded.slice(0, i)),
-        clientSecret: decodeURIComponent(decoded.slice(i + 1)),
-      };
+): ClientCredentials {
+  return (
+    parseBasicAuth(request) ?? {
+      clientId: form.get("client_id")?.toString() ?? "",
+      clientSecret: form.get("client_secret")?.toString() ?? "",
     }
-  }
-  return {
-    clientId: form.get("client_id")?.toString() ?? "",
-    clientSecret: form.get("client_secret")?.toString() ?? "",
-  };
+  );
+}
+
+/**
+ * Read client credentials from HTTP Basic auth or a parsed JSON body. The JSON
+ * data-store endpoints accept either client_secret_basic or `client_id`/
+ * `client_secret` fields in the body (client_secret_post), mirroring the
+ * form-encoded OAuth/pay endpoints.
+ */
+export function getClientCredentialsJson(
+  request: Request,
+  body: Record<string, unknown>,
+): ClientCredentials {
+  return (
+    parseBasicAuth(request) ?? {
+      clientId: typeof body.client_id === "string" ? body.client_id : "",
+      clientSecret:
+        typeof body.client_secret === "string" ? body.client_secret : "",
+    }
+  );
 }
 
 export interface AuthorizeParams {

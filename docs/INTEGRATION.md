@@ -473,6 +473,123 @@ webhook is always recoverable via verify. Respond `2xx` to acknowledge.
 
 ---
 
+## 4. Data store (JSON key–value)
+
+A hosted JSON key–value store scoped to your app, so a serverless/edge backend
+(Cloudflare Workers, Vercel, Deno Deploy) can persist data without standing up
+its own database. It's plain client-authenticated HTTPS + JSON — **no driver, no
+connection pool**, just `fetch`. Two scopes:
+
+- **`user`** — data keyed to one of your users (pass their `sub` from userinfo as
+  `user_id`). Use it for per-user state, preferences, saves.
+- **`app`** — a single namespace shared across your whole app (config, shared
+  lists, counters).
+
+Data is isolated per app: one app can never read another's keys. Authenticate the
+same way as the pay endpoints — `client_id`/`client_secret` in the JSON body, or
+HTTP Basic. **These are server-to-server calls; never expose `client_secret` to
+the browser.**
+
+### Endpoints
+
+All are `POST` with a JSON body and return JSON.
+
+| Purpose | Method & path |
+| ------- | ------------- |
+| Get a key    | `POST AUTH/api/data/get`    |
+| Set a key    | `POST AUTH/api/data/set`    |
+| Delete a key | `POST AUTH/api/data/delete` |
+| List a scope | `POST AUTH/api/data/list`   |
+
+### Get / Set / Delete
+
+```jsonc
+// POST AUTH/api/data/set
+{
+  "client_id": "…", "client_secret": "…",
+  "scope": "user",            // "user" | "app"
+  "user_id": "uuid",          // required when scope=user (the user's `sub`); omit for app
+  "key": "preferences",       // 1–256 chars
+  "value": { "theme": "dark" } // any JSON, including null
+}
+// -> { "key": "preferences", "ok": true, "updated_at": "2026-06-10T12:00:00.000Z" }
+```
+
+```jsonc
+// POST AUTH/api/data/get   (same auth + scope/user_id/key, no value)
+// -> { "key": "preferences", "value": { "theme": "dark" }, "found": true }
+//    missing key -> { "key": "preferences", "value": null, "found": false }
+```
+
+```jsonc
+// POST AUTH/api/data/delete   (same auth + scope/user_id/key)
+// -> { "key": "preferences", "deleted": true }   // false if it didn't exist
+```
+
+`set` is an upsert (last-write-wins). `value` may be any JSON value — objects,
+arrays, strings, numbers, booleans, or `null`. Use `found` (not `value`) to tell
+"stored `null`" apart from "no such key".
+
+### List
+
+```jsonc
+// POST AUTH/api/data/list
+{
+  "client_id": "…", "client_secret": "…",
+  "scope": "app",
+  "prefix": "item:",   // optional: only keys starting with this
+  "limit": 100,        // optional: 1–1000, default 100
+  "cursor": null       // optional: pass back next_cursor for the next page
+}
+// -> {
+//      "entries": [ { "key": "item:1", "value": { … }, "updated_at": "…" }, … ],
+//      "next_cursor": "item:100"   // null when there are no more pages
+//    }
+```
+
+Entries are ordered by key ascending. Keep calling with `cursor = next_cursor`
+until `next_cursor` is `null`.
+
+### Limits & errors
+
+- Key: 1–256 characters. Value: ≤ 256 KB JSON-encoded.
+- A bad `scope`/`user_id`, oversized key/value, missing `value` on set, or an
+  unknown `user_id` returns `400 invalid_request` with an `error_description`.
+- Bad credentials return `401 invalid_client`.
+
+### Node / edge example
+
+```js
+const AUTH = process.env.AUTH_BASE_URL;
+const auth = { client_id: process.env.CLIENT_ID, client_secret: process.env.CLIENT_SECRET };
+
+async function dataSet(scope, key, value, userId) {
+  const res = await fetch(`${AUTH}/api/data/set`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...auth, scope, user_id: userId, key, value }),
+  });
+  if (!res.ok) throw new Error(`data set failed: ${res.status}`);
+  return res.json();
+}
+
+async function dataGet(scope, key, userId) {
+  const res = await fetch(`${AUTH}/api/data/get`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...auth, scope, user_id: userId, key }),
+  });
+  const { value, found } = await res.json();
+  return found ? value : undefined;
+}
+
+// per-user: pass the user's `sub`; app-global: omit user_id and use scope "app".
+await dataSet("user", "preferences", { theme: "dark" }, user.sub);
+await dataSet("app", "config", { maintenance: false });
+```
+
+---
+
 ## Notes & gotchas
 
 - `redirect_uri` must **exactly** match a registered URI (scheme, host, path).
@@ -482,3 +599,5 @@ webhook is always recoverable via verify. Respond `2xx` to acknowledge.
   this server — price in credits at that rate; don't apply your own conversion.
 - A user can have `allowed: false` even while logged in (left the server / lost
   the role). Re-check `allowed` on each login.
+- The data store is per-app isolated and server-to-server only — its keys are not
+  shared between apps, and `client_secret` must stay on your backend.

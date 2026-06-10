@@ -8,6 +8,9 @@ system**, built for a Discord friend group that shares self-hosted tools.
   standard OAuth client library.
 - **Credits**: users hold a balance (admins top up manually); provider sites
   charge against it through a hosted confirm flow.
+- **Data store**: a hosted JSON key–value store (per-user and app-global) so
+  provider apps on edge/serverless runtimes can persist data without their own
+  database — plain client-authenticated HTTPS, no driver.
 
 Integrating a site? The fastest path is the **integration skill**: sign in at
 `/dashboard`, open *One-click integration*, and run the one-line install command
@@ -120,7 +123,7 @@ URI matches.
 ```
 app/                # routes: login, oauth/authorize, pay, dashboard, admin, api/*
 db/                 # Drizzle schema, client, migrations
-lib/                # env, session, discord, crypto, oauth, credits, payments, admin
+lib/                # env, session, discord, crypto, oauth, credits, payments, data, admin
 scripts/            # PGlite-backed verification harness + suites
 docs/               # integration guide + LLM agent prompt
 proxy.ts            # auth gate for /dashboard and /admin

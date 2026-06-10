@@ -121,6 +121,45 @@ same number of credits on every platform.
    keyed by the webhook signing secret>. Verify the signature, de-dupe on the id,
    and still treat /api/pay/verify as authoritative. Delivery is best-effort.
 
+## DATA — store/fetch JSON (optional)
+
+**When to use this — read first.** This store is a *fallback for apps that have
+no database of their own*. If my project already has a database (Postgres, SQLite,
+Mongo, Supabase, an ORM, etc.), use that — do NOT reach for this. Only consider it
+when there is genuinely no datastore and I'd otherwise have to set one up. Before
+using it, **ASK ME** ("Your app has no database — want me to use Friend Group
+Auth's hosted JSON store instead of setting one up?") and wait for a yes. Don't
+wire it in unprompted.
+
+A hosted JSON key-value store scoped to my app, for persisting data from a
+serverless/edge backend without its own database. Plain client-authenticated
+HTTPS + JSON (no driver/pool). Server-to-server only — never call it from the
+browser. Two scopes:
+- scope="user": data keyed to one of my users — pass their `sub` (from userinfo)
+  as `user_id`. For per-user state/preferences/saves.
+- scope="app": one namespace shared across the whole app. Omit `user_id`.
+Data is isolated per app. Authenticate like the pay endpoints (client_id +
+client_secret in the JSON body, or HTTP Basic).
+
+All endpoints are POST with a JSON body:
+- Set:    POST {AUTH_BASE_URL}/api/data/set
+          { client_id, client_secret, scope, user_id?, key, value }
+          -> { key, ok:true, updated_at }   (upsert, last-write-wins)
+- Get:    POST {AUTH_BASE_URL}/api/data/get
+          { client_id, client_secret, scope, user_id?, key }
+          -> { key, value, found }          (value is null when found===false)
+- Delete: POST {AUTH_BASE_URL}/api/data/delete
+          { client_id, client_secret, scope, user_id?, key }
+          -> { key, deleted }
+- List:   POST {AUTH_BASE_URL}/api/data/list
+          { client_id, client_secret, scope, user_id?, prefix?, limit?, cursor? }
+          -> { entries:[{ key, value, updated_at }], next_cursor }
+          (ordered by key; page by passing next_cursor back as cursor until null)
+
+`value` may be any JSON (including null) — use `found` to distinguish a stored
+null from a missing key. Limits: key ≤ 256 chars, value ≤ 256 KB JSON-encoded;
+bad input -> 400 invalid_request, bad creds -> 401 invalid_client.
+
 ## Deliverables
 - A login route that redirects to /oauth/authorize with a fresh PKCE pair + state.
 - A callback route that verifies state, exchanges the code, calls userinfo,
