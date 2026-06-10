@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { Coins } from "lucide-react";
 import { AdminSearchBox } from "./AdminSearchBox";
+import { UserHistory } from "./UserHistory";
 import type { AdminUserRow } from "./AdminTypes";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
@@ -79,7 +80,8 @@ export function UsersSection({
                 </td>
                 <td className="p-4 text-right tabular-nums">{u.balance}</td>
                 <td className="p-4">
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-1.5">
+                    <UserHistory discordId={u.discordId} name={u.name} t={t} />
                     <button
                       type="button"
                       onClick={() => onGrant(u.discordId)}

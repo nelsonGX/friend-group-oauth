@@ -7,7 +7,8 @@ import { clients, users } from "@/db/schema";
 import { auth } from "@/lib/session";
 import { getDictionary } from "@/lib/i18n";
 import { format } from "@/lib/i18n/format";
-import { adjustBalance } from "@/lib/credits";
+import { adjustBalance, getActivity, getBalance } from "@/lib/credits";
+import { activityLabel } from "@/lib/activity";
 import {
   markWithdrawalPaid as markWithdrawalPaidLib,
   rejectWithdrawal as rejectWithdrawalLib,
@@ -71,6 +72,61 @@ export async function grantCredits(
       user: target.username,
       balance: result.balance,
     }),
+  };
+}
+
+export interface UserHistoryEntry {
+  id: string;
+  time: string;
+  label: string;
+  delta: number;
+}
+
+export type UserHistoryResult =
+  | { ok: true; name: string; balance: number; entries: UserHistoryEntry[] }
+  | { ok: false; message: string };
+
+/**
+ * The full ledger for a member, resolved into display rows. Admin-only and read
+ * on demand (when the row's history popup opens) so the admin table itself stays
+ * cheap — we don't pre-load every user's transactions up front.
+ */
+export async function fetchUserHistory(
+  discordId: string,
+): Promise<UserHistoryResult> {
+  const { t } = await getDictionary();
+  const d = t.adminActions;
+  const user = await auth();
+  if (!user?.isAdmin) return { ok: false, message: d.notAuthorized };
+
+  const id = discordId.trim();
+  if (!id) return { ok: false, message: d.provideIdAndAmount };
+
+  const db = getDb();
+  const [target] = await db
+    .select()
+    .from(users)
+    .where(eq(users.discordId, id))
+    .limit(1);
+  if (!target) return { ok: false, message: d.noUserWithId };
+
+  // A generous cap rather than paging: enough to be the member's whole history
+  // in practice for a friend-group ledger, without an unbounded scan.
+  const [balance, entries] = await Promise.all([
+    getBalance(target.id),
+    getActivity(target.id, 1000),
+  ]);
+
+  return {
+    ok: true,
+    name: target.globalName ?? target.username,
+    balance,
+    entries: entries.map((entry) => ({
+      id: entry.id,
+      time: entry.createdAt.toISOString().slice(0, 16).replace("T", " "),
+      label: activityLabel(entry, t.dashboard),
+      delta: entry.delta,
+    })),
   };
 }
 
