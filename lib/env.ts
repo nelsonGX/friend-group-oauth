@@ -59,4 +59,28 @@ export const env = {
   get DISCORD_REDIRECT_URI(): string {
     return `${this.APP_URL}/api/auth/discord/callback`;
   },
+
+  // --- Crypto (USDT) top-ups ---
+
+  /**
+   * Account-level extended PUBLIC key (BIP44 `m/44'/60'/0'`) of the wallet that
+   * receives USDT top-ups. Per-member deposit addresses are derived from this
+   * watch-only — the server never holds private keys.
+   */
+  get USDT_HD_XPUB(): string {
+    return required("USDT_HD_XPUB");
+  },
+  /** Shared secret that authorizes the background top-up poller endpoint. */
+  get TOPUP_POLL_SECRET(): string {
+    return required("TOPUP_POLL_SECRET");
+  },
+  /**
+   * Whether top-ups are configured. Lets the UI hide the feature (and the poller
+   * no-op) when the xpub / poll secret aren't set, without throwing. Deposit
+   * scanning uses public RPCs (no API key required), optionally overridden per
+   * chain via `EVM_RPC_<chainId>`.
+   */
+  get TOPUPS_ENABLED(): boolean {
+    return Boolean(process.env.USDT_HD_XPUB && process.env.TOPUP_POLL_SECRET);
+  },
 };

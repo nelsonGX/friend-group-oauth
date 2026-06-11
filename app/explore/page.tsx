@@ -11,8 +11,10 @@ import { getDictionary } from "@/lib/i18n";
 import { getBalance, getActivity } from "@/lib/credits";
 import { activityLabel } from "@/lib/activity";
 import { ConnectedApps } from "../dashboard/ConnectedApps";
+import { getTopupConfig } from "@/lib/topups";
 import { WalletActions } from "./WalletActions";
 import { RedeemCode } from "./RedeemCode";
+import { TopUpPanel } from "./TopUpPanel";
 import { CreditBalance } from "./CreditBalance";
 import { ExploreDirectory, type AppCategory } from "./ExploreDirectory";
 
@@ -79,6 +81,7 @@ export default async function ExplorePage() {
     listedQuery,
   ]);
   const connectedIds = new Set(connected.map((c) => c.clientId));
+  const topupEnabled = getTopupConfig().enabled;
 
   const d = t.dashboard;
   const e = t.explore;
@@ -177,6 +180,7 @@ export default async function ExplorePage() {
         </section>
 
         <aside className="reveal space-y-6 lg:sticky lg:top-20" style={{ animationDelay: "120ms" }}>
+          {user.allowed && topupEnabled && <TopUpPanel t={e.topup} />}
           {user.allowed && <RedeemCode t={e.redeem} />}
           {user.allowed && <WalletActions t={e.wallet} />}
           <ConnectedApps

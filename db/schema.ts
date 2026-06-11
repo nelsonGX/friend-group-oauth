@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -495,6 +496,91 @@ export const withdrawals = pgTable(
 );
 
 /**
+ * A member's personal USDT deposit address for crypto top-ups.
+ *
+ * Each member is assigned one address, derived watch-only from a configured
+ * account-level extended public key (`USDT_HD_XPUB`) at a unique, monotonically
+ * assigned `derivationIndex` (BIP44 `m/44'/60'/0'/0/index`). Because EVM
+ * addresses are deterministic from the key, the SAME address receives USDT on
+ * every supported chain. The server never holds private keys — funds are swept
+ * off-platform with the seed kept offline.
+ *
+ * The address is stored lowercased (its canonical form for matching); display
+ * code applies an EIP-55 checksum.
+ */
+export const cryptoDepositAddresses = pgTable(
+  "crypto_deposit_addresses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** BIP44 child index this address was derived at (unique, never reused). */
+    derivationIndex: integer("derivation_index").notNull().unique(),
+    /** The derived EVM address, lowercased. Same on every supported chain. */
+    address: text("address").notNull().unique(),
+    ...timestamps,
+  },
+  (t) => [
+    check("crypto_deposit_addresses_index_nonnegative", sql`${t.derivationIndex} >= 0`),
+  ],
+);
+
+/**
+ * A settled incoming USDT deposit, recorded when the poller observes a confirmed
+ * transfer to a member's deposit address. Credits granted are
+ * floor(USDT × 32) — the fixed 1 USDT = 32 credits rate, sub-credit dust ignored
+ * — written as a single `topup` ledger row keyed on `topup:<chainId>:<txHash>`.
+ *
+ * The unique (chainId, txHash) index makes settlement idempotent: re-observing a
+ * transfer on later polls never double-credits.
+ */
+export const cryptoDeposits = pgTable(
+  "crypto_deposits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** EVM chain the deposit landed on. */
+    chainId: integer("chain_id").notNull(),
+    /** Transaction hash of the transfer, lowercased. */
+    txHash: text("tx_hash").notNull(),
+    /** Sender address, lowercased — recorded for reference. */
+    fromAddress: text("from_address"),
+    /** Amount received, in 6-decimal micro-USDT. */
+    valueMicros: bigint("value_micros", { mode: "number" }).notNull(),
+    /** Credits granted for this deposit (floor of USDT × 32). */
+    credits: integer("credits").notNull(),
+    /** Block the transfer was mined in (for reference / ordering). */
+    blockNumber: bigint("block_number", { mode: "number" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("crypto_deposits_user_id_idx").on(t.userId),
+    uniqueIndex("crypto_deposits_chain_tx_idx").on(t.chainId, t.txHash),
+    check("crypto_deposits_value_micros_positive", sql`${t.valueMicros} > 0`),
+    check("crypto_deposits_credits_positive", sql`${t.credits} > 0`),
+  ],
+);
+
+/**
+ * Per-chain cursor for the deposit scanner: the last block we've fully scanned
+ * for USDT transfers. The poller resumes from here each run (scanning up to
+ * tip − minConfirmations), so deposits aren't missed across restarts and old
+ * history isn't re-scanned. Settlement is idempotent regardless, so a reset or
+ * overlap is safe.
+ */
+export const cryptoScanState = pgTable("crypto_scan_state", {
+  chainId: integer("chain_id").primaryKey(),
+  lastBlock: bigint("last_block", { mode: "number" }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+/**
  * Hosted JSON key–value store for provider apps ("database as a service").
  *
  * Each row is one JSON value addressed by `key` within a namespace owned by a
@@ -543,6 +629,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   ledger: many(ledger),
   appLedger: many(appLedger),
   withdrawals: many(withdrawals),
+  cryptoDeposits: many(cryptoDeposits),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -586,6 +673,20 @@ export const withdrawalsRelations = relations(withdrawals, ({ one }) => ({
   }),
 }));
 
+export const cryptoDepositAddressesRelations = relations(
+  cryptoDepositAddresses,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [cryptoDepositAddresses.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const cryptoDepositsRelations = relations(cryptoDeposits, ({ one }) => ({
+  user: one(users, { fields: [cryptoDeposits.userId], references: [users.id] }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type LedgerEntry = typeof ledger.$inferSelect;
@@ -595,4 +696,7 @@ export type LoginHandoff = typeof loginHandoffs.$inferSelect;
 export type RedeemCode = typeof redeemCodes.$inferSelect;
 export type Redemption = typeof redemptions.$inferSelect;
 export type Withdrawal = typeof withdrawals.$inferSelect;
+export type CryptoDepositAddress = typeof cryptoDepositAddresses.$inferSelect;
+export type CryptoDeposit = typeof cryptoDeposits.$inferSelect;
+export type CryptoScanState = typeof cryptoScanState.$inferSelect;
 export type AppDatum = typeof appData.$inferSelect;

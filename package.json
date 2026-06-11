@@ -17,11 +17,15 @@
     "verify:devices": "tsx scripts/verify-devices.ts",
     "verify:redeem": "tsx scripts/verify-redeem.ts",
     "verify:data": "tsx scripts/verify-data.ts",
-    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem && npm run verify:data",
+    "verify:topups": "tsx scripts/verify-topups.ts",
+    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem && npm run verify:data && npm run verify:topups",
     "doctor": "npx react-doctor@latest",
     "lint-css": "npx @tailwindcss/upgrade --force && npx tailwind-lint --fix"
   },
   "dependencies": {
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "@scure/bip32": "^2.2.0",
     "@tanem/react-nprogress": "^6.0.3",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.3",
