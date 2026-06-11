@@ -20,6 +20,7 @@ export async function POST() {
         return {
           id: d.id,
           network: chain?.name ?? String(d.chainId),
+          token: d.token,
           amount: microsToUsdtString(d.valueMicros),
           credits: d.credits,
           time: d.createdAt.toISOString().slice(0, 16).replace("T", " "),

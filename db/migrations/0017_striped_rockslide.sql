@@ -1,0 +1,1 @@
+ALTER TABLE "crypto_deposits" ADD COLUMN "token" text DEFAULT 'USDT' NOT NULL;

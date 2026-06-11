@@ -26,7 +26,9 @@ export interface IncomingTransfer {
   from: string;
   /** Recipient (one of our deposit addresses), lowercased. */
   toAddress: string;
-  /** Amount received, normalized to 6-decimal micro-USDT. */
+  /** Which stablecoin — "USDT" or "USDC". */
+  token: string;
+  /** Amount received, normalized to 6-decimal micros. */
   valueMicros: number;
   blockNumber: number;
 }
@@ -97,6 +99,9 @@ export async function getTransfersTo(
 
   const topicTo = addresses.map(addressTopic);
   const known = new Set(addresses.map((a) => a.toLowerCase()));
+  // Look up token (symbol + decimals) by the contract that emitted the log.
+  const tokenByAddress = new Map(chain.tokens.map((t) => [t.address.toLowerCase(), t]));
+  const tokenAddresses = chain.tokens.map((t) => t.address);
   const out: IncomingTransfer[] = [];
 
   let start = fromBlock;
@@ -107,7 +112,7 @@ export async function getTransfersTo(
     try {
       logs = (await rpcCall(chain, "eth_getLogs", [
         {
-          address: chain.usdtContract,
+          address: tokenAddresses,
           topics: [TRANSFER_TOPIC, null, topicTo],
           fromBlock: `0x${start.toString(16)}`,
           toBlock: `0x${end.toString(16)}`,
@@ -118,18 +123,29 @@ export async function getTransfersTo(
         span = Math.max(MIN_CHUNK, Math.floor(span / 2));
         continue;
       }
+      // Public nodes prune old logs; once we've shrunk to MIN_CHUNK and still
+      // fail because the range predates retention, skip it and keep going so the
+      // recent (retained) blocks — where any real deposit is — still get scanned.
+      if (isPrunedHistory(err)) {
+        start = end + 1;
+        span = DEFAULT_CHUNK;
+        continue;
+      }
       throw err;
     }
 
     for (const log of logs) {
       const to = `0x${log.topics[2]?.slice(26).toLowerCase()}`;
       if (!known.has(to)) continue;
+      const token = tokenByAddress.get(log.address?.toLowerCase());
+      if (!token) continue; // a contract we didn't ask for — ignore
       const raw = log.data && log.data !== "0x" ? log.data : "0x0";
       out.push({
         txHash: (log.transactionHash ?? "").toLowerCase(),
         from: `0x${log.topics[1]?.slice(26).toLowerCase()}`,
         toAddress: to,
-        valueMicros: toMicros(raw, chain.decimals),
+        token: token.symbol,
+        valueMicros: toMicros(raw, token.decimals),
         blockNumber: parseInt(log.blockNumber, 16) || 0,
       });
     }
@@ -140,7 +156,15 @@ export async function getTransfersTo(
   return out;
 }
 
+/** Whether an RPC error means the requested blocks are older than the node keeps. */
+function isPrunedHistory(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return /prun|history|not available|missing trie|older than|out of range|exceed/.test(msg);
+}
+
 interface RpcLog {
+  /** The contract that emitted the log (which token). */
+  address: string;
   topics: string[];
   data: string;
   transactionHash: string;

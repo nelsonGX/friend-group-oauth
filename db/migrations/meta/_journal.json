@@ -120,6 +120,13 @@
       "when": 1781173895364,
       "tag": "0016_aberrant_true_believers",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1781176236920,
+      "tag": "0017_striped_rockslide",
+      "breakpoints": true
     }
   ]
 }

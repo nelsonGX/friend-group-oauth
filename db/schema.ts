@@ -545,6 +545,8 @@ export const cryptoDeposits = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     /** EVM chain the deposit landed on. */
     chainId: integer("chain_id").notNull(),
+    /** Which stablecoin was received — "USDT" or "USDC". */
+    token: text("token").notNull().default("USDT"),
     /** Transaction hash of the transfer, lowercased. */
     txHash: text("tx_hash").notNull(),
     /** Sender address, lowercased — recorded for reference. */

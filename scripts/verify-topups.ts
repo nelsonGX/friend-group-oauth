@@ -60,6 +60,7 @@ async function main() {
   const unconfirmed = await settleDeposit({
     chainId: 1,
     toAddress: a1,
+    token: "USDT",
     txHash: "0xAAA",
     fromAddress: "0xsender",
     valueMicros: 1_000_000,
@@ -73,6 +74,7 @@ async function main() {
   const dust = await settleDeposit({
     chainId: 1,
     toAddress: a1,
+    token: "USDC",
     txHash: "0xDUST",
     fromAddress: "0xsender",
     valueMicros: 10_000, // 0.01 USDT → 0 credits
@@ -85,6 +87,7 @@ async function main() {
   const ok1 = await settleDeposit({
     chainId: 1,
     toAddress: a1,
+    token: "USDT",
     txHash: "0xTX1",
     fromAddress: "0xSender",
     valueMicros: 1_000_000, // 1 USDT
@@ -99,6 +102,7 @@ async function main() {
   const ok2 = await settleDeposit({
     chainId: 56,
     toAddress: a1,
+    token: "USDC",
     txHash: "0xTX2",
     fromAddress: "0xSender",
     valueMicros: 2_000_001, // 2.000001 USDT → 64 credits (1 micro dust dropped)
@@ -112,6 +116,7 @@ async function main() {
   const replay = await settleDeposit({
     chainId: 1,
     toAddress: a1,
+    token: "USDT",
     txHash: "0xTX1",
     fromAddress: "0xSender",
     valueMicros: 1_000_000,
@@ -125,6 +130,7 @@ async function main() {
   const otherChain = await settleDeposit({
     chainId: 137,
     toAddress: a1,
+    token: "USDC",
     txHash: "0xTX1",
     fromAddress: "0xSender",
     valueMicros: 1_000_000,
@@ -138,6 +144,7 @@ async function main() {
   const stranger = await settleDeposit({
     chainId: 1,
     toAddress: "0x000000000000000000000000000000000000beef",
+    token: "USDT",
     txHash: "0xTX9",
     fromAddress: "0xSender",
     valueMicros: 1_000_000,
@@ -150,6 +157,7 @@ async function main() {
   const toBob = await settleDeposit({
     chainId: 1,
     toAddress: bAddr,
+    token: "USDT",
     txHash: "0xBOB1",
     fromAddress: "0xSender",
     valueMicros: 1_000_000,
@@ -167,6 +175,7 @@ async function main() {
     .from(schema.cryptoDeposits)
     .where(and(eq(schema.cryptoDeposits.userId, alice.id), eq(schema.cryptoDeposits.chainId, 137)));
   check("deposit row stores credits + value", crossChain.credits === 32 && crossChain.valueMicros === 1_000_000);
+  check("deposit row records the token", crossChain.token === "USDC");
 
   summarize();
 }

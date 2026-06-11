@@ -132,6 +132,7 @@ export type SettleResult =
 export async function settleDeposit(opts: {
   chainId: number;
   toAddress: string;
+  token: string;
   txHash: string;
   fromAddress: string | null;
   valueMicros: number;
@@ -175,13 +176,14 @@ export async function settleDeposit(opts: {
       providerId: null,
       delta: credits,
       kind: "topup",
-      reason: `USDT top-up · ${microsToUsdtString(opts.valueMicros)} USDT on ${chain.name}`,
+      reason: `${opts.token} top-up · ${microsToUsdtString(opts.valueMicros)} ${opts.token} on ${chain.name}`,
       ref: `topup:${opts.chainId}:${txHash}`,
     });
 
     await tx.insert(cryptoDeposits).values({
       userId: addr.userId,
       chainId: opts.chainId,
+      token: opts.token,
       txHash,
       fromAddress: opts.fromAddress?.toLowerCase() ?? null,
       valueMicros: opts.valueMicros,
@@ -238,6 +240,7 @@ export async function pollChain(chainId: number): Promise<PollSummary> {
     const r = await settleDeposit({
       chainId,
       toAddress: t.toAddress,
+      token: t.token,
       txHash: t.txHash,
       fromAddress: t.from,
       valueMicros: t.valueMicros,

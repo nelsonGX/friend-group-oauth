@@ -11,6 +11,7 @@ type TopupDict = Dictionary["topup"];
 export interface DepositRow {
   id: string;
   network: string;
+  token: string;
   amount: string;
   credits: number;
   time: string;
@@ -179,7 +180,9 @@ export function DepositView({
                   <tr key={d.id} className="border-b border-border/60">
                     <td className="py-2.5 pr-4 text-muted">{d.time}</td>
                     <td className="py-2.5 pr-4 text-muted">{d.network}</td>
-                    <td className="py-2.5 pr-4 font-mono text-xs">{d.amount}</td>
+                    <td className="py-2.5 pr-4 font-mono text-xs">
+                      {d.amount} {d.token}
+                    </td>
                     <td className="py-2.5 pr-4 font-medium text-success">+{d.credits}</td>
                     <td className="py-2.5">
                       {d.txUrl ? (
