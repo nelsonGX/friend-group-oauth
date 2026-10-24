@@ -69,52 +69,40 @@ export function getTopupConfig(): TopupConfig {
 
 /**
  * The member's deposit address, creating (deriving + storing) it on first use.
- * Idempotent: the unique `userId` row means repeat calls return the same address.
- * A fresh index is assigned as max(index)+1 under a retry on the unique index, so
- * concurrent first-time creations can't collide on an index.
+ * Idempotent: repeat calls return the same address. Creation runs under a
+ * transaction-scoped advisory lock, so concurrent first-time calls neither
+ * collide on max(index)+1 nor give one member two addresses. A member merged by
+ * an account migration may own several; the lowest index is their primary.
  */
 export async function getOrCreateDepositAddress(userId: string): Promise<string> {
   const db = getDb();
+  const primary = (q: Pick<typeof db, "select">) =>
+    q
+      .select({ address: cryptoDepositAddresses.address })
+      .from(cryptoDepositAddresses)
+      .where(eq(cryptoDepositAddresses.userId, userId))
+      .orderBy(cryptoDepositAddresses.derivationIndex)
+      .limit(1);
 
-  const [existing] = await db
-    .select({ address: cryptoDepositAddresses.address })
-    .from(cryptoDepositAddresses)
-    .where(eq(cryptoDepositAddresses.userId, userId))
-    .limit(1);
+  const [existing] = await primary(db);
   if (existing) return existing.address;
 
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const [{ next }] = await db
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('crypto_deposit_addresses'))`);
+    const [now] = await primary(tx);
+    if (now) return now.address;
+
+    const [{ next }] = await tx
       .select({
         next: sql<number>`cast(coalesce(max(${cryptoDepositAddresses.derivationIndex}), -1) + 1 as int)`,
       })
       .from(cryptoDepositAddresses);
     const address = deriveDepositAddress(next).toLowerCase();
-    try {
-      await db
-        .insert(cryptoDepositAddresses)
-        .values({ userId, derivationIndex: next, address });
-      return address;
-    } catch (err) {
-      if (!isUniqueViolation(err)) throw err;
-      // Either this user got an address concurrently, or the index was taken.
-      const [now] = await db
-        .select({ address: cryptoDepositAddresses.address })
-        .from(cryptoDepositAddresses)
-        .where(eq(cryptoDepositAddresses.userId, userId))
-        .limit(1);
-      if (now) return now.address;
-      // Index race — recompute max+1 and retry.
-    }
-  }
-  throw new Error("Could not assign a deposit address.");
-}
-
-/** True if a thrown DB error is a Postgres unique-constraint violation (23505). */
-function isUniqueViolation(err: unknown): boolean {
-  const code = (err as { code?: string })?.code;
-  const causeCode = (err as { cause?: { code?: string } })?.cause?.code;
-  return code === "23505" || causeCode === "23505";
+    await tx
+      .insert(cryptoDepositAddresses)
+      .values({ userId, derivationIndex: next, address });
+    return address;
+  });
 }
 
 export type SettleResult =

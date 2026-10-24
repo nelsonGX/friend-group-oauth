@@ -1,0 +1,2 @@
+ALTER TABLE "crypto_deposit_addresses" DROP CONSTRAINT "crypto_deposit_addresses_user_id_unique";--> statement-breakpoint
+CREATE INDEX "crypto_deposit_addresses_user_id_idx" ON "crypto_deposit_addresses" USING btree ("user_id");

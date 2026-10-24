@@ -507,6 +507,11 @@ export const withdrawals = pgTable(
  *
  * The address is stored lowercased (its canonical form for matching); display
  * code applies an EIP-55 checksum.
+ *
+ * A member normally has exactly one address, but an account migration that
+ * merges two members keeps both of their addresses (deposits to either must
+ * still be credited), so `userId` is not unique; the lowest index is the one
+ * shown on the top-up page.
  */
 export const cryptoDepositAddresses = pgTable(
   "crypto_deposit_addresses",
@@ -514,7 +519,6 @@ export const cryptoDepositAddresses = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id")
       .notNull()
-      .unique()
       .references(() => users.id, { onDelete: "cascade" }),
     /** BIP44 child index this address was derived at (unique, never reused). */
     derivationIndex: integer("derivation_index").notNull().unique(),
@@ -523,6 +527,7 @@ export const cryptoDepositAddresses = pgTable(
     ...timestamps,
   },
   (t) => [
+    index("crypto_deposit_addresses_user_id_idx").on(t.userId),
     check("crypto_deposit_addresses_index_nonnegative", sql`${t.derivationIndex} >= 0`),
   ],
 );

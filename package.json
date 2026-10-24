@@ -18,7 +18,8 @@
     "verify:redeem": "tsx scripts/verify-redeem.ts",
     "verify:data": "tsx scripts/verify-data.ts",
     "verify:topups": "tsx scripts/verify-topups.ts",
-    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem && npm run verify:data && npm run verify:topups",
+    "verify:migrate": "tsx scripts/verify-migrate.ts",
+    "verify": "npm run verify:oauth && npm run verify:credits && npm run verify:devices && npm run verify:redeem && npm run verify:data && npm run verify:topups && npm run verify:migrate",
     "doctor": "npx react-doctor@latest",
     "lint-css": "npx @tailwindcss/upgrade --force && npx tailwind-lint --fix"
   },

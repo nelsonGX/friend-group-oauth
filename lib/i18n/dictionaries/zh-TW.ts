@@ -504,6 +504,10 @@ const zhTW: Dictionary = {
     registerProviderDesc: "為朋友的網站建立 OAuth 憑證。",
     createRedeemCode: "建立兌換代碼",
     createRedeemCodeDesc: "建立成員可兌換點數的代碼。",
+    migrateAccount: "遷移帳號",
+    migrateAccountDesc:
+      "將成員移轉到新的 Discord 帳號。餘額、紀錄、應用程式、儲值地址與應用程式資料都會一併移轉；若新帳號已在此登入過，會合併為同一個帳號。",
+    migrateConfirm: "要將此成員移轉到新的 Discord 帳號嗎？舊帳號會被登出，且此操作無法復原。",
     redeemCodes: "兌換代碼",
     searchRedeemCodes: "搜尋代碼…",
     noRedeemCodes: "尚無兌換代碼。",
@@ -593,6 +597,10 @@ const zhTW: Dictionary = {
       customCodePlaceholder: "自訂代碼（選填）",
       creatingCode: "建立中…",
       createCode: "建立代碼",
+      fromDiscordIdPlaceholder: "舊的 Discord 使用者 ID",
+      toDiscordIdPlaceholder: "新的 Discord 使用者 ID",
+      migrating: "遷移中…",
+      migrate: "遷移帳號",
     },
   },
   adminActions: {
@@ -611,6 +619,11 @@ const zhTW: Dictionary = {
     invalidExpiresInDays: "到期天數必須為正整數。",
     redeemCodeExists: "此代碼已存在——請換一個。",
     redeemCodeCreated: "兌換代碼已建立——分享給你的成員吧。",
+    migrateProvideIds: "請同時提供舊的與新的 Discord ID。",
+    migrateSameAccount: "舊的與新的 Discord ID 相同。",
+    migrateSourceNotFound: "找不到具有舊 Discord ID 的使用者。",
+    migrated: "已將 {user} 移轉到 Discord ID {id}。之後請使用新帳號登入。",
+    migratedMerged: "已將新帳號合併到 {user}（Discord ID {id}）。兩個帳號的所有資料現在都在同一個帳號上。",
   },
   authorize: {
     error: "授權錯誤",

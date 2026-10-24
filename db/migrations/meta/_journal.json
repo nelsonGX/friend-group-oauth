@@ -127,6 +127,13 @@
       "when": 1781176236920,
       "tag": "0017_striped_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792853630005,
+      "tag": "0018_sturdy_tattoo",
+      "breakpoints": true
     }
   ]
 }

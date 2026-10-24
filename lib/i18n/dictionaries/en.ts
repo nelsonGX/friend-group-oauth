@@ -520,6 +520,11 @@ const en = {
     registerProviderDesc: "Create OAuth credentials for a friend's site.",
     createRedeemCode: "Create a redeem code",
     createRedeemCodeDesc: "Mint a code members can redeem for credits.",
+    migrateAccount: "Migrate account",
+    migrateAccountDesc:
+      "Move a member to a new Discord account. Balance, history, apps, deposit addresses and app data all follow; if the new account already signed in here, it's merged in.",
+    migrateConfirm:
+      "Move this member to the new Discord account? The old account is signed out, and this can't be undone.",
     redeemCodes: "Redeem codes",
     searchRedeemCodes: "Search codes…",
     noRedeemCodes: "No redeem codes yet.",
@@ -609,6 +614,10 @@ const en = {
       customCodePlaceholder: "Custom code (optional)",
       creatingCode: "Creating…",
       createCode: "Create code",
+      fromDiscordIdPlaceholder: "Old Discord user ID",
+      toDiscordIdPlaceholder: "New Discord user ID",
+      migrating: "Migrating…",
+      migrate: "Migrate account",
     },
   },
   adminActions: {
@@ -630,6 +639,12 @@ const en = {
     invalidExpiresInDays: "Expiry must be a positive integer number of days.",
     redeemCodeExists: "That code already exists — pick a different one.",
     redeemCodeCreated: "Redeem code created — share it with your members.",
+    migrateProvideIds: "Provide both the old and the new Discord ID.",
+    migrateSameAccount: "The old and new Discord IDs are the same.",
+    migrateSourceNotFound: "No user with the old Discord ID.",
+    migrated: "Moved {user} to Discord ID {id}. They'll sign in with the new account from now on.",
+    migratedMerged:
+      "Merged the new account into {user} (Discord ID {id}). Everything from both accounts is now on one profile.",
   },
   authorize: {
     error: "Authorization error",

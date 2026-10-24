@@ -14,6 +14,7 @@ import {
   rejectWithdrawal as rejectWithdrawalLib,
 } from "@/lib/withdrawals";
 import { createRedeemCode as mintRedeemCode } from "@/lib/redeem";
+import { migrateAccount as migrateAccountLib } from "@/lib/migrate-account";
 import { redeemCodes } from "@/db/schema";
 import { hashSecret, randomToken } from "@/lib/crypto";
 import { SUPPORTED_SCOPES } from "@/lib/oauth";
@@ -127,6 +128,50 @@ export async function fetchUserHistory(
       label: activityLabel(entry, t.dashboard),
       delta: entry.delta,
     })),
+  };
+}
+
+/**
+ * Move a member to a new Discord account (see lib/migrate-account). The old
+ * user row survives, so their balance, apps, history and OAuth `sub` carry over;
+ * if the new account already logged in, its own data is merged in.
+ */
+export async function migrateAccount(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { t } = await getDictionary();
+  const d = t.adminActions;
+  const user = await auth();
+  if (!user?.isAdmin) return { ok: false, message: d.notAuthorized };
+
+  const fromDiscordId = formData.get("fromDiscordId")?.toString() ?? "";
+  const toDiscordId = formData.get("toDiscordId")?.toString() ?? "";
+  const result = await migrateAccountLib({ fromDiscordId, toDiscordId });
+  if (!result.ok) {
+    return {
+      ok: false,
+      message:
+        result.reason === "same_account"
+          ? d.migrateSameAccount
+          : result.reason === "source_not_found"
+            ? d.migrateSourceNotFound
+            : d.migrateProvideIds,
+    };
+  }
+
+  const [migrated] = await getDb()
+    .select()
+    .from(users)
+    .where(eq(users.id, result.userId))
+    .limit(1);
+  revalidatePath("/admin");
+  return {
+    ok: true,
+    message: format(result.merged ? d.migratedMerged : d.migrated, {
+      user: migrated.globalName ?? migrated.username,
+      id: migrated.discordId,
+    }),
   };
 }
 

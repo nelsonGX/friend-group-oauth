@@ -3,6 +3,7 @@
 import type { RefObject } from "react";
 import { GrantCreditsForm } from "./GrantCreditsForm";
 import { NewClientForm } from "./NewClientForm";
+import { MigrateAccountForm } from "./MigrateAccountForm";
 import { NewRedeemCodeForm } from "./NewRedeemCodeForm";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 
@@ -51,6 +52,15 @@ export function AdminFormsPanel({
         <h2 className="font-semibold">{t.createRedeemCode}</h2>
         <p className="mb-4 mt-1 text-sm text-muted">{t.createRedeemCodeDesc}</p>
         <NewRedeemCodeForm t={t.forms} />
+      </section>
+
+      <section
+        className="reveal card card-hover-border p-6"
+        style={{ animationDelay: "300ms" }}
+      >
+        <h2 className="font-semibold">{t.migrateAccount}</h2>
+        <p className="mb-4 mt-1 text-sm text-muted">{t.migrateAccountDesc}</p>
+        <MigrateAccountForm t={t.forms} confirmText={t.migrateConfirm} />
       </section>
     </div>
   );
